@@ -1,0 +1,146 @@
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { catalogoServicios, disponibilidad, crearCitaManual } from '../../lib/panel/api-panel'
+import { Boton, Campo, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
+import { fechaISO, hora, franja, duracion, dinero } from '../../lib/formato'
+import { mensajeDeError } from '../../lib/errores'
+
+type Servicio = { id: string; name: string; duration_minutes: number; price: number; currency: string; buffer_after_minutes: number }
+
+export default function CitaManual() {
+  const navegar = useNavigate()
+  const [servicioId, setServicioId] = useState<string>('')
+  const [fecha, setFecha] = useState<string>(fechaISO(new Date()))
+  const [horaSel, setHoraSel] = useState<string>('')
+  const [nombre, setNombre] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [nota, setNota] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [guardando, setGuardando] = useState(false)
+
+  const qServ = useQuery<Servicio[]>({ queryKey: ['cat-serv'], queryFn: catalogoServicios as () => Promise<Servicio[]> })
+  const servicio = qServ.data?.find(s => s.id === servicioId)
+
+  const qHoras = useQuery({
+    queryKey: ['disp-manual', fecha, servicioId],
+    queryFn: () => disponibilidad(fecha, servicio!.duration_minutes, servicio!.buffer_after_minutes),
+    enabled: !!servicio && !!fecha,
+  })
+
+  const dias = useMemo(() => {
+    const hoy = new Date()
+    return Array.from({ length: 21 }, (_, i) => {
+      const d = new Date(hoy); d.setDate(hoy.getDate() + i); return d
+    })
+  }, [])
+
+  async function guardar() {
+    if (!servicio || !horaSel || !nombre.trim() || !telefono.trim()) {
+      setError('Completa servicio, fecha, hora, nombre y teléfono.'); return
+    }
+    setGuardando(true); setError(null)
+    try {
+      const r = await crearCitaManual({
+        inicio: horaSel,
+        items: [{ service_id: servicio.id, addons: [] }],
+        nombre: nombre.trim(), telefono: telefono.trim(),
+        nota: nota.trim() || undefined,
+      })
+      navegar(`/panel/cita/${r.id}`)
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setGuardando(false) }
+  }
+
+  return (
+    <div className="p-5 space-y-5 pb-32">
+      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
+      <h1 className="font-display text-[30px]">Nueva cita manual</h1>
+
+      {error && <Aviso>{error}</Aviso>}
+
+      <section>
+        <Etiqueta>Servicio</Etiqueta>
+        {qServ.isLoading && <Esqueleto className="h-20 mt-3" />}
+        <div className="space-y-2 mt-3">
+          {qServ.data?.map(s => (
+            <button key={s.id} onClick={() => { setServicioId(s.id); setHoraSel('') }}
+              className={`w-full text-left px-4 py-3 rounded-sm border
+                ${servicioId === s.id ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
+              <div className="flex justify-between">
+                <span>{s.name}</span>
+                <span className="text-[14px] text-tinta-tenue">
+                  {duracion(s.duration_minutes)} · {dinero(Number(s.price), s.currency)}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {servicio && (
+        <section>
+          <Etiqueta>Fecha</Etiqueta>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            {dias.map(d => {
+              const iso = fechaISO(d); const activo = fecha === iso
+              const et = new Intl.DateTimeFormat('es',{ timeZone:'America/Havana', weekday:'short' }).format(d)
+              const num = new Intl.DateTimeFormat('es',{ timeZone:'America/Havana', day:'numeric' }).format(d)
+              return (
+                <button key={iso} onClick={() => { setFecha(iso); setHoraSel('') }}
+                  className={`min-h-[56px] rounded-sm border flex flex-col items-center justify-center
+                    ${activo ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
+                  <span className="text-[11px] uppercase">{et}</span>
+                  <span className="text-[16px] font-semibold">{num}</span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {servicio && (
+        <section>
+          <Etiqueta>Hora</Etiqueta>
+          {qHoras.isLoading && <Esqueleto className="h-16 mt-3" />}
+          {qHoras.data && qHoras.data.length === 0 && (
+            <p className="text-[14px] text-tinta-tenue mt-3">No hay huecos ese día.</p>
+          )}
+          {qHoras.data && (['Mañana','Tarde','Noche'] as const).map(f => {
+            const grupo = qHoras.data.filter(h => franja(h) === f)
+            if (!grupo.length) return null
+            return (
+              <div key={f} className="mt-3">
+                <div className="text-[12px] tracking-wider text-tinta-tenue mb-1">{f}</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {grupo.map(h => (
+                    <button key={h} onClick={() => setHoraSel(h)}
+                      className={`min-h-[44px] rounded-sm border text-[14px]
+                        ${horaSel === h ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
+                      {hora(h)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </section>
+      )}
+
+      {horaSel && (
+        <section className="space-y-3">
+          <Etiqueta>Clienta</Etiqueta>
+          <Campo etiqueta="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
+          <Campo etiqueta="Teléfono" value={telefono} onChange={e => setTelefono(e.target.value)}
+                 inputMode="tel" />
+          <label className="block">
+            <span className="block text-[14px] text-tinta-suave mb-1.5">Nota (opcional)</span>
+            <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
+              className="w-full px-4 py-3 rounded-sm border border-rosa-200 text-[16px]" />
+          </label>
+          <Boton ancho onClick={guardar} cargando={guardando}>Crear cita</Boton>
+        </section>
+      )}
+    </div>
+  )
+}

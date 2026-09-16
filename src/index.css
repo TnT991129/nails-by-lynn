@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face { font-family:'Inter'; font-style:normal; font-weight:400 500 600;
+  font-display:swap; src:local('Inter'); }
+@font-face { font-family:'Playfair Display'; font-style:normal; font-weight:400 500;
+  font-display:swap; src:local('Playfair Display'); }
+
+@layer base {
+  html { -webkit-text-size-adjust:100%; }
+  body { @apply bg-superficie-base text-tinta font-sans antialiased; }
+  h1,h2 { @apply font-display; }
+  :focus-visible { @apply outline-none ring-2 ring-rosa-600 ring-offset-2 rounded-sm; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
