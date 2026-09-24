@@ -79,9 +79,9 @@ export default function FichaClienta() {
       )}
 
       <Tarjeta className="space-y-2">
-        <label className="block text-[14px] text-tinta-tenue">Notas privadas</label>
+        <label className="block text-[14px] text-tinta-tenue">Sobre esta clienta</label>
         <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={4}
-          placeholder="Alergias, preferencias, horarios habituales…"
+          placeholder="Alergias, preferencias, cómo prefiere que la trates…"
           className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
         {error && <Aviso>{error}</Aviso>}
         <Boton variante="secundario" onClick={guardar} cargando={guardando}>Guardar notas</Boton>

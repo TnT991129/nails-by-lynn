@@ -17,7 +17,7 @@ const EditarHorarios = lazy(() => import('./EditarHorarios'))
 const Estadisticas = lazy(() => import('./Estadisticas'))
 const Gastos = lazy(() => import('./Gastos'))
 const Respaldo = lazy(() => import('./Respaldo'))
-const GaleriaPanel = lazy(() => import('./Galeria'))
+const GaleriaPanel = lazy(() => import('./GaleriaPanel'))
 
 function Cargando() {
   return <div className="p-5"><Esqueleto className="h-24" /></div>

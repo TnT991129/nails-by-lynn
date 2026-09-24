@@ -2,15 +2,20 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { catalogoServicios, disponibilidad, crearCitaManual } from '../../lib/panel/api-panel'
+import { obtenerAddons } from '../../lib/api'
 import { Boton, Campo, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
 import { fechaISO, hora, franja, duracion, dinero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 
-type Servicio = { id: string; name: string; duration_minutes: number; price: number; currency: string; buffer_after_minutes: number }
+type Servicio = {
+  id: string; name: string; duration_minutes: number;
+  price: number; currency: string; buffer_after_minutes: number;
+}
 
 export default function CitaManual() {
   const navegar = useNavigate()
   const [servicioId, setServicioId] = useState<string>('')
+  const [addonsSel, setAddonsSel] = useState<string[]>([])
   const [fecha, setFecha] = useState<string>(fechaISO(new Date()))
   const [horaSel, setHoraSel] = useState<string>('')
   const [nombre, setNombre] = useState('')
@@ -19,13 +24,26 @@ export default function CitaManual() {
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
 
-  const qServ = useQuery<Servicio[]>({ queryKey: ['cat-serv'], queryFn: catalogoServicios as () => Promise<Servicio[]> })
+  const qServ = useQuery<Servicio[]>({
+    queryKey: ['cat-serv'],
+    queryFn: catalogoServicios as () => Promise<Servicio[]>,
+  })
+  const qAddons = useQuery({ queryKey: ['addons-manual'], queryFn: obtenerAddons })
+
   const servicio = qServ.data?.find(s => s.id === servicioId)
+  const addonsElegidos = qAddons.data?.filter(a => addonsSel.includes(a.id)) ?? []
+
+  // Duración = servicio + suma de complementos elegidos
+  const duracionTotal = useMemo(() => {
+    if (!servicio) return 0
+    const extra = addonsElegidos.reduce((t, a) => t + Number(a.extra_minutes ?? 0), 0)
+    return servicio.duration_minutes + extra
+  }, [servicio, addonsElegidos])
 
   const qHoras = useQuery({
-    queryKey: ['disp-manual', fecha, servicioId],
-    queryFn: () => disponibilidad(fecha, servicio!.duration_minutes, servicio!.buffer_after_minutes),
-    enabled: !!servicio && !!fecha,
+    queryKey: ['disp-manual', fecha, servicioId, addonsSel.join('-')],
+    queryFn: () => disponibilidad(fecha, duracionTotal, servicio!.buffer_after_minutes),
+    enabled: !!servicio && !!fecha && duracionTotal > 0,
   })
 
   const dias = useMemo(() => {
@@ -35,6 +53,11 @@ export default function CitaManual() {
     })
   }, [])
 
+  function toggleAddon(id: string) {
+    setAddonsSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
+    setHoraSel('')  // los complementos cambian la duración → recalcular horas
+  }
+
   async function guardar() {
     if (!servicio || !horaSel || !nombre.trim() || !telefono.trim()) {
       setError('Completa servicio, fecha, hora, nombre y teléfono.'); return
@@ -43,7 +66,7 @@ export default function CitaManual() {
     try {
       const r = await crearCitaManual({
         inicio: horaSel,
-        items: [{ service_id: servicio.id, addons: [] }],
+        items: [{ service_id: servicio.id, addons: addonsSel }],
         nombre: nombre.trim(), telefono: telefono.trim(),
         nota: nota.trim() || undefined,
       })
@@ -64,7 +87,9 @@ export default function CitaManual() {
         {qServ.isLoading && <Esqueleto className="h-20 mt-3" />}
         <div className="space-y-2 mt-3">
           {qServ.data?.map(s => (
-            <button key={s.id} onClick={() => { setServicioId(s.id); setHoraSel('') }}
+            <button key={s.id} onClick={() => {
+              setServicioId(s.id); setHoraSel(''); setAddonsSel([])
+            }}
               className={`w-full text-left px-4 py-3 rounded-sm border
                 ${servicioId === s.id ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
               <div className="flex justify-between">
@@ -77,6 +102,39 @@ export default function CitaManual() {
           ))}
         </div>
       </section>
+
+      {servicio && qAddons.data && qAddons.data.length > 0 && (
+        <section>
+          <Etiqueta>Complementos (opcional)</Etiqueta>
+          <div className="space-y-2 mt-3">
+            {qAddons.data.map(a => {
+              const activo = addonsSel.includes(a.id)
+              return (
+                <button key={a.id} onClick={() => toggleAddon(a.id)}
+                  className={`w-full text-left px-4 py-3 rounded-sm border
+                    ${activo ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-[14px]">{a.name}</div>
+                      <div className="text-[12px] text-tinta-tenue">
+                        +{a.extra_minutes} min · +{Number(a.extra_price).toLocaleString('es-CU')} CUP
+                      </div>
+                    </div>
+                    <span className={`text-[18px] ${activo ? 'text-rosa-600' : 'text-tinta-tenue'}`}>
+                      {activo ? '✓' : '+'}
+                    </span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          {duracionTotal > 0 && (
+            <div className="mt-3 text-[13px] text-tinta-tenue text-right">
+              Duración total: <b>{duracion(duracionTotal)}</b>
+            </div>
+          )}
+        </section>
+      )}
 
       {servicio && (
         <section>

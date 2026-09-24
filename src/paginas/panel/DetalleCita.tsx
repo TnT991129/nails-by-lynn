@@ -121,24 +121,25 @@ export default function DetalleCita() {
         <div className="space-y-2">
           <div className="text-[14px] text-tinta-tenue">Cambiar estado</div>
           <div className="grid grid-cols-2 gap-2">
-            {c.status !== 'CONFIRMADA' && (
+            {c.status === 'PENDIENTE' && (
               <Boton variante="secundario" onClick={() => cambiar('CONFIRMADA')} cargando={trabajando}>
                 Confirmar
               </Boton>
             )}
-            {c.status !== 'EN_CURSO' && (
+            {(c.status === 'PENDIENTE' || c.status === 'CONFIRMADA') && (
               <Boton variante="secundario" onClick={() => cambiar('EN_CURSO')} cargando={trabajando}>
                 En curso
               </Boton>
             )}
-            <Boton onClick={() => cambiar('COMPLETADA')} cargando={trabajando}>
+            <Boton onClick={() => cambiar('COMPLETADA')} cargando={trabajando}
+                   className={c.status === 'PENDIENTE' ? '' : 'col-span-2'}>
               Completada
             </Boton>
             <Boton variante="peligro" onClick={() => cambiar('NO_SHOW')} cargando={trabajando}>
               No asistió
             </Boton>
             <Boton variante="peligro" onClick={() => cambiar('CANCELADA_NEGOCIO')}
-                   cargando={trabajando} className="col-span-2">
+                   cargando={trabajando}>
               Cancelar cita
             </Boton>
           </div>
@@ -146,9 +147,9 @@ export default function DetalleCita() {
       )}
 
       <Tarjeta className="space-y-2">
-        <label className="block text-[14px] text-tinta-tenue">Nota privada</label>
+        <label className="block text-[14px] text-tinta-tenue">Nota de esta cita</label>
         <textarea value={nota} onChange={e => setNota(e.target.value)} rows={3}
-          placeholder="Prefiere tonos nude, llega puntual…"
+          placeholder="Ej: trajo su propio esmalte, necesita salir a las 4…"
           className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
         <Boton variante="secundario" onClick={guardarNota} cargando={trabajando}>
           Guardar nota

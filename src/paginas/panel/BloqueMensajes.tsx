@@ -64,7 +64,7 @@ export default function BloqueMensajes({ cita, tokenAcceso }: {
     }
   }
 
-  const teclas: PlantillaKey[] = ['confirmacion','recordatorio','retraso','gracias']
+  const teclas: PlantillaKey[] = ['recordatorio','retraso']
 
   return (
     <Tarjeta className="space-y-3">
@@ -82,7 +82,7 @@ export default function BloqueMensajes({ cita, tokenAcceso }: {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2">
         {teclas.map(k => {
           const enviado = enviados.has(k)
           return (
