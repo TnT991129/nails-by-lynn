@@ -2,8 +2,9 @@ import { NavLink, useLocation } from 'react-router-dom'
 
 const ITEMS = [
   { a: '/', etiqueta: 'Inicio', icono: '⌂' },
-  { a: '/servicios', etiqueta: 'Servicios', icono: '✦' },
-  { a: '/mis-citas', etiqueta: 'Mis citas', icono: '☰' },
+{ a: '/servicios', etiqueta: 'Servicios', icono: '💅' },
+{ a: '/galeria', etiqueta: 'Galería', icono: '📷' },
+{ a: '/mis-citas', etiqueta: 'Mis citas', icono: '📅' },
 ]
 
 export default function Navegacion() {
@@ -11,8 +12,7 @@ export default function Navegacion() {
   if (pathname.startsWith('/reservar') || pathname.startsWith('/panel')) return null
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-rosa-100 z-20
-                    pb-[env(safe-area-inset-bottom)]">
+    <nav className="bottom-0 z-20 fixed inset-x-0 pb-[env(safe-area-inset-bottom)] bg-white border-rosa-100 border-t">
       <ul className="flex">
         {ITEMS.map(i => (
           <li key={i.a} className="flex-1">
