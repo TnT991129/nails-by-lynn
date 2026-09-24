@@ -225,3 +225,61 @@ export function listarBloqueosFuturos() {
       .order('starts_at')
   )
 }
+
+// ================== NOTIFICACIONES (wa.me asistido) ==================
+export type NotifRegistro = {
+  id: string; template_key: string;
+  scheduled_for: string; status: string;
+  sent_at: string | null;
+}
+
+// Ver que mensajes ya se enviaron para una cita
+export function notifsDeCita(appointment_id: string) {
+  return ejecutar<NotifRegistro[]>(
+    sb.from('notifications').select('id, template_key, scheduled_for, status, sent_at')
+      .eq('appointment_id', appointment_id)
+      .order('scheduled_for')
+  )
+}
+
+// Registrar que Lynn envió un mensaje (marca la fila existente o crea una nueva)
+export async function registrarEnvio(
+  appointment_id: string,
+  template_key: string,
+  rendered_message: string,
+  recipient_phone: string,
+) {
+  // Buscar si ya existe una fila PENDIENTE con esta plantilla
+  const { data: existentes } = await sb.from('notifications')
+    .select('id')
+    .eq('appointment_id', appointment_id)
+    .eq('template_key', template_key)
+    .eq('status', 'PENDIENTE')
+    .limit(1)
+
+  if (existentes && existentes.length > 0) {
+    // Marcar la existente como enviada
+    const { error } = await sb.from('notifications')
+      .update({ status: 'ENVIADA', sent_at: new Date().toISOString(),
+                sent_by: (await sb.auth.getUser()).data.user?.id })
+      .eq('id', existentes[0].id)
+    if (error) throw error
+    return
+  }
+
+  // Crear una nueva fila ya enviada (para mensajes manuales como "retraso" o "gracias")
+  const { error } = await sb.from('notifications').insert({
+    business_id: NEGOCIO_ID,
+    appointment_id,
+    recipient_type: 'CLIENTA',
+    recipient_phone,
+    channel: 'WHATSAPP_ASISTIDO',
+    template_key,
+    rendered_message,
+    scheduled_for: new Date().toISOString(),
+    status: 'ENVIADA',
+    sent_at: new Date().toISOString(),
+    sent_by: (await sb.auth.getUser()).data.user?.id,
+  })
+  if (error) throw error
+}

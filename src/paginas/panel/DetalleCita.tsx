@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { citasEnRango, cambiarEstadoCita, actualizarNotaInterna } from '../../lib/panel/api-panel'
+import { sb } from '../../lib/panel/supabase-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, duracion, dinero } from '../../lib/formato'
+import BloqueMensajes from './BloqueMensajes'
 import { mensajeDeError } from '../../lib/errores'
 
 export default function DetalleCita() {
@@ -54,6 +56,15 @@ export default function DetalleCita() {
   if (q.isLoading) return <div className="p-5"><Esqueleto className="h-48" /></div>
   if (q.isError) return <div className="p-5"><Aviso>{mensajeDeError(q.error)}</Aviso></div>
 
+  const qToken = useQuery({
+    queryKey: ['token-cita', id],
+    queryFn: async () => {
+      const { data, error } = await sb.from('appointments').select('access_token').eq('id', id).single()
+      if (error) throw error
+      return data.access_token as string
+    },
+  })
+
   const c = q.data!
   const activa = ['PENDIENTE','CONFIRMADA','EN_CURSO'].includes(c.status)
 
@@ -101,6 +112,8 @@ export default function DetalleCita() {
           </div>
         )}
       </Tarjeta>
+
+      {qToken.data && <BloqueMensajes cita={c} tokenAcceso={qToken.data} />}
 
       {error && <Aviso>{error}</Aviso>}
 
