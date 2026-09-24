@@ -163,8 +163,8 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
   onEditar: () => void; onCerrar: () => void;
 }) {
   const [nombre, setNombre] = useState(complemento.name)
-  const [precio, setPrecio] = useState(String(complemento.price))
-  const [duracion, setDuracion] = useState(String(complemento.duration_minutes))
+  const [precio, setPrecio] = useState(String(complemento.extra_price))
+  const [duracion, setDuracion] = useState(String(complemento.extra_minutes))
   const [activo, setActivo] = useState(complemento.is_active)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -176,7 +176,7 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
       if (isNaN(p) || p < 0) throw new Error('Precio inválido')
       if (isNaN(d) || d < 0) throw new Error('Duración inválida')
       await actualizarComplemento(complemento.id, {
-        name: nombre.trim(), price: p, duration_minutes: d, is_active: activo,
+        name: nombre.trim(), extra_price: p, extra_minutes: d, is_active: activo,
       })
       onCerrar()
     } catch (e) { setError(mensajeDeError(e)) }
@@ -193,7 +193,7 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
           )}
         </div>
         <div className="text-[14px] text-tinta-tenue">
-          +{complemento.duration_minutes} min · +{Number(complemento.price).toLocaleString('es-CU')} {complemento.currency}
+          +{complemento.extra_minutes} min · +{Number(complemento.extra_price).toLocaleString('es-CU')} CUP
         </div>
       </div>
       <Boton variante="secundario" onClick={onEditar}>Editar</Boton>

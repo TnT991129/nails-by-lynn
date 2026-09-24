@@ -160,9 +160,9 @@ export function actualizarServicio(id: string, cambios: Partial<ServicioEdit>) {
 
 // ================== EDITAR COMPLEMENTOS ==================
 export type ComplementoEdit = {
-  id: string; name: string; description: string | null;
-  price: number; currency: string;
-  duration_minutes: number; is_active: boolean; sort_order: number;
+  id: string; name: string;
+  extra_price: number; extra_minutes: number;
+  is_active: boolean; sort_order: number;
 }
 
 export function listarComplementos() {
