@@ -3,6 +3,7 @@ import { Tarjeta } from '../../componentes/ui'
 
 const ITEMS = [
   { a: '/panel/estadisticas', titulo: 'Estadísticas', desc: 'Ingresos, neto, clientas top', icono: '📊' },
+  { a: '/panel/galeria',      titulo: 'Galería',      desc: 'Subir y publicar fotos', icono: '📷' },
   { a: '/panel/gastos',       titulo: 'Gastos',       desc: 'Material, transporte, marketing', icono: '💸' },
   { a: '/panel/servicios',    titulo: 'Servicios',    desc: 'Precios, duración y complementos', icono: '💅' },
   { a: '/panel/horarios',     titulo: 'Horarios',     desc: 'Días laborables y bloqueos', icono: '📅' },
@@ -25,9 +26,6 @@ export default function Mas() {
           </Tarjeta>
         </Link>
       ))}
-      <div className="pt-4 text-[13px] text-tinta-tenue text-center">
-        Galería con fotos en la próxima entrega.
-      </div>
     </div>
   )
 }

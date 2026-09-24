@@ -81,3 +81,24 @@ export function reprogramarCita(token: string, nuevoInicio: string, sesion?: str
   return rpc<{ ok: boolean; reprogramaciones_usadas: number; maximo: number }>(
     'reprogramar_cita', { p_token: token, p_nuevo_inicio: nuevoInicio, p_session_token: sesion ?? null })
 }
+
+// ============ GALERÍA PÚBLICA ============
+export type FotoPublica = {
+  id: string
+  image_url: string
+  thumbnail_url: string | null
+  alt_text: string | null
+  caption: string | null
+  service_id: string | null
+  is_featured: boolean
+  sort_order: number
+}
+
+export function obtenerFotosPublicas() {
+  return seleccionar<FotoPublica>('gallery_photos', {
+    select: 'id,image_url,thumbnail_url,alt_text,caption,service_id,is_featured,sort_order',
+    filtros: { is_published: 'is.true' },
+    orden: 'sort_order.asc,created_at.desc',
+    limite: 200,
+  })
+}

@@ -10,6 +10,7 @@ const Reserva   = lazy(() => import('./paginas/Reserva'))
 const Cita      = lazy(() => import('./paginas/Cita'))
 const MisCitas  = lazy(() => import('./paginas/MisCitas'))
 const Panel     = lazy(() => import('./paginas/panel'))
+const Galeria   = lazy(() => import('./paginas/Galeria'))
 
 function Cargando() {
   return (
@@ -44,6 +45,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/reservar" element={<Reserva />} />
           <Route path="/cita/:token" element={<Cita />} />
           <Route path="/mis-citas" element={<MisCitas />} />
+          <Route path="/galeria" element={<Galeria />} />
           <Route path="/panel/*" element={<Panel />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

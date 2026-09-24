@@ -461,3 +461,85 @@ export async function gastosParaCsv() {
   if (error) throw error
   return data as Record<string, unknown>[]
 }
+
+// ================== GALERÍA (panel) ==================
+export type FotoPanel = {
+  id: string; image_url: string; thumbnail_url: string | null;
+  alt_text: string | null; caption: string | null;
+  service_id: string | null;
+  has_consent: boolean; is_featured: boolean; is_published: boolean;
+  sort_order: number; created_at: string;
+}
+
+// Subir un archivo al bucket 'galeria' y devolver su URL pública
+export async function subirImagen(archivo: File): Promise<{ url: string; path: string }> {
+  const ext = archivo.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const nombre = `${crypto.randomUUID()}.${ext}`
+  const path = `${NEGOCIO_ID}/${nombre}`
+
+  const { error } = await sb.storage.from('galeria').upload(path, archivo, {
+    cacheControl: '31536000',
+    upsert: false,
+    contentType: archivo.type,
+  })
+  if (error) throw error
+
+  const { data } = sb.storage.from('galeria').getPublicUrl(path)
+  return { url: data.publicUrl, path }
+}
+
+// Registrar la foto en la tabla
+export async function crearFoto(args: {
+  image_url: string
+  service_id: string | null
+  caption: string | null
+  alt_text: string | null
+  has_consent: boolean
+  is_featured: boolean
+  is_published: boolean
+  client_id?: string | null
+}) {
+  return ejecutar(
+    sb.from('gallery_photos').insert({
+      business_id: NEGOCIO_ID,
+      image_url: args.image_url,
+      thumbnail_url: args.image_url,   // sin generación de thumbnail: usamos la misma
+      service_id: args.service_id,
+      caption: args.caption,
+      alt_text: args.alt_text,
+      has_consent: args.has_consent,
+      is_featured: args.is_featured,
+      is_published: args.is_published,
+      client_id: args.client_id ?? null,
+    }).select().single()
+  )
+}
+
+export function listarFotosPanel() {
+  return ejecutar<FotoPanel[]>(
+    sb.from('gallery_photos').select(
+      'id, image_url, thumbnail_url, alt_text, caption, service_id, has_consent, is_featured, is_published, sort_order, created_at'
+    ).eq('business_id', NEGOCIO_ID)
+     .order('created_at', { ascending: false })
+     .limit(300)
+  )
+}
+
+export function actualizarFoto(id: string, cambios: Partial<FotoPanel>) {
+  return ejecutar(
+    sb.from('gallery_photos').update(cambios).eq('id', id).select().single()
+  )
+}
+
+export async function eliminarFoto(id: string, imageUrl: string) {
+  // Borrar la fila
+  const { error: e1 } = await sb.from('gallery_photos').delete().eq('id', id)
+  if (e1) throw e1
+
+  // Intentar borrar del storage (si falla, no es crítico)
+  // La URL viene como https://xxx.supabase.co/storage/v1/object/public/galeria/PATH
+  const match = imageUrl.match(/\/galeria\/(.+)$/)
+  if (match) {
+    await sb.storage.from('galeria').remove([match[1]])
+  }
+}
