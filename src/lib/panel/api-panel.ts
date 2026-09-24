@@ -430,3 +430,34 @@ export function crearGasto(args: {
 export function eliminarGasto(id: string) {
   return ejecutar(sb.from('expenses').delete().eq('id', id))
 }
+
+// ================== RESPALDO ==================
+export async function exportarRespaldoCompleto() {
+  const { data, error } = await sb.rpc('exportar_respaldo', { p_business_id: NEGOCIO_ID })
+  if (error) throw error
+  return data as Record<string, unknown>
+}
+
+// Descargas rápidas por tabla (para abrir en Excel)
+export async function citasParaCsv() {
+  const { data, error } = await sb.from('v_agenda').select('*')
+    .eq('business_id', NEGOCIO_ID).order('starts_at', { ascending: false })
+  if (error) throw error
+  return data as Record<string, unknown>[]
+}
+
+export async function clientasParaCsv() {
+  const { data, error } = await sb.from('clients').select(
+    'full_name, phone, email, instagram, total_appointments, total_no_shows, total_cancellations, total_spent_cup, first_seen_at, last_appointment_at'
+  ).eq('business_id', NEGOCIO_ID)
+    .order('total_spent_cup', { ascending: false })
+  if (error) throw error
+  return data as Record<string, unknown>[]
+}
+
+export async function gastosParaCsv() {
+  const { data, error } = await sb.from('expenses').select('date, category, description, amount, currency')
+    .eq('business_id', NEGOCIO_ID).order('date', { ascending: false })
+  if (error) throw error
+  return data as Record<string, unknown>[]
+}

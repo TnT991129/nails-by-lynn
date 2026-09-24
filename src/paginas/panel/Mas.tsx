@@ -6,6 +6,7 @@ const ITEMS = [
   { a: '/panel/gastos',       titulo: 'Gastos',       desc: 'Material, transporte, marketing', icono: '💸' },
   { a: '/panel/servicios',    titulo: 'Servicios',    desc: 'Precios, duración y complementos', icono: '💅' },
   { a: '/panel/horarios',     titulo: 'Horarios',     desc: 'Días laborables y bloqueos', icono: '📅' },
+  { a: '/panel/respaldo',     titulo: 'Respaldo',     desc: 'Descargar copia de tus datos', icono: '💾' },
 ]
 
 export default function Mas() {
@@ -25,7 +26,7 @@ export default function Mas() {
         </Link>
       ))}
       <div className="pt-4 text-[13px] text-tinta-tenue text-center">
-        Galería y respaldo en la próxima entrega.
+        Galería con fotos en la próxima entrega.
       </div>
     </div>
   )

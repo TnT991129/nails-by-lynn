@@ -16,6 +16,7 @@ const EditarServicios = lazy(() => import('./EditarServicios'))
 const EditarHorarios = lazy(() => import('./EditarHorarios'))
 const Estadisticas = lazy(() => import('./Estadisticas'))
 const Gastos = lazy(() => import('./Gastos'))
+const Respaldo = lazy(() => import('./Respaldo'))
 
 function Cargando() {
   return <div className="p-5"><Esqueleto className="h-24" /></div>
@@ -45,6 +46,7 @@ export default function Panel() {
             <Route path="horarios" element={<EditarHorarios />} />
             <Route path="estadisticas" element={<Estadisticas />} />
             <Route path="gastos" element={<Gastos />} />
+            <Route path="respaldo" element={<Respaldo />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/panel/entrar" replace />} />
