@@ -283,3 +283,150 @@ export async function registrarEnvio(
   })
   if (error) throw error
 }
+
+// ================== ESTADÍSTICAS ==================
+// Todas las estadísticas se computan sobre appointments completadas del mes.
+// Los precios están en price_snapshot para que subir precios no distorsione
+// el histórico.
+
+export type ResumenMes = {
+  ingresos: number
+  gastos: number
+  neto: number
+  citas_completadas: number
+  citas_no_show: number
+  citas_canceladas: number
+  ticket_promedio: number
+  clientas_atendidas: number
+  moneda: string
+}
+
+export type FilaServicio = { nombre: string; cantidad: number; ingresos: number }
+export type FilaClienta = { id: string; nombre: string; visitas: number; gastado: number }
+
+// Devuelve un rango [ini, fin) que cubre un mes en hora local Havana
+function rangoMes(año: number, mesCero: number) {
+  const ini = new Date(Date.UTC(año, mesCero, 1, 4, 0, 0))  // Havana ~ UTC-4/-5
+  const fin = new Date(Date.UTC(año, mesCero + 1, 1, 4, 0, 0))
+  return { ini: ini.toISOString(), fin: fin.toISOString() }
+}
+
+export async function resumenMes(año: number, mesCero: number): Promise<ResumenMes> {
+  const { ini, fin } = rangoMes(año, mesCero)
+
+  // Traer todas las citas del mes (para contar completadas, no-shows, canceladas)
+  const { data: citas, error: eCit } = await sb.from('appointments')
+    .select('id, status, client_id, total_amount, currency, starts_at')
+    .eq('business_id', NEGOCIO_ID)
+    .gte('starts_at', ini).lt('starts_at', fin)
+  if (eCit) throw eCit
+
+  // Traer gastos del mes
+  const iniFecha = ini.slice(0, 10), finFecha = fin.slice(0, 10)
+  const { data: gastos, error: eG } = await sb.from('expenses')
+    .select('amount, currency')
+    .eq('business_id', NEGOCIO_ID)
+    .gte('date', iniFecha).lt('date', finFecha)
+  if (eG) throw eG
+
+  const completadas = (citas ?? []).filter(c => c.status === 'COMPLETADA')
+  const ingresos = completadas.reduce((t, c) => t + Number(c.total_amount), 0)
+  const totalGastos = (gastos ?? []).reduce((t, g) => t + Number(g.amount), 0)
+  const clientasSet = new Set(completadas.map(c => c.client_id))
+
+  return {
+    ingresos,
+    gastos: totalGastos,
+    neto: ingresos - totalGastos,
+    citas_completadas: completadas.length,
+    citas_no_show: (citas ?? []).filter(c => c.status === 'NO_SHOW').length,
+    citas_canceladas: (citas ?? []).filter(c =>
+      c.status === 'CANCELADA_CLIENTA' || c.status === 'CANCELADA_NEGOCIO').length,
+    ticket_promedio: completadas.length > 0 ? ingresos / completadas.length : 0,
+    clientas_atendidas: clientasSet.size,
+    moneda: 'CUP',
+  }
+}
+
+// Top servicios del mes
+export async function topServiciosMes(año: number, mesCero: number, limite = 5): Promise<FilaServicio[]> {
+  const { ini, fin } = rangoMes(año, mesCero)
+  const { data, error } = await sb.from('appointment_items')
+    .select('service_name_snapshot, price_snapshot, appointment_id, appointments!inner(status, starts_at, business_id)')
+    .eq('appointments.business_id', NEGOCIO_ID)
+    .eq('appointments.status', 'COMPLETADA')
+    .gte('appointments.starts_at', ini).lt('appointments.starts_at', fin)
+  if (error) throw error
+
+  // Agrupar por nombre
+  const acc = new Map<string, { cantidad: number; ingresos: number }>()
+  for (const fila of (data ?? [])) {
+    const nombre = fila.service_name_snapshot as string
+    const precio = Number(fila.price_snapshot)
+    const cur = acc.get(nombre) ?? { cantidad: 0, ingresos: 0 }
+    cur.cantidad++; cur.ingresos += precio
+    acc.set(nombre, cur)
+  }
+
+  return Array.from(acc.entries())
+    .map(([nombre, v]) => ({ nombre, ...v }))
+    .sort((a, b) => b.ingresos - a.ingresos)
+    .slice(0, limite)
+}
+
+// Top clientas del mes
+export async function topClientasMes(año: number, mesCero: number, limite = 5): Promise<FilaClienta[]> {
+  const { ini, fin } = rangoMes(año, mesCero)
+  const { data, error } = await sb.from('appointments')
+    .select('client_id, total_amount, clients!inner(id, full_name)')
+    .eq('business_id', NEGOCIO_ID)
+    .eq('status', 'COMPLETADA')
+    .gte('starts_at', ini).lt('starts_at', fin)
+  if (error) throw error
+
+  const acc = new Map<string, { nombre: string; visitas: number; gastado: number }>()
+  for (const fila of (data ?? [])) {
+    const id = fila.client_id as string
+    const nombre = (fila.clients as unknown as { full_name: string }).full_name
+    const monto = Number(fila.total_amount)
+    const cur = acc.get(id) ?? { nombre, visitas: 0, gastado: 0 }
+    cur.visitas++; cur.gastado += monto
+    acc.set(id, cur)
+  }
+
+  return Array.from(acc.entries())
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.gastado - a.gastado)
+    .slice(0, limite)
+}
+
+// ================== GASTOS ==================
+export type Gasto = {
+  id: string; date: string; category: string;
+  description: string | null; amount: number; currency: string;
+}
+
+export type CategoriaGasto = 'MATERIAL'|'HERRAMIENTAS'|'LOCAL'|'TRANSPORTE'|'MARKETING'|'OTRO'
+
+export function listarGastos(limite = 100) {
+  return ejecutar<Gasto[]>(
+    sb.from('expenses').select('id, date, category, description, amount, currency')
+      .eq('business_id', NEGOCIO_ID)
+      .order('date', { ascending: false }).limit(limite)
+  )
+}
+
+export function crearGasto(args: {
+  date: string; category: CategoriaGasto; description: string;
+  amount: number; currency: 'CUP' | 'USD';
+}) {
+  return ejecutar(
+    sb.from('expenses').insert({
+      business_id: NEGOCIO_ID, ...args,
+    }).select().single()
+  )
+}
+
+export function eliminarGasto(id: string) {
+  return ejecutar(sb.from('expenses').delete().eq('id', id))
+}
