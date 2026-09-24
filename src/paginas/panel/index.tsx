@@ -12,6 +12,8 @@ const DetalleCita = lazy(() => import('./DetalleCita'))
 const Clientas = lazy(() => import('./Clientas'))
 const FichaClienta = lazy(() => import('./FichaClienta'))
 const Mas = lazy(() => import('./Mas'))
+const EditarServicios = lazy(() => import('./EditarServicios'))
+const EditarHorarios = lazy(() => import('./EditarHorarios'))
 
 function Cargando() {
   return <div className="p-5"><Esqueleto className="h-24" /></div>
@@ -37,6 +39,8 @@ export default function Panel() {
             <Route path="clientas" element={<Clientas />} />
             <Route path="clientas/:id" element={<FichaClienta />} />
             <Route path="mas" element={<Mas />} />
+            <Route path="servicios" element={<EditarServicios />} />
+            <Route path="horarios" element={<EditarHorarios />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/panel/entrar" replace />} />

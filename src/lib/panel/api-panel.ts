@@ -134,3 +134,94 @@ export async function disponibilidad(fecha: string, duracion: number, buffer?: n
   if (error) throw error
   return ((data ?? []) as { hora: string }[]).map(f => f.hora)
 }
+
+// ================== EDITAR SERVICIOS ==================
+export type ServicioEdit = {
+  id: string; name: string; slug: string;
+  description: string | null;
+  price: number; currency: string;
+  duration_minutes: number; buffer_after_minutes: number;
+  is_active: boolean; sort_order: number;
+}
+
+export function listarServiciosPanel() {
+  return ejecutar<ServicioEdit[]>(
+    sb.from('services').select('*')
+      .eq('business_id', NEGOCIO_ID).order('sort_order')
+  )
+}
+
+export function actualizarServicio(id: string, cambios: Partial<ServicioEdit>) {
+  return ejecutar(
+    sb.from('services').update({ ...cambios, updated_at: new Date().toISOString() })
+      .eq('id', id).select().single()
+  )
+}
+
+// ================== EDITAR COMPLEMENTOS ==================
+export type ComplementoEdit = {
+  id: string; name: string; description: string | null;
+  price: number; currency: string;
+  duration_minutes: number; is_active: boolean; sort_order: number;
+}
+
+export function listarComplementos() {
+  return ejecutar<ComplementoEdit[]>(
+    sb.from('service_addons').select('*')
+      .eq('business_id', NEGOCIO_ID).order('sort_order')
+  )
+}
+
+export function actualizarComplemento(id: string, cambios: Partial<ComplementoEdit>) {
+  return ejecutar(
+    sb.from('service_addons').update(cambios).eq('id', id).select().single()
+  )
+}
+
+// ================== EDITAR HORARIOS ==================
+export type ReglaHorario = {
+  id: string; weekday: number;
+  start_time: string; end_time: string;
+  is_active: boolean;
+}
+
+export function listarHorarios() {
+  return ejecutar<ReglaHorario[]>(
+    sb.from('schedule_rules').select('*')
+      .eq('business_id', NEGOCIO_ID).order('weekday')
+  )
+}
+
+// Reemplaza todas las reglas de un dia por las nuevas (permite dias con varios turnos)
+export async function guardarHorariosDia(
+  weekday: number,
+  turnos: { start_time: string; end_time: string }[]
+) {
+  // 1) Borrar las reglas actuales del dia
+  const { error: e1 } = await sb.from('schedule_rules').delete()
+    .eq('business_id', NEGOCIO_ID).eq('weekday', weekday)
+  if (e1) throw e1
+
+  // 2) Insertar las nuevas (si hay). Sin turnos = dia cerrado.
+  if (turnos.length === 0) return
+  const filas = turnos.map(t => ({
+    business_id: NEGOCIO_ID, weekday,
+    start_time: t.start_time, end_time: t.end_time, is_active: true,
+  }))
+  const { error: e2 } = await sb.from('schedule_rules').insert(filas)
+  if (e2) throw e2
+}
+
+// ================== BLOQUEOS ==================
+export type Bloqueo = {
+  id: string; starts_at: string; ends_at: string; reason: string;
+}
+
+export function listarBloqueosFuturos() {
+  return ejecutar<Bloqueo[]>(
+    sb.from('blocks').select('id, starts_at, ends_at, reason')
+      .eq('business_id', NEGOCIO_ID)
+      .gte('ends_at', new Date().toISOString())
+      .order('starts_at')
+  )
+}
