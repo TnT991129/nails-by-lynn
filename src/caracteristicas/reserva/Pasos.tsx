@@ -100,8 +100,8 @@ export function PasoExtras({
 }
 
 export function PasoFecha({
-  fecha, setFecha, maxDias = 60,
-}: { fecha: string | null; setFecha: (f: string) => void; maxDias?: number }) {
+  fecha, setFecha, diasLaborables, maxDias = 60,
+}: { fecha: string | null; setFecha: (f: string) => void; diasLaborables?: number[]; maxDias?: number }) {
   const dias = useMemo(() => {
     const hoy = new Date()
     return Array.from({ length: maxDias }, (_, i) => {
@@ -117,14 +117,18 @@ export function PasoFecha({
         {dias.slice(0, 21).map(d => {
           const iso = fechaISO(d)
           const activo = fecha === iso
+          // Día de la semana de esa fecha (0 = domingo). Mientras carga, todos habilitados.
+          const cerrado = !!diasLaborables && !diasLaborables.includes(new Date(`${iso}T12:00:00Z`).getUTCDay())
           const etiqueta = new Intl.DateTimeFormat('es', { timeZone:'America/Havana', weekday:'short' }).format(d)
           const num = new Intl.DateTimeFormat('es', { timeZone:'America/Havana', day:'numeric' }).format(d)
           return (
-            <button key={iso} onClick={() => setFecha(iso)} aria-pressed={activo}
+            <button key={iso} onClick={() => setFecha(iso)} aria-pressed={activo} disabled={cerrado}
               className={`min-h-[64px] rounded border flex flex-col items-center justify-center
-                ${activo ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
+                ${activo ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}
+                disabled:opacity-40`}>
               <span className="text-[12px] uppercase tracking-wide opacity-80">{etiqueta}</span>
               <span className="text-[19px] font-semibold">{num}</span>
+              {cerrado && <span className="text-[11px]">Cerrado</span>}
             </button>
           )
         })}
@@ -171,7 +175,7 @@ export function PasoHora({
 
   if (horas.length === 0) {
     return <Vacio titulo="No hay horarios ese día"
-                  texto="Prueba con otra fecha cercana. Suelo tener huecos entre semana." />
+                  texto="Cada día tengo 2 turnos: 9:00 AM y 1:00 PM. Prueba con otra fecha cercana." />
   }
 
   return (

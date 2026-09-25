@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { obtenerServicios, obtenerAddons, obtenerDisponibilidad } from '../lib/api'
+import { obtenerServicios, obtenerAddons, obtenerDisponibilidad, obtenerDiasLaborables } from '../lib/api'
 import { useReserva } from '../caracteristicas/reserva/useReserva'
 import { Progreso, PasoServicio, PasoExtras, PasoFecha, PasoHora, PasoDatos, PasoResumen }
   from '../caracteristicas/reserva/Pasos'
@@ -19,6 +19,7 @@ export default function Reserva() {
 
   const qServicios = useQuery({ queryKey:['servicios'], queryFn: obtenerServicios })
   const qAddons = useQuery({ queryKey:['addons'], queryFn: obtenerAddons })
+  const qDias = useQuery({ queryKey:['dias-laborables'], queryFn: obtenerDiasLaborables })
 
   const r = useReserva(qServicios.data ?? [], qAddons.data ?? [])
 
@@ -103,7 +104,7 @@ export default function Reserva() {
           <PasoExtras addons={r.addonsAplicables}
             addonsElegidos={r.addonsElegidos} alternarAddon={r.alternarAddon} />
         )}
-        {r.paso === 3 && <PasoFecha fecha={r.fecha} setFecha={r.setFecha} />}
+        {r.paso === 3 && <PasoFecha fecha={r.fecha} setFecha={r.setFecha} diasLaborables={qDias.data} />}
         {r.paso === 4 && (
           <PasoHora horas={qHoras.data ?? []} cargando={qHoras.isLoading}
             error={qHoras.isError ? mensajeDeError(qHoras.error) : null}

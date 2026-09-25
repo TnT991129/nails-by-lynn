@@ -23,6 +23,15 @@ export function obtenerAddons(): Promise<Addon[]> {
   })
 }
 
+/** Días de la semana (0 = domingo) en que Lynn tiene horario activo */
+export async function obtenerDiasLaborables(): Promise<number[]> {
+  const filas = await seleccionar<{ weekday: number }>('schedule_rules', {
+    select: 'weekday',
+    filtros: { business_id: `eq.${NEGOCIO_ID}`, is_active: 'is.true' },
+  })
+  return [...new Set(filas.map(f => f.weekday))]
+}
+
 export async function obtenerDisponibilidad(
   fecha: string, duracionMinutos: number, bufferMinutos?: number,
 ): Promise<string[]> {
