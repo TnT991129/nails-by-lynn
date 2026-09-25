@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerCita, cancelarCita } from '../lib/api'
-import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../componentes/ui'
+import { Boton, Tarjeta, Pildora, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
+import { IconoCheck, IconoUbicacion, IconoWhatsApp, IconoReloj } from '../componentes/iconos'
 import { fechaLarga, hora, duracion, dinero } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
 import { olvidarToken } from '../lib/almacenamiento'
@@ -69,43 +70,51 @@ export default function Cita() {
   const activa = c.estado === 'CONFIRMADA' || c.estado === 'PENDIENTE'
 
   return (
-    <div className="pb-24">
-      {esNueva && (
-        <section className="px-5 pt-14 pb-10 text-center"
-          style={{ background:'radial-gradient(ellipse at 50% 45%, #EE4397 0%, #FBA2D0 45%, #FEF2F8 75%, #FFFFFF 100%)' }}>
-          <div className="w-16 h-16 rounded-full bg-rosa-600 text-white text-[28px]
-                          flex items-center justify-center mx-auto mb-5 animate-entrada">✓</div>
-          <h1 className="font-display text-[30px]">¡Tu cita está confirmada! 💗</h1>
-          <p className="text-[14px] text-tinta-suave mt-3 max-w-xs mx-auto">
-            Toca el botón de abajo para avisar a Lynn.
+    <div className="pb-28">
+      {esNueva ? (
+        <section className="px-5 pt-14 pb-12 text-center bg-gradient-to-b from-rosa-100 via-rosa-50 to-superficie-base">
+          <div className="w-20 h-20 rounded-full bg-rosa-600 text-white shadow-boton ring-8 ring-white/70
+                          flex items-center justify-center mx-auto mb-6 animate-entrada">
+            <IconoCheck tam={36} strokeWidth={2.6} />
+          </div>
+          <h1 className="text-[32px] leading-tight">¡Tu cita está confirmada!</h1>
+          <p className="text-[15px] text-tinta-suave mt-3 max-w-xs mx-auto">
+            Toca el botón verde de abajo para avisar a Lynn por WhatsApp.
           </p>
+        </section>
+      ) : (
+        <section className="px-4 pt-8 pb-2">
+          <h1 className="text-[34px] leading-tight">Tu cita</h1>
         </section>
       )}
 
-      <div className="px-5 pt-6 space-y-4">
-        <Tarjeta className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[14px] text-tinta-tenue">{c.code}</span>
+      <div className="px-4 pt-4 space-y-4">
+        <Tarjeta className="p-0 overflow-hidden">
+          <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+            <span className="font-mono text-[13px] tracking-wider text-tinta-tenue">{c.code}</span>
             <Pildora estado={c.estado} />
           </div>
-          <div>
+          <div className="px-5 pb-5">
+            <div className="text-[22px] font-semibold capitalize leading-tight">{fechaLarga(c.inicio)}</div>
+            <div className="flex items-center gap-1.5 text-[15px] text-tinta-suave mt-1.5">
+              <IconoReloj tam={16} /> {hora(c.inicio)} – {hora(c.fin)} · {duracion(c.duracion_minutos)}
+            </div>
+            {c.negocio.ubicacion && (
+              <div className="flex items-center gap-1.5 text-[15px] text-tinta-suave mt-1">
+                <IconoUbicacion tam={16} /> {c.negocio.ubicacion}
+              </div>
+            )}
+          </div>
+          <div className="border-t border-dashed border-rosa-200 px-5 py-4 space-y-1.5 bg-rosa-50/40">
             {c.servicios?.map((s, i) => (
-              <div key={i} className="flex justify-between text-[16px]">
-                <span>{s.nombre}</span><span>{dinero(Number(s.precio), c.moneda)}</span>
+              <div key={i} className="flex justify-between text-[15px]">
+                <span>{s.nombre}</span><span className="font-medium">{dinero(Number(s.precio), c.moneda)}</span>
               </div>
             ))}
           </div>
-          <hr className="border-rosa-100" />
-          <div className="space-y-1">
-            <div className="text-[19px] font-semibold capitalize">{fechaLarga(c.inicio)}</div>
-            <div className="text-[16px]">{hora(c.inicio)} – {hora(c.fin)}</div>
-            <div className="text-[14px] text-tinta-tenue">Duración: {duracion(c.duracion_minutos)}</div>
-            {c.negocio.ubicacion && <div className="text-[14px] mt-2">📍 {c.negocio.ubicacion}</div>}
-          </div>
           {Number(c.anticipo) > 0 && (
             <>
-              <hr className="border-rosa-100" />
-              <div className="space-y-1 text-[14px]">
+              <div className="border-t border-rosa-100 px-5 py-4 space-y-1 text-[14px]">
                 <div className="flex justify-between"><span>Precio</span><span>{dinero(Number(c.total), c.moneda)}</span></div>
                 <div className="flex justify-between"><span>Anticipo</span><span>{dinero(Number(c.anticipo), c.moneda)}</span></div>
                 <div className="flex justify-between font-medium"><span>Saldo</span><span>{dinero(Number(c.saldo), c.moneda)}</span></div>
@@ -118,14 +127,12 @@ export default function Cita() {
           <a
             href={enlaceAvisoLynn(c.negocio.whatsapp, mensajeAvisoLynn(c))}
             target="_blank" rel="noreferrer"
-            className="block w-full min-h-[56px] bg-[#25D366] hover:bg-[#20BA5A]
+            className="w-full min-h-[56px] bg-[#25D366] hover:bg-[#20BA5A]
                        text-white font-semibold text-[17px]
-                       rounded-sm px-4 flex items-center justify-center gap-2
-                       shadow-sm active:scale-[0.98] transition-transform"
+                       rounded-full px-4 flex items-center justify-center gap-2
+                       shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)] active:scale-[0.98] transition"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M17.5 14.4c-.3-.15-1.7-.85-2-.95s-.5-.15-.7.15-.8.95-1 1.15-.35.2-.65.05-1.25-.45-2.4-1.45c-.9-.8-1.5-1.75-1.65-2.05s-.05-.45.1-.6c.15-.15.3-.35.45-.55s.2-.3.3-.5.05-.35 0-.5-.7-1.7-1-2.35c-.25-.6-.5-.55-.7-.55h-.6c-.2 0-.55.05-.85.4s-1.1 1.05-1.1 2.55 1.15 2.95 1.3 3.15c.15.2 2.25 3.45 5.5 4.85.75.35 1.35.55 1.85.7.75.25 1.45.2 2 .1.6-.1 1.7-.7 2-1.35s.3-1.2.2-1.35c-.1-.15-.3-.25-.6-.4zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 4.95L2 22l5.25-1.35C8.65 21.5 10.3 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/>
-            </svg>
+            <IconoWhatsApp tam={22} />
             Avisar a Lynn por WhatsApp
           </a>
         )}
@@ -135,8 +142,9 @@ export default function Cita() {
         {activa && !confirmando && (
           <div className="space-y-3">
             {c.negocio.whatsapp && (
-              <a href={`https://wa.me/53${c.negocio.whatsapp}`} target="_blank" rel="noreferrer">
-                <Boton ancho variante="secundario">Contactar</Boton>
+              <a href={`https://wa.me/53${c.negocio.whatsapp}`} target="_blank" rel="noreferrer"
+                 className={estiloBoton('secundario', true)}>
+                <IconoWhatsApp tam={19} /> Contactar
               </a>
             )}
             <Boton ancho variante="peligro" onClick={() => setConfirmando(true)}>
@@ -163,7 +171,7 @@ export default function Cita() {
           </Tarjeta>
         )}
 
-        <Link to="/" className="block text-center text-rosa-800 underline min-h-[44px] leading-[44px]">
+        <Link to="/" className="block text-center text-rosa-800 font-medium min-h-[44px] leading-[44px]">
           Volver al inicio
         </Link>
       </div>

@@ -7,6 +7,7 @@ import { Progreso, PasoServicio, PasoExtras, PasoFecha, PasoHora, PasoDatos, Pas
   from '../caracteristicas/reserva/Pasos'
 import { validarNombre, validarTelefono, validarEmail } from '../caracteristicas/reserva/validacion'
 import { Boton, Esqueleto, Aviso } from '../componentes/ui'
+import { IconoAtras, IconoCerrar } from '../componentes/iconos'
 import { duracion, dinero } from '../lib/formato'
 import { mensajeDeError, codigoDeError } from '../lib/errores'
 
@@ -82,13 +83,15 @@ export default function Reserva() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-superficie-base">
-      <header className="bg-white border-b border-rosa-100 pt-3 sticky top-0 z-10">
-        <div className="flex items-center justify-between px-5 pb-1">
+      <header className="bg-white/90 backdrop-blur-md border-b border-rosa-100 pt-3 sticky top-0 z-10">
+        <div className="flex items-center justify-between px-3 pb-2">
           <button onClick={() => r.paso === 1 ? navegar('/') : r.setPaso((r.paso - 1) as 1)}
-                  className="text-tinta-suave text-[16px] min-h-[44px]" aria-label="Volver">←</button>
-          <span className="text-[16px] font-medium">Reservar cita</span>
-          <button onClick={() => navegar('/')} className="text-tinta-suave text-[16px] min-h-[44px]"
-                  aria-label="Cerrar">✕</button>
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-tinta-suave hover:bg-rosa-50"
+                  aria-label="Volver"><IconoAtras /></button>
+          <span className="font-display text-[19px]">Reservar cita</span>
+          <button onClick={() => navegar('/')}
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-tinta-suave hover:bg-rosa-50"
+                  aria-label="Cerrar"><IconoCerrar /></button>
         </div>
         <Progreso paso={r.paso} />
       </header>
@@ -120,12 +123,17 @@ export default function Reserva() {
         )}
       </main>
 
-      <footer className="sticky bottom-0 bg-white border-t border-rosa-100 px-5 py-3 pb-[env(safe-area-inset-bottom)]">
+      <footer className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-rosa-100 shadow-flota
+                         px-5 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         {r.duracionTotal > 0 && (
-          <p className="text-[14px] text-tinta-tenue mb-2 truncate">
-            {r.serviciosElegidos.map(s => s.name).join(' + ')} · {duracion(r.duracionTotal)}
-            {r.precioTotal > 0 && ` · ${dinero(r.precioTotal)}`}
-          </p>
+          <div className="flex items-baseline justify-between gap-3 mb-2.5">
+            <p className="text-[13px] text-tinta-tenue truncate">
+              {r.serviciosElegidos.map(s => s.name).join(' + ')} · {duracion(r.duracionTotal)}
+            </p>
+            {r.precioTotal > 0 && (
+              <span className="font-display text-[18px] text-rosa-700 shrink-0">{dinero(r.precioTotal)}</span>
+            )}
+          </div>
         )}
         <Boton ancho cargando={enviando} disabled={!puedeSeguir}
           onClick={() => r.paso === 6 ? confirmar() : r.setPaso((r.paso + 1) as 2)}>
