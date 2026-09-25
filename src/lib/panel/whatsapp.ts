@@ -83,12 +83,15 @@ ${urlPublica()}reservar
 }
 
 // Devuelve el URL wa.me con el mensaje ya codificado
-export function enlaceWhatsApp(telefono: string, mensaje: string): string {
+// Número listo para wa.me: solo dígitos y con prefijo 53 si es un móvil cubano de 8 dígitos
+export function numeroWhatsApp(telefono: string): string {
   const soloDigitos = telefono.replace(/\D/g, '')
-  // Asegurar prefijo 53 para Cuba si el numero tiene 8 digitos
-  const conPrefijo = soloDigitos.length === 8 ? '53' + soloDigitos : soloDigitos
+  return soloDigitos.length === 8 ? '53' + soloDigitos : soloDigitos
+}
+
+export function enlaceWhatsApp(telefono: string, mensaje: string): string {
   const texto = encodeURIComponent(mensaje)
-  return `https://wa.me/${conPrefijo}?text=${texto}`
+  return `https://wa.me/${numeroWhatsApp(telefono)}?text=${texto}`
 }
 
 // Etiquetas humanas para los botones

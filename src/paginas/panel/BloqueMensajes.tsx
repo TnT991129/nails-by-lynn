@@ -12,7 +12,6 @@ function plantillaSugerida(c: CitaAgenda): PlantillaKey | null {
   const inicio = new Date(c.starts_at).getTime()
   const horas = (inicio - ahora) / 3_600_000
 
-  if (c.status === 'COMPLETADA') return 'gracias'
   if (c.status === 'CONFIRMADA' || c.status === 'PENDIENTE') {
     if (horas > 20 && horas < 30) return 'recordatorio'  // ventana de 24h ± 4-6h
     if (horas < 2 && horas > -1)  return 'retraso'
