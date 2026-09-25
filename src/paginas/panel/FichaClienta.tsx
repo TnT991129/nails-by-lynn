@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { obtenerClienta, citasDeClienta, actualizarNotasInternas, bloquearClienta, eliminarClienta }
-  from '../../lib/panel/api-panel'
+import { obtenerClienta, citasDeClienta, actualizarNotasInternas, bloquearClienta,
+  resumenHistorialClienta, eliminarClientaConHistorial } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, dinero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
@@ -21,6 +21,11 @@ export default function FichaClienta() {
 
   const qCli = useQuery({ queryKey:['cli', id], queryFn: () => obtenerClienta(id) })
   const qCitas = useQuery({ queryKey:['cli-citas', id], queryFn: () => citasDeClienta(id) })
+  const qHist = useQuery({
+    queryKey: ['cli-historial', id],
+    queryFn: () => resumenHistorialClienta(id),
+    enabled: confirmarBorrado,
+  })
 
   if (qCli.data && !cargada) {
     setNotas(qCli.data.internal_notes ?? '')
@@ -47,14 +52,12 @@ export default function FichaClienta() {
   }
 
   async function eliminar() {
-    // Primer toque pide confirmación; el segundo borra
-    if (!confirmarBorrado) { setConfirmarBorrado(true); return }
     setTrabajando(true); setErrorGestion(null)
     try {
-      await eliminarClienta(id)
-      qc.invalidateQueries({ queryKey: ['clientas'] })
+      await eliminarClientaConHistorial(id)
+      qc.invalidateQueries()  // cambian agenda y estadísticas
       navegar('/panel/clientas', { replace: true })
-    } catch (e) { setErrorGestion(mensajeDeError(e)); setConfirmarBorrado(false) }
+    } catch (e) { setErrorGestion(mensajeDeError(e)) }
     finally { setTrabajando(false) }
   }
 
@@ -62,6 +65,7 @@ export default function FichaClienta() {
   if (qCli.isError) return <div className="p-5"><Aviso>{mensajeDeError(qCli.error)}</Aviso></div>
 
   const c = qCli.data!
+  const h = qHist.data
   const proxima = qCitas.data?.find(x =>
     ['CONFIRMADA','PENDIENTE'].includes(x.status) &&
     new Date(x.starts_at).getTime() > Date.now())
@@ -152,9 +156,40 @@ export default function FichaClienta() {
           onClick={() => alternarBloqueo(!c.is_blocked)}>
           {c.is_blocked ? 'Desbloquear clienta' : 'Bloquear clienta'}
         </Boton>
-        <Boton variante="peligro" ancho cargando={trabajando} onClick={eliminar}>
-          {confirmarBorrado ? '¿Seguro? Toca otra vez para eliminar' : 'Eliminar clienta'}
-        </Boton>
+        {!confirmarBorrado ? (
+          <Boton variante="peligro" ancho onClick={() => { setConfirmarBorrado(true); setErrorGestion(null) }}>
+            Eliminar clienta
+          </Boton>
+        ) : (
+          <div className="p-3 rounded-sm border border-rosa-200 bg-rosa-50 space-y-2">
+            {qHist.isLoading && <Esqueleto className="h-12" />}
+            {qHist.isError && <Aviso>{mensajeDeError(qHist.error)}</Aviso>}
+            {h && (h.activas > 0 ? (
+              <p className="text-[14px]">
+                Tiene {h.activas} {h.activas === 1 ? 'cita pendiente' : 'citas pendientes'}.
+                Cancélalas primero para poder eliminarla.
+              </p>
+            ) : h.citas > 0 ? (
+              <p className="text-[14px]">
+                ⚠️ Tiene <b>{h.citas} {h.citas === 1 ? 'cita' : 'citas'}</b> en su historial
+                {h.completadas > 0 && <> (<b>{h.completadas} {h.completadas === 1 ? 'completada' : 'completadas'}
+                {h.ingresos > 0 && `, ${dinero(h.ingresos)}`}</b>)</>}.
+                Si la eliminas se borrará todo y esos ingresos dejarán de contar en Estadísticas.
+                No se puede deshacer.
+              </p>
+            ) : (
+              <p className="text-[14px]">Se eliminará esta clienta. No se puede deshacer.</p>
+            ))}
+            {h && h.activas === 0 && (
+              <Boton variante="peligro" ancho cargando={trabajando} onClick={eliminar}>
+                {h.citas > 0 ? 'Borrar clienta y su historial' : 'Sí, eliminar'}
+              </Boton>
+            )}
+            <Boton variante="secundario" ancho onClick={() => setConfirmarBorrado(false)}>
+              Cancelar
+            </Boton>
+          </div>
+        )}
       </Tarjeta>
     </div>
   )

@@ -163,17 +163,28 @@ export function bloquearClienta(id: string, bloqueada: boolean) {
   return ejecutar(sb.from('clients').update({ is_blocked: bloqueada }).eq('id', id).select('id').single())
 }
 
-// Solo se elimina una clienta sin citas: borrar su historial rompería estadísticas y respaldos
-export async function eliminarClienta(id: string) {
-  const { count, error: e1 } = await sb.from('appointments')
-    .select('id', { count: 'exact', head: true }).eq('client_id', id)
-  if (e1) throw e1
-  if ((count ?? 0) > 0) throw new Error('CLIENTA_CON_CITAS')
-  const { error } = await sb.from('clients').delete().eq('id', id).select('id').single()
-  if (error) {
-    if ((error as { code?: string }).code === '23503') throw new Error('CLIENTA_CON_CITAS')
-    throw error
+export type ResumenHistorial = { citas: number; activas: number; completadas: number; ingresos: number }
+
+// Lo que se perdería al eliminar a la clienta (se muestra antes de confirmar)
+export async function resumenHistorialClienta(id: string): Promise<ResumenHistorial> {
+  const filas = await ejecutar<{ status: string; total_amount: number; blocked_until: string }[]>(
+    sb.from('appointments').select('status, total_amount, blocked_until').eq('client_id', id))
+  const ahora = Date.now()
+  const completadas = filas.filter(f => f.status === 'COMPLETADA')
+  return {
+    citas: filas.length,
+    // Mismo criterio que la función SQL: citas activas que aún no han terminado
+    activas: filas.filter(f => ['PENDIENTE','CONFIRMADA','EN_CURSO'].includes(f.status)
+      && new Date(f.blocked_until).getTime() > ahora).length,
+    completadas: completadas.length,
+    ingresos: completadas.reduce((t, f) => t + Number(f.total_amount), 0),
   }
+}
+
+// Borra la clienta y todo su historial (función eliminar_clienta_con_historial en Supabase)
+export async function eliminarClientaConHistorial(id: string) {
+  const { error } = await sb.rpc('eliminar_clienta_con_historial', { p_client_id: id })
+  if (error) throw error
 }
 
 export function citasDeClienta(id: string) {

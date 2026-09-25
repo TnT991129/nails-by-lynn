@@ -20,7 +20,9 @@ const MENSAJES: Record<string, string> = {
   LIMITE_REPROGRAMACIONES:'Ya cambiaste esta cita el máximo de veces permitido.',
   HORARIO_OCUPADO:       'Ese horario choca con otra cita. Elige otro.',
   TELEFONO_DUPLICADO:    'Ya hay una clienta con ese teléfono.',
-  CLIENTA_CON_CITAS:     'Esta clienta tiene citas en su historial y no se puede eliminar. Puedes bloquearla.',
+  CLIENTA_CON_CITAS_ACTIVAS:'Tiene citas pendientes. Cancélalas primero para poder eliminarla.',
+  CLIENTA_NO_ENCONTRADA: 'No encontramos esa clienta.',
+  NO_AUTORIZADA:         'Tu sesión no tiene permiso para esto. Vuelve a entrar al panel.',
 }
 
 export function mensajeDeError(e: unknown): string {
