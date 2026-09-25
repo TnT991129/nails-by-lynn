@@ -6,7 +6,8 @@ const ITEMS = [
   { a: '/panel/galeria',      titulo: 'Galería',      desc: 'Subir y publicar fotos', icono: '📷' },
   { a: '/panel/gastos',       titulo: 'Gastos',       desc: 'Material, transporte, marketing', icono: '💸' },
   { a: '/panel/servicios',    titulo: 'Servicios',    desc: 'Precios, duración y complementos', icono: '💅' },
-  { a: '/panel/horarios',     titulo: 'Horarios',     desc: 'Días laborables y bloqueos', icono: '📅' },
+  { a: '/panel/horarios',     titulo: 'Horarios',     desc: 'Semana, vacaciones y bloqueos', icono: '📅' },
+  { a: '/panel/espera',       titulo: 'Lista de espera', desc: 'Clientas esperando un turno libre', icono: '⏳' },
   { a: '/panel/respaldo',     titulo: 'Respaldo',     desc: 'Descargar copia de tus datos', icono: '💾' },
 ]
 

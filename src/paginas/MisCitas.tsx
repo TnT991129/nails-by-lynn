@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
 import { obtenerCita } from '../lib/api'
-import { tokensGuardados } from '../lib/almacenamiento'
+import { tokensGuardados, citaAvisada } from '../lib/almacenamiento'
 import { Pildora, Esqueleto, Vacio, Etiqueta, estiloBoton } from '../componentes/ui'
 import { IconoReloj } from '../componentes/iconos'
 import { hora, ZONA } from '../lib/formato'
@@ -80,7 +80,12 @@ export default function MisCitas() {
               <IconoReloj tam={14} />
               <span className="capitalize">{semana}</span> · {hora(c.inicio)}
             </div>
-            <div className="mt-2"><Pildora estado={c.estado} /></div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Pildora estado={c.estado} />
+              {!pasada && ['PENDIENTE', 'CONFIRMADA'].includes(c.estado) && !citaAvisada(c.code) && (
+                <span className="text-[12px] font-semibold text-[#128C4A]">● Falta avisar a Lynn</span>
+              )}
+            </div>
           </div>
         </div>
       </Link>

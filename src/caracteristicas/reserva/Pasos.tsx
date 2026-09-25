@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Servicio, Addon } from '../../lib/tipos'
 import { Tarjeta, Campo, Esqueleto, Aviso, Vacio } from '../../componentes/ui'
 import { IconoCheck, IconoReloj, IconoSol, IconoTarde, IconoCalendario, IconoAtras } from '../../componentes/iconos'
 import { dinero, duracion, fechaLarga, hora, franja, fechaISO, cuentaAtras } from '../../lib/formato'
 import { validarNombre, validarTelefono, validarEmail } from './validacion'
+import { EnlacePoliticas } from '../../componentes/Politicas'
 import type { Datos } from './useReserva'
 
 const NOMBRES_PASOS = ['Servicio','Extras','Fecha','Hora','Datos','Listo']
@@ -137,8 +138,11 @@ const isoDeUTC = (ms: number) => {
 
 // Calendario mensual. maxDias = 60 coincide con settings.max_advance_days del servidor.
 export function PasoFecha({
-  fecha, setFecha, diasLaborables, maxDias = 60,
-}: { fecha: string | null; setFecha: (f: string) => void; diasLaborables?: number[]; maxDias?: number }) {
+  fecha, setFecha, diasLaborables, diasCerrados = [], maxDias = 60,
+}: {
+  fecha: string | null; setFecha: (f: string) => void
+  diasLaborables?: number[]; diasCerrados?: { desde: string; hasta: string }[]; maxDias?: number
+}) {
   // "Hoy" según La Habana, no según la hora del móvil
   const hoyISO = fechaISO(new Date())
   const [y0, m0, d0] = hoyISO.split('-').map(Number)
@@ -190,7 +194,8 @@ export function PasoFecha({
             const esHoy = iso === hoyISO
             const fueraDeRango = iso < hoyISO || iso > ultimoISO
             // Mientras carga el horario, todos los días del rango quedan habilitados
-            const cerrado = !!diasLaborables && !diasLaborables.includes(new Date(`${iso}T12:00:00Z`).getUTCDay())
+            const cerrado = (!!diasLaborables && !diasLaborables.includes(new Date(`${iso}T12:00:00Z`).getUTCDay()))
+              || diasCerrados.some(r => iso >= r.desde && iso <= r.hasta)   // vacaciones y días cerrados
             const deshabilitado = fueraDeRango || cerrado
             return (
               <button key={iso} onClick={() => setFecha(iso)} aria-pressed={activo} disabled={deshabilitado}
@@ -223,10 +228,11 @@ export function PasoFecha({
 }
 
 export function PasoHora({
-  horas, cargando, error, inicio, onElegir, expiraEn,
+  horas, cargando, error, inicio, onElegir, expiraEn, siNoHay,
 }: {
   horas: string[]; cargando: boolean; error: string | null
   inicio: string | null; onElegir: (h: string) => void; expiraEn: string | null
+  siNoHay?: ReactNode   // lo que se ofrece cuando el día está lleno (lista de espera)
 }) {
   const [tick, setTick] = useState(0)
   useEffect(() => {
@@ -253,8 +259,10 @@ export function PasoHora({
   if (error) return <Aviso>{error}</Aviso>
 
   if (horas.length === 0) {
-    return <Vacio titulo="No hay horarios ese día"
-                  texto="Cada día tengo 2 turnos: 9:00 AM y 1:00 PM. Prueba con otra fecha cercana." />
+    return <Vacio titulo="No hay turnos libres ese día"
+                  texto="Cada día tengo 2 turnos: 9:00 AM y 1:00 PM. Prueba con otra fecha cercana.">
+      {siNoHay}
+    </Vacio>
   }
 
   return (
@@ -330,11 +338,11 @@ export function PasoDatos({
 }
 
 export function PasoResumen({
-  servicios, addons, inicio, duracionMin, total, acepta, setAcepta, politica,
+  servicios, addons, inicio, duracionMin, total, acepta, setAcepta,
 }: {
   servicios: Servicio[]; addons: Addon[]; inicio: string
   duracionMin: number; total: number
-  acepta: boolean; setAcepta: (v: boolean) => void; politica: string | null
+  acepta: boolean; setAcepta: (v: boolean) => void
 }) {
   return (
     <div className="space-y-5 animate-entrada">
@@ -368,20 +376,22 @@ export function PasoResumen({
         </div>
       </Tarjeta>
 
-      {politica && (
-        <details className="bg-white rounded-lg p-4 border border-rosa-100">
-          <summary className="text-[14px] font-medium cursor-pointer">Políticas del estudio</summary>
-          <p className="text-[14px] text-tinta-suave mt-3 whitespace-pre-line">{politica}</p>
-        </details>
-      )}
-
       <label className="flex items-start gap-3 cursor-pointer bg-white rounded-lg border border-rosa-100 p-4">
         <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)}
                className="mt-0.5 w-5 h-5 accent-rosa-600 shrink-0" />
         <span className="text-[14px] text-tinta-suave">
-          Acepto las políticas de cancelación del estudio.
+          Acepto las <EnlacePoliticas />.
         </span>
       </label>
+
+      <div className="flex gap-3 items-start bg-[#E9FBF0] border border-[#25D366]/30 rounded-lg p-4">
+        <span className="w-7 h-7 rounded-full bg-[#25D366] text-white text-[14px] font-bold
+                         flex items-center justify-center shrink-0" aria-hidden>!</span>
+        <p className="text-[14px] text-tinta-suave">
+          <b className="text-tinta">Importante:</b> al confirmar, toca el botón verde
+          <b className="text-tinta"> «Avisar a Lynn por WhatsApp»</b> para que sepa de tu cita y te la confirme.
+        </p>
+      </div>
     </div>
   )
 }

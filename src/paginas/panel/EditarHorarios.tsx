@@ -4,17 +4,18 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   listarHorarios, guardarHorariosDia,
   listarBloqueosFuturos, crearBloqueo, eliminarBloqueo,
+  listarDiasCerrados, crearDiasCerrados, eliminarDiasCerrados, citasActivasEntre,
   type ReglaHorario,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
-import { fechaLarga, hora } from '../../lib/formato'
+import { fechaLarga, hora, fechaISO, instanteEnHabana } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 
 const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
 
 export default function EditarHorarios() {
   const navegar = useNavigate()
-  const [pestaña, setPestaña] = useState<'horario' | 'bloqueos'>('horario')
+  const [pestaña, setPestaña] = useState<'horario' | 'cerrados' | 'bloqueos'>('horario')
 
   return (
     <div className="p-5 space-y-4">
@@ -25,16 +26,23 @@ export default function EditarHorarios() {
         <button onClick={() => setPestaña('horario')}
           className={`flex-1 px-3 py-2 rounded-sm text-[14px] min-h-[40px]
             ${pestaña === 'horario' ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
-          Horario semanal
+          Semanal
+        </button>
+        <button onClick={() => setPestaña('cerrados')}
+          className={`flex-1 px-3 py-2 rounded-sm text-[14px] min-h-[40px]
+            ${pestaña === 'cerrados' ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
+          Días cerrados
         </button>
         <button onClick={() => setPestaña('bloqueos')}
           className={`flex-1 px-3 py-2 rounded-sm text-[14px] min-h-[40px]
             ${pestaña === 'bloqueos' ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
-          Bloqueos
+          Horas
         </button>
       </div>
 
-      {pestaña === 'horario' ? <HorarioSemanal /> : <Bloqueos />}
+      {pestaña === 'horario' && <HorarioSemanal />}
+      {pestaña === 'cerrados' && <DiasCerrados />}
+      {pestaña === 'bloqueos' && <Bloqueos />}
     </div>
   )
 }
@@ -161,12 +169,11 @@ function Bloqueos() {
     try {
       if (!fecha) throw new Error('Elige una fecha')
       if (!motivo.trim()) throw new Error('Escribe un motivo')
-      const inicio = diaCompleto ? `${fecha}T00:00:00` : `${fecha}T${ini}:00`
-      const cierre = diaCompleto ? `${fecha}T23:59:00` : `${fecha}T${fin}:00`
       if (!diaCompleto && ini >= fin) throw new Error('La hora de inicio debe ser menor que la de fin')
-      // Convertir a UTC ISO (asumiendo la hora local de America/Havana ~ UTC-4/-5)
-      // Por simplicidad enviamos como local-hora; Postgres timestamptz lo entiende relativo a la zona del cliente
-      await crearBloqueo(new Date(inicio).toISOString(), new Date(cierre).toISOString(), motivo.trim())
+      // Horas de La Habana, aunque el móvil esté en otra zona horaria
+      const inicio = instanteEnHabana(fecha, diaCompleto ? '00:00' : ini)
+      const cierre = instanteEnHabana(fecha, diaCompleto ? '23:59' : fin)
+      await crearBloqueo(inicio, cierre, motivo.trim())
       qc.invalidateQueries({ queryKey: ['bloqueos'] })
       setNuevo(false); setFecha(''); setMotivo(''); setDiaCompleto(false)
       setIni('09:00'); setFin('18:00')
@@ -185,7 +192,8 @@ function Bloqueos() {
   return (
     <div className="space-y-3">
       <p className="text-[13px] text-tinta-tenue">
-        Días u horas puntuales que no aceptas citas (vacaciones, cita médica, etc.)
+        Horas sueltas de un día en las que no aceptas citas (cita médica, un recado…).
+        Para días enteros o vacaciones usa «Días cerrados».
       </p>
 
       {!nuevo && <Boton ancho onClick={() => setNuevo(true)}>+ Nuevo bloqueo</Boton>}
@@ -246,6 +254,122 @@ function Bloqueos() {
             </div>
             <button onClick={() => eliminar(b.id)}
               className="text-estado-error text-[14px] min-h-[44px] px-2">Eliminar</button>
+          </Tarjeta>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Vacaciones y días sueltos cerrados: la web los muestra como cerrados y no ofrece turnos
+function DiasCerrados() {
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['dias-cerrados-panel'], queryFn: listarDiasCerrados })
+  const hoy = fechaISO(new Date())
+  const [nuevo, setNuevo] = useState(false)
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [citas, setCitas] = useState<number | null>(null)   // citas ya reservadas en esas fechas
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function limpiar() {
+    setNuevo(false); setDesde(''); setHasta(''); setMotivo(''); setCitas(null); setError(null)
+  }
+
+  async function guardar() {
+    setError(null)
+    const fin = hasta || desde
+    if (!desde) { setError('Elige el primer día.'); return }
+    if (fin < desde) { setError('El último día no puede ser antes del primero.'); return }
+    setGuardando(true)
+    try {
+      // Primer intento: si hay citas en esas fechas, avisar antes de cerrar
+      if (citas === null) {
+        const n = await citasActivasEntre(desde, fin)
+        if (n > 0) { setCitas(n); return }
+      }
+      await crearDiasCerrados(desde, fin, motivo.trim())
+      qc.invalidateQueries({ queryKey: ['dias-cerrados-panel'] })
+      limpiar()
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setGuardando(false) }
+  }
+
+  async function eliminar(id: string) {
+    if (!confirm('¿Volver a abrir estos días?')) return
+    try {
+      await eliminarDiasCerrados(id)
+      qc.invalidateQueries({ queryKey: ['dias-cerrados-panel'] })
+    } catch (e) { alert(mensajeDeError(e)) }
+  }
+
+  const rango = (d: string, h: string) => d === h
+    ? fechaLarga(`${d}T16:00:00Z`)
+    : `${fechaLarga(`${d}T16:00:00Z`)} → ${fechaLarga(`${h}T16:00:00Z`)}`
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[13px] text-tinta-tenue">
+        Vacaciones o días libres. Las clientas los verán como cerrados en el calendario.
+      </p>
+
+      {!nuevo && <Boton ancho onClick={() => setNuevo(true)}>+ Cerrar días</Boton>}
+
+      {nuevo && (
+        <Tarjeta className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="block text-[14px] text-tinta-suave mb-1.5">Desde</span>
+              <input type="date" value={desde} min={hoy}
+                onChange={e => { setDesde(e.target.value); setCitas(null) }}
+                className="w-full min-h-[44px] px-2 rounded-sm border border-rosa-200 text-[16px]" />
+            </label>
+            <label className="block">
+              <span className="block text-[14px] text-tinta-suave mb-1.5">Hasta</span>
+              <input type="date" value={hasta} min={desde || hoy}
+                onChange={e => { setHasta(e.target.value); setCitas(null) }}
+                className="w-full min-h-[44px] px-2 rounded-sm border border-rosa-200 text-[16px]" />
+            </label>
+          </div>
+          <p className="text-[12px] text-tinta-tenue -mt-1">Para un solo día deja «Hasta» vacío.</p>
+          <label className="block">
+            <span className="block text-[14px] text-tinta-suave mb-1.5">Motivo (solo lo ves tú)</span>
+            <input value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ej: vacaciones"
+              className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px]" />
+          </label>
+          {citas !== null && (
+            <Aviso tipo="aviso">
+              Tienes <b>{citas} {citas === 1 ? 'cita' : 'citas'}</b> en esas fechas. Cerrar los días no las cancela:
+              reagéndalas o avisa a esas clientas desde la Agenda. Pulsa «Cerrar igualmente» para continuar.
+            </Aviso>
+          )}
+          {error && <Aviso>{error}</Aviso>}
+          <div className="flex gap-2">
+            <Boton variante="secundario" onClick={limpiar} className="flex-1">Cancelar</Boton>
+            <Boton onClick={guardar} cargando={guardando} className="flex-1">
+              {citas ? 'Cerrar igualmente' : 'Guardar'}
+            </Boton>
+          </div>
+        </Tarjeta>
+      )}
+
+      {q.isLoading && <Esqueleto className="h-20" />}
+      {q.isError && <Aviso>{mensajeDeError(q.error)}</Aviso>}
+      {q.data && q.data.length === 0 && !nuevo && (
+        <p className="text-[14px] text-tinta-tenue text-center py-4">No hay días cerrados próximos.</p>
+      )}
+
+      <div className="space-y-2">
+        {q.data?.map(d => (
+          <Tarjeta key={d.id} className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="text-[14px] font-medium first-letter:uppercase">{rango(d.date_from, d.date_to)}</div>
+              {d.reason && <div className="text-[13px] text-tinta-suave mt-1 truncate">{d.reason}</div>}
+            </div>
+            <button onClick={() => eliminar(d.id)}
+              className="text-estado-error text-[14px] min-h-[44px] px-2">Abrir</button>
           </Tarjeta>
         ))}
       </div>

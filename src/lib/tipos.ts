@@ -58,9 +58,24 @@ export type CitaDetalle = {
   saldo: number
   nota: string | null
   reprogramaciones: number
+  // Opcionales: llegan desde que se aplicó supabase/reprogramar_clienta.sql
+  margen_minutos?: number
+  max_reprogramaciones?: number
+  horas_minimas_reprogramar?: number
   cliente: { nombre: string; telefono: string }
   negocio: { nombre: string; ubicacion: string | null; whatsapp: string | null; zona: string }
   servicios: { nombre: string; precio: number }[]
 }
 
 export type ItemReserva = { service_id: string; addons: string[] }
+
+export type Politicas = {
+  cancelar_minimo_horas: number
+  cancelar_gratis_horas: number
+  cambiar_minimo_horas: number
+  max_cambios: number
+  max_citas_activas: number
+  max_dias_antelacion: number
+  anticipo: boolean
+  textos: Record<'cancelacion' | 'cambios' | 'anticipo' | 'no_show' | 'retrasos' | 'reembolsos' | 'espera' | 'privacidad', string | null>
+}

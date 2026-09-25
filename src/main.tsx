@@ -20,6 +20,7 @@ const Cita      = lazy(PAGINAS_PUBLICAS.cita)
 const MisCitas  = lazy(PAGINAS_PUBLICAS.misCitas)
 const Panel     = lazy(() => import('./paginas/panel'))
 const Galeria   = lazy(PAGINAS_PUBLICAS.galeria)
+const Politicas = lazy(() => import('./paginas/Politicas'))
 
 function Cargando() {
   return (
@@ -64,6 +65,7 @@ function Rutas() {
           <Route path="/cita/:token" element={<Cita />} />
           <Route path="/mis-citas" element={<MisCitas />} />
           <Route path="/galeria" element={<Galeria />} />
+          <Route path="/politicas" element={<Politicas />} />
           <Route path="/panel/*" element={<Panel />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -1,5 +1,5 @@
 import { seleccionar, rpc, NEGOCIO_ID } from './supabase'
-import type { Servicio, Addon, Negocio, CitaCreada, CitaDetalle, ItemReserva } from './tipos'
+import type { Servicio, Addon, Negocio, CitaCreada, CitaDetalle, ItemReserva, Politicas } from './tipos'
 
 export async function obtenerNegocio(): Promise<Negocio> {
   const filas = await seleccionar<Negocio>('businesses', {
@@ -30,6 +30,27 @@ export async function obtenerDiasLaborables(): Promise<number[]> {
     filtros: { business_id: `eq.${NEGOCIO_ID}`, is_active: 'is.true' },
   })
   return [...new Set(filas.map(f => f.weekday))]
+}
+
+/** Rangos de días cerrados (vacaciones) que aún no han pasado. Fechas 'YYYY-MM-DD'. */
+export async function obtenerDiasCerrados(): Promise<{ desde: string; hasta: string }[]> {
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Havana' }).format(new Date())
+  const filas = await seleccionar<{ date_from: string; date_to: string }>('schedule_exceptions', {
+    select: 'date_from,date_to',
+    filtros: { business_id: `eq.${NEGOCIO_ID}`, type: 'eq.CERRADO', date_to: `gte.${hoy}` },
+  })
+  return filas.map(f => ({ desde: f.date_from, hasta: f.date_to }))
+}
+
+export function obtenerPoliticas(): Promise<Politicas> {
+  return rpc<Politicas>('obtener_politicas', { p_business_id: NEGOCIO_ID })
+}
+
+export function unirseListaEspera(fecha: string, nombre: string, telefono: string, servicioId?: string) {
+  return rpc<{ ok: boolean; ya_estaba: boolean }>('unirse_lista_espera', {
+    p_business_id: NEGOCIO_ID, p_fecha: fecha, p_nombre: nombre,
+    p_telefono: telefono, p_service_id: servicioId ?? null,
+  })
 }
 
 export async function obtenerDisponibilidad(

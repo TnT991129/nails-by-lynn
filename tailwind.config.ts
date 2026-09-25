@@ -30,8 +30,10 @@ export default {
       keyframes: {
         entrada: { '0%':{opacity:'0',transform:'translateY(8px)'}, '100%':{opacity:'1',transform:'none'} },
         pulso:   { '0%,100%':{opacity:'1'}, '50%':{opacity:'.5'} },
+        latido:  { '0%,100%':{transform:'scale(1)'}, '50%':{transform:'scale(1.03)'} },
       },
-      animation: { entrada:'entrada .25s ease-out both', pulso:'pulso 1.6s ease-in-out infinite' },
+      animation: { entrada:'entrada .25s ease-out both', pulso:'pulso 1.6s ease-in-out infinite',
+                   latido:'latido 1.8s ease-in-out infinite' },
     },
   },
 } satisfies Config

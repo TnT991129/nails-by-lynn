@@ -171,6 +171,11 @@ export default function Inicio() {
               )}
             </div>
           </div>
+          <p className="text-center mt-4">
+            <Link to="/politicas" className="text-[13px] text-tinta-tenue underline underline-offset-2 inline-block min-h-[44px] leading-[44px]">
+              Políticas del estudio
+            </Link>
+          </p>
         </section>
       )}
     </div>

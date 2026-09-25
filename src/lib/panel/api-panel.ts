@@ -1,4 +1,5 @@
 import { sb, NEGOCIO_ID } from './supabase-panel'
+import { fechaISO, instanteEnHabana } from '../formato'
 
 export type CitaAgenda = {
   id: string; code: string; starts_at: string; ends_at: string; blocked_until: string
@@ -710,4 +711,67 @@ export async function eliminarComplemento(id: string) {
   const { error } = await sb.from('service_addons').delete().eq('id', id)
   if (error) throw error
   return { deleted: true }
+}
+
+// ================== DÍAS CERRADOS (vacaciones) ==================
+// Se guardan en schedule_exceptions tipo CERRADO; intervalos_trabajo ya los respeta.
+export type DiaCerrado = { id: string; date_from: string; date_to: string; reason: string | null }
+
+export function listarDiasCerrados() {
+  return ejecutar<DiaCerrado[]>(
+    sb.from('schedule_exceptions').select('id, date_from, date_to, reason')
+      .eq('business_id', NEGOCIO_ID).eq('type', 'CERRADO')
+      .gte('date_to', fechaISO(new Date()))
+      .order('date_from')
+  )
+}
+
+export function crearDiasCerrados(desde: string, hasta: string, motivo: string) {
+  return ejecutar(sb.from('schedule_exceptions').insert({
+    business_id: NEGOCIO_ID, type: 'CERRADO', date_from: desde, date_to: hasta, reason: motivo || null,
+  }).select('id').single())
+}
+
+export function eliminarDiasCerrados(id: string) {
+  return ejecutar(sb.from('schedule_exceptions').delete().eq('id', id))
+}
+
+/** Citas activas entre dos fechas (inclusive), en hora de La Habana */
+export async function citasActivasEntre(desde: string, hasta: string): Promise<number> {
+  const [y, m, d] = hasta.split('-').map(Number)
+  const diaSiguiente = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+  const { count, error } = await sb.from('appointments').select('id', { count: 'exact', head: true })
+    .eq('business_id', NEGOCIO_ID).in('status', ['PENDIENTE', 'CONFIRMADA', 'EN_CURSO'])
+    .gte('starts_at', instanteEnHabana(desde, '00:00'))
+    .lt('starts_at', instanteEnHabana(diaSiguiente, '00:00'))
+  if (error) throw error
+  return count ?? 0
+}
+
+// ================== LISTA DE ESPERA ==================
+export type EnEspera = {
+  id: string; preferred_date_from: string; created_at: string; notified_at: string | null
+  clients: { full_name: string; phone: string } | null
+  services: { name: string } | null
+}
+
+// Las relaciones muchos-a-uno llegan como objeto; sin tipos de la BD, supabase-js las declara como lista
+const unaFila = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+
+export async function listarListaEspera(): Promise<EnEspera[]> {
+  const { data, error } = await sb.from('waitlist')
+    .select('id, preferred_date_from, created_at, notified_at, clients(full_name, phone), services(name)')
+    .eq('business_id', NEGOCIO_ID).eq('status', 'ACTIVA')
+    .gte('preferred_date_from', fechaISO(new Date()))
+    .order('preferred_date_from').order('created_at')
+  if (error) throw error
+  return (data ?? []).map(f => ({ ...f, clients: unaFila(f.clients), services: unaFila(f.services) }))
+}
+
+export function marcarAvisoEspera(id: string) {
+  return ejecutar(sb.from('waitlist').update({ notified_at: new Date().toISOString() }).eq('id', id))
+}
+
+export function quitarDeEspera(id: string) {
+  return ejecutar(sb.from('waitlist').update({ status: 'CERRADA' }).eq('id', id))
 }

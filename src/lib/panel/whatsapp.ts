@@ -116,3 +116,15 @@ export const ETIQUETAS: Record<PlantillaKey, { titulo: string; icono: string; de
   gracias:      { titulo: 'Enviar agradecimiento', icono: '💖', descripcion: 'Después de completar' },
   reagendada:   { titulo: 'Avisar del cambio',     icono: '📅', descripcion: 'Tras reagendar la cita' },
 }
+
+// Mensaje para avisar a una clienta de la lista de espera que se liberó un turno
+export function mensajeListaEspera(nombre: string, fecha: string): string {
+  const dia = fechaLarga(`${fecha}T16:00:00Z`)
+  return (
+`Hola ${primeroNombre(nombre)} 💖
+
+¡Se liberó un turno el ${dia}! Como estabas en la lista de espera, te aviso primero a ti.
+
+Si todavía lo quieres, resérvalo aquí antes de que lo tome otra persona:
+${urlPublica()}reservar`)
+}

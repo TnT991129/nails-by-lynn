@@ -23,6 +23,18 @@ export function guardarToken(token: string) {
   if (!actuales.includes(token)) escribir(CLAVE_CITAS, [token, ...actuales].slice(0, 50))
 }
 
+// Códigos de cita (NBL-XXXX) cuyo aviso a Lynn por WhatsApp ya se abrió. No guarda datos personales.
+const CLAVE_AVISADAS = 'nbl.avisadas'
+
+export function citaAvisada(codigo: string): boolean {
+  return leer<string[]>(CLAVE_AVISADAS, []).includes(codigo)
+}
+
+export function marcarAvisada(codigo: string) {
+  const actuales = leer<string[]>(CLAVE_AVISADAS, [])
+  if (!actuales.includes(codigo)) escribir(CLAVE_AVISADAS, [codigo, ...actuales].slice(0, 50))
+}
+
 export function olvidarToken(token: string) {
   escribir(CLAVE_CITAS, tokensGuardados().filter(t => t !== token))
 }

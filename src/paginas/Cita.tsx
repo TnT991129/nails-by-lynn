@@ -6,7 +6,9 @@ import { Boton, Tarjeta, Pildora, Esqueleto, Aviso, estiloBoton } from '../compo
 import { IconoCheck, IconoUbicacion, IconoWhatsApp, IconoReloj } from '../componentes/iconos'
 import { fechaLarga, hora, duracion, dinero } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
-import { olvidarToken } from '../lib/almacenamiento'
+import { olvidarToken, citaAvisada, marcarAvisada } from '../lib/almacenamiento'
+import { EnlacePoliticas } from '../componentes/Politicas'
+import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
 
 function mensajeAvisoLynn(c: {
   code: string; inicio: string; duracion_minutos: number;
@@ -49,6 +51,8 @@ export default function Cita() {
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [trabajando, setTrabajando] = useState(false)
+  const [reprogramando, setReprogramando] = useState(false)
+  const [avisadaAhora, setAvisadaAhora] = useState(false)
 
   const q = useQuery({ queryKey:['cita', token], queryFn: () => obtenerCita(token) })
 
@@ -68,6 +72,40 @@ export default function Cita() {
 
   const c = q.data!
   const activa = c.estado === 'CONFIRMADA' || c.estado === 'PENDIENTE'
+  // Reglas de settings: se puede cambiar hasta X horas antes y un máximo de veces
+  const horasHasta = (new Date(c.inicio).getTime() - Date.now()) / 3_600_000
+  const reglasCambio = c.max_reprogramaciones !== undefined && c.horas_minimas_reprogramar !== undefined
+  const quedanCambios = reglasCambio && c.reprogramaciones < c.max_reprogramaciones!
+  const aTiempo = reglasCambio && horasHasta >= c.horas_minimas_reprogramar!
+  const puedeCambiar = activa && quedanCambios && aTiempo
+
+  // Insistimos en que avise a Lynn: es como ella se entera de la reserva
+  const avisada = avisadaAhora || citaAvisada(c.code)
+  const enlaceAviso = c.negocio.whatsapp ? enlaceAvisoLynn(c.negocio.whatsapp, mensajeAvisoLynn(c)) : null
+  const alAvisar = () => { marcarAvisada(c.code); setAvisadaAhora(true) }
+  const bloqueAviso = activa && enlaceAviso && (!avisada ? (
+    <div className="rounded-xl border-2 border-[#25D366] bg-[#E9FBF0] p-4 space-y-3 animate-entrada">
+      <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#25D366] text-white text-[11px] font-bold uppercase tracking-wider">
+        {esNueva ? 'Último paso' : '¿Ya avisaste a Lynn?'}
+      </span>
+      <p className="text-[15px] text-tinta leading-snug">
+        <b>Avisa a Lynn por WhatsApp</b> para que sepa de tu cita y te la confirme.
+        El mensaje ya va escrito: solo tienes que tocar <b>Enviar</b>.
+      </p>
+      <a href={enlaceAviso} target="_blank" rel="noreferrer" onClick={alAvisar}
+         className="w-full min-h-[56px] bg-[#25D366] hover:bg-[#20BA5A] text-white font-semibold text-[17px]
+                    rounded-full px-4 flex items-center justify-center gap-2 animate-latido
+                    shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)] active:scale-[0.98] transition">
+        <IconoWhatsApp tam={22} />
+        Avisar a Lynn por WhatsApp
+      </a>
+    </div>
+  ) : esNueva && (
+    <p className="flex items-center justify-center gap-2 text-[14px] text-estado-exito">
+      <IconoCheck tam={16} strokeWidth={2.6} /> Aviso abierto en WhatsApp.
+      <a href={enlaceAviso} target="_blank" rel="noreferrer" className="underline text-rosa-800">¿No se envió? Otra vez</a>
+    </p>
+  ))
 
   return (
     <div className="pb-28">
@@ -77,9 +115,9 @@ export default function Cita() {
                           flex items-center justify-center mx-auto mb-6 animate-entrada">
             <IconoCheck tam={36} strokeWidth={2.6} />
           </div>
-          <h1 className="text-[32px] leading-tight">¡Tu cita está confirmada!</h1>
+          <h1 className="text-[32px] leading-tight">¡Tu cita está reservada!</h1>
           <p className="text-[15px] text-tinta-suave mt-3 max-w-xs mx-auto">
-            Toca el botón verde de abajo para avisar a Lynn por WhatsApp.
+            Tu turno ya está guardado. Te falta un paso: avisar a Lynn 👇
           </p>
         </section>
       ) : (
@@ -89,6 +127,8 @@ export default function Cita() {
       )}
 
       <div className="px-4 pt-4 space-y-4">
+        {esNueva && bloqueAviso}
+
         <Tarjeta className="p-0 overflow-hidden">
           <div className="px-5 pt-5 pb-4 flex items-center justify-between">
             <span className="font-mono text-[13px] tracking-wider text-tinta-tenue">{c.code}</span>
@@ -123,24 +163,21 @@ export default function Cita() {
           )}
         </Tarjeta>
 
-        {esNueva && c.negocio.whatsapp && (
-          <a
-            href={enlaceAvisoLynn(c.negocio.whatsapp, mensajeAvisoLynn(c))}
-            target="_blank" rel="noreferrer"
-            className="w-full min-h-[56px] bg-[#25D366] hover:bg-[#20BA5A]
-                       text-white font-semibold text-[17px]
-                       rounded-full px-4 flex items-center justify-center gap-2
-                       shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)] active:scale-[0.98] transition"
-          >
-            <IconoWhatsApp tam={22} />
-            Avisar a Lynn por WhatsApp
-          </a>
-        )}
+        {!esNueva && bloqueAviso}
 
         {error && <Aviso>{error}</Aviso>}
 
-        {activa && !confirmando && (
+        {reprogramando && (
+          <ReprogramarCita token={token} cita={c} onCerrar={() => setReprogramando(false)} />
+        )}
+
+        {activa && !confirmando && !reprogramando && (
           <div className="space-y-3">
+            {puedeCambiar && (
+              <Boton ancho onClick={() => { setReprogramando(true); setError(null) }}>
+                Cambiar fecha u hora
+              </Boton>
+            )}
             {c.negocio.whatsapp && (
               <a href={`https://wa.me/53${c.negocio.whatsapp}`} target="_blank" rel="noreferrer"
                  className={estiloBoton('secundario', true)}>
@@ -150,6 +187,17 @@ export default function Cita() {
             <Boton ancho variante="peligro" onClick={() => setConfirmando(true)}>
               Cancelar cita
             </Boton>
+            {reglasCambio && !puedeCambiar && (
+              <p className="text-[13px] text-tinta-tenue text-center">
+                {!quedanCambios
+                  ? `Ya cambiaste esta cita ${c.reprogramaciones} ${c.reprogramaciones === 1 ? 'vez' : 'veces'}, el máximo permitido.`
+                  : `Los cambios se hacen hasta ${c.horas_minimas_reprogramar} horas antes.`}
+                {' '}Si necesitas moverla, escríbeme por WhatsApp.
+              </p>
+            )}
+            <p className="text-[13px] text-tinta-tenue text-center">
+              Consulta las <EnlacePoliticas texto="políticas de cancelación y cambios" />.
+            </p>
           </div>
         )}
 
