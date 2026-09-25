@@ -52,6 +52,20 @@ export function fechaISO(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA }).format(d)
 }
 
+/** "2026-10-02" + "15:30" en hora de La Habana → ISO en UTC */
+export function instanteEnHabana(fecha: string, hhmm: string): string {
+  const [y, m, d] = fecha.split('-').map(Number)
+  const [h, mi] = hhmm.split(':').map(Number)
+  const supuesto = Date.UTC(y, m - 1, d, h, mi)
+  const p = new Intl.DateTimeFormat('en-US', {
+    timeZone: ZONA, hourCycle: 'h23', year: 'numeric', month: 'numeric',
+    day: 'numeric', hour: 'numeric', minute: 'numeric',
+  }).formatToParts(new Date(supuesto))
+  const g = (t: string) => Number(p.find(x => x.type === t)?.value)
+  const pared = Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'))
+  return new Date(supuesto - (pared - supuesto)).toISOString()
+}
+
 export function cuentaAtras(hasta: string): string {
   const s = Math.max(0, Math.floor((new Date(hasta).getTime() - Date.now()) / 1000))
   return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`

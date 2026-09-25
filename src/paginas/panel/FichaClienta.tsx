@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { obtenerClienta, citasDeClienta, actualizarNotasInternas } from '../../lib/panel/api-panel'
+import { obtenerClienta, citasDeClienta, actualizarNotasInternas, bloquearClienta, eliminarClienta }
+  from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, dinero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
@@ -14,6 +15,9 @@ export default function FichaClienta() {
   const [cargada, setCargada] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmarBorrado, setConfirmarBorrado] = useState(false)
+  const [trabajando, setTrabajando] = useState(false)
+  const [errorGestion, setErrorGestion] = useState<string | null>(null)
 
   const qCli = useQuery({ queryKey:['cli', id], queryFn: () => obtenerClienta(id) })
   const qCitas = useQuery({ queryKey:['cli-citas', id], queryFn: () => citasDeClienta(id) })
@@ -32,6 +36,28 @@ export default function FichaClienta() {
     finally { setGuardando(false) }
   }
 
+  async function alternarBloqueo(bloqueada: boolean) {
+    setTrabajando(true); setErrorGestion(null)
+    try {
+      await bloquearClienta(id, bloqueada)
+      qc.invalidateQueries({ queryKey: ['cli', id] })
+      qc.invalidateQueries({ queryKey: ['clientas'] })
+    } catch (e) { setErrorGestion(mensajeDeError(e)) }
+    finally { setTrabajando(false) }
+  }
+
+  async function eliminar() {
+    // Primer toque pide confirmación; el segundo borra
+    if (!confirmarBorrado) { setConfirmarBorrado(true); return }
+    setTrabajando(true); setErrorGestion(null)
+    try {
+      await eliminarClienta(id)
+      qc.invalidateQueries({ queryKey: ['clientas'] })
+      navegar('/panel/clientas', { replace: true })
+    } catch (e) { setErrorGestion(mensajeDeError(e)); setConfirmarBorrado(false) }
+    finally { setTrabajando(false) }
+  }
+
   if (qCli.isLoading) return <div className="p-5"><Esqueleto className="h-48" /></div>
   if (qCli.isError) return <div className="p-5"><Aviso>{mensajeDeError(qCli.error)}</Aviso></div>
 
@@ -45,7 +71,16 @@ export default function FichaClienta() {
       <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
 
       <div>
-        <h1 className="font-display text-[24px]">{c.full_name}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="font-display text-[24px]">{c.full_name}</h1>
+          <Link to={`/panel/clientas/${c.id}/editar`}
+            className="min-h-[44px] px-3 inline-flex items-center text-rosa-800 underline text-[14px] shrink-0">
+            Editar
+          </Link>
+        </div>
+        {c.is_blocked && (
+          <div className="text-[13px] text-estado-error">Bloqueada: no puede reservar desde la web</div>
+        )}
         <a href={`https://wa.me/${c.phone.replace(/[^0-9]/g,'')}`} target="_blank" rel="noreferrer"
            className="text-rosa-800 underline text-[14px] min-h-[44px] inline-flex items-center">
           {c.phone} · WhatsApp
@@ -109,6 +144,18 @@ export default function FichaClienta() {
           ))}
         </div>
       </section>
+
+      <Tarjeta className="space-y-2">
+        <div className="text-[14px] text-tinta-tenue">Gestionar clienta</div>
+        {errorGestion && <Aviso>{errorGestion}</Aviso>}
+        <Boton variante="secundario" ancho cargando={trabajando}
+          onClick={() => alternarBloqueo(!c.is_blocked)}>
+          {c.is_blocked ? 'Desbloquear clienta' : 'Bloquear clienta'}
+        </Boton>
+        <Boton variante="peligro" ancho cargando={trabajando} onClick={eliminar}>
+          {confirmarBorrado ? '¿Seguro? Toca otra vez para eliminar' : 'Eliminar clienta'}
+        </Boton>
+      </Tarjeta>
     </div>
   )
 }

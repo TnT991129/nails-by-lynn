@@ -6,6 +6,7 @@ import { sb } from '../../lib/panel/supabase-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, duracion, dinero } from '../../lib/formato'
 import BloqueMensajes from './BloqueMensajes'
+import ReagendarCita from './ReagendarCita'
 import { mensajeDeError } from '../../lib/errores'
 import { numeroWhatsApp } from '../../lib/panel/whatsapp'
 
@@ -17,6 +18,7 @@ export default function DetalleCita() {
   const [notaCargada, setNotaCargada] = useState(false)
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [reagendando, setReagendando] = useState(false)
 
   // Cargamos todas las citas de un rango amplio y filtramos, para reutilizar cache
   const q = useQuery({
@@ -119,6 +121,11 @@ export default function DetalleCita() {
       {qToken.data && <BloqueMensajes cita={c} tokenAcceso={qToken.data} />}
 
       {error && <Aviso>{error}</Aviso>}
+
+      {activa && (reagendando
+        ? <ReagendarCita cita={c} tokenAcceso={qToken.data} onCerrar={() => setReagendando(false)} />
+        : <Boton variante="secundario" ancho onClick={() => setReagendando(true)}>📅 Reagendar</Boton>
+      )}
 
       {activa && (
         <div className="space-y-2">

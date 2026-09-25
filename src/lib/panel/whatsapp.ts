@@ -3,7 +3,7 @@
 
 import { hora, fechaLarga } from '../formato'
 
-export type PlantillaKey = 'confirmacion' | 'recordatorio' | 'retraso' | 'gracias'
+export type PlantillaKey = 'confirmacion' | 'recordatorio' | 'retraso' | 'gracias' | 'reagendada'
 
 export type DatosMensaje = {
   cliente_nombre: string
@@ -69,6 +69,20 @@ Estoy con un pequeño retraso hoy. Tu cita seguirá adelante, pero podría empez
 
 Gracias por tu paciencia 💗`)
 
+    case 'reagendada':
+      return (
+`Hola ${nombre} 💖
+
+Tuve que cambiar el horario de tu cita. El nuevo es:
+
+📅 ${cuando}
+💅 ${d.servicios}
+
+Puedes ver los detalles aquí:
+${link}
+
+Si no te viene bien, escríbeme y buscamos otro hueco. ¡Gracias por tu comprensión!`)
+
     case 'gracias':
       return (
 `¡Muchas gracias por tu visita, ${nombre}! 💅✨
@@ -100,4 +114,5 @@ export const ETIQUETAS: Record<PlantillaKey, { titulo: string; icono: string; de
   recordatorio: { titulo: 'Enviar recordatorio', icono: '🔔', descripcion: '24h antes de la cita' },
   retraso:      { titulo: 'Avisar de retraso',   icono: '⏰', descripcion: 'Si vas con demora hoy' },
   gracias:      { titulo: 'Enviar agradecimiento', icono: '💖', descripcion: 'Después de completar' },
+  reagendada:   { titulo: 'Avisar del cambio',     icono: '📅', descripcion: 'Tras reagendar la cita' },
 }

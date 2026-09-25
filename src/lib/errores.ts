@@ -18,6 +18,9 @@ const MENSAJES: Record<string, string> = {
   CITA_NO_REPROGRAMABLE: 'Esta cita ya no se puede cambiar.',
   FUERA_DE_PLAZO:        'Ya pasó el plazo para hacer este cambio. Escríbeme por WhatsApp 💗',
   LIMITE_REPROGRAMACIONES:'Ya cambiaste esta cita el máximo de veces permitido.',
+  HORARIO_OCUPADO:       'Ese horario choca con otra cita. Elige otro.',
+  TELEFONO_DUPLICADO:    'Ya hay una clienta con ese teléfono.',
+  CLIENTA_CON_CITAS:     'Esta clienta tiene citas en su historial y no se puede eliminar. Puedes bloquearla.',
 }
 
 export function mensajeDeError(e: unknown): string {

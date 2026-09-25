@@ -48,6 +48,25 @@ export function actualizarNotaInterna(id: string, nota: string) {
   return ejecutar(sb.from('appointments').update({ internal_note: nota }).eq('id', id))
 }
 
+// ---------- REAGENDAR ----------
+// Mueve la cita conservando su duración y su margen posterior.
+// La restricción EXCLUDE de appointments impide que choque con otra cita.
+export async function reagendarCita(cita: CitaAgenda, nuevoInicio: string) {
+  const inicio = new Date(nuevoInicio).getTime()
+  const margen = new Date(cita.blocked_until).getTime() - new Date(cita.ends_at).getTime()
+  const fin = inicio + cita.total_duration_minutes * 60_000
+  const { error } = await sb.from('appointments').update({
+    starts_at: new Date(inicio).toISOString(),
+    ends_at: new Date(fin).toISOString(),
+    blocked_until: new Date(fin + margen).toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq('id', cita.id).select('id').single()
+  if (error) {
+    if ((error as { code?: string }).code === '23P01') throw new Error('HORARIO_OCUPADO')
+    throw error
+  }
+}
+
 // ---------- CITA MANUAL ----------
 // Reutiliza la funcion crear_cita, pero con origen MANUAL (salta antelacion minima y hold)
 export async function crearCitaManual(args: {
@@ -107,6 +126,54 @@ export function obtenerClienta(id: string) {
 
 export function actualizarNotasInternas(id: string, notas: string) {
   return ejecutar(sb.from('clients').update({ internal_notes: notas }).eq('id', id))
+}
+
+export type DatosClienta = {
+  full_name: string; phone: string; email: string | null; instagram: string | null
+}
+
+// Mismo formato que usa crear_cita, para que la clienta se reconozca si luego reserva por la web
+async function normalizarTelefono(telefono: string): Promise<string> {
+  const { data, error } = await sb.rpc('normalizar_telefono', { p: telefono })
+  if (error) throw error
+  if (!data) throw new Error('TELEFONO_INVALIDO')
+  return data as string
+}
+
+function errorDeClienta(error: unknown): never {
+  if ((error as { code?: string }).code === '23505') throw new Error('TELEFONO_DUPLICADO')
+  throw error
+}
+
+export async function crearClienta(d: DatosClienta) {
+  const phone = await normalizarTelefono(d.phone)
+  const { data, error } = await sb.from('clients')
+    .insert({ ...d, phone, business_id: NEGOCIO_ID }).select('id').single()
+  if (error) errorDeClienta(error)
+  return data as { id: string }
+}
+
+export async function actualizarClienta(id: string, d: DatosClienta) {
+  const phone = await normalizarTelefono(d.phone)
+  const { error } = await sb.from('clients').update({ ...d, phone }).eq('id', id).select('id').single()
+  if (error) errorDeClienta(error)
+}
+
+export function bloquearClienta(id: string, bloqueada: boolean) {
+  return ejecutar(sb.from('clients').update({ is_blocked: bloqueada }).eq('id', id).select('id').single())
+}
+
+// Solo se elimina una clienta sin citas: borrar su historial rompería estadísticas y respaldos
+export async function eliminarClienta(id: string) {
+  const { count, error: e1 } = await sb.from('appointments')
+    .select('id', { count: 'exact', head: true }).eq('client_id', id)
+  if (e1) throw e1
+  if ((count ?? 0) > 0) throw new Error('CLIENTA_CON_CITAS')
+  const { error } = await sb.from('clients').delete().eq('id', id).select('id').single()
+  if (error) {
+    if ((error as { code?: string }).code === '23503') throw new Error('CLIENTA_CON_CITAS')
+    throw error
+  }
 }
 
 export function citasDeClienta(id: string) {

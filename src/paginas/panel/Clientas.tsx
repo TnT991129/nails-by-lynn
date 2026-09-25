@@ -15,7 +15,13 @@ export default function Clientas() {
 
   return (
     <div className="p-5 space-y-4">
-      <h1 className="font-display text-[30px]">Clientas</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="font-display text-[30px]">Clientas</h1>
+        <Link to="/panel/clientas/nueva"
+          className="min-h-[44px] px-4 inline-flex items-center rounded-sm bg-rosa-600 text-white text-[14px] font-medium">
+          + Nueva
+        </Link>
+      </div>
       <input value={busq} onChange={e => setBusq(e.target.value)}
         placeholder="Buscar por nombre, teléfono o @instagram"
         className="w-full min-h-[48px] px-4 rounded-sm border border-rosa-200 text-[16px]" />
@@ -35,7 +41,9 @@ export default function Clientas() {
           <Link key={c.id} to={`/panel/clientas/${c.id}`} className="block">
             <Tarjeta className="space-y-1">
               <div className="flex items-center justify-between gap-2">
-                <div className="text-[16px] font-medium truncate">{c.full_name}</div>
+                <div className="text-[16px] font-medium truncate">
+                  {c.full_name}{c.is_blocked && <span className="text-[12px] text-estado-error"> · bloqueada</span>}
+                </div>
                 <div className="text-[14px] text-tinta-tenue shrink-0">
                   {c.total_appointments} {c.total_appointments === 1 ? 'cita' : 'citas'}
                 </div>

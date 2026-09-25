@@ -11,6 +11,7 @@ const CitaManual = lazy(() => import('./CitaManual'))
 const DetalleCita = lazy(() => import('./DetalleCita'))
 const Clientas = lazy(() => import('./Clientas'))
 const FichaClienta = lazy(() => import('./FichaClienta'))
+const FormClienta = lazy(() => import('./FormClienta'))
 const Mas = lazy(() => import('./Mas'))
 const EditarServicios = lazy(() => import('./EditarServicios'))
 const EditarHorarios = lazy(() => import('./EditarHorarios'))
@@ -41,7 +42,9 @@ export default function Panel() {
             <Route path="agenda/nueva" element={<CitaManual />} />
             <Route path="cita/:id" element={<DetalleCita />} />
             <Route path="clientas" element={<Clientas />} />
+            <Route path="clientas/nueva" element={<FormClienta />} />
             <Route path="clientas/:id" element={<FichaClienta />} />
+            <Route path="clientas/:id/editar" element={<FormClienta />} />
             <Route path="mas" element={<Mas />} />
             <Route path="servicios" element={<EditarServicios />} />
             <Route path="horarios" element={<EditarHorarios />} />
