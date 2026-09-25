@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  listarServiciosPanel, actualizarServicio,
-  listarComplementos, actualizarComplemento,
+  listarServiciosPanel, actualizarServicio, crearServicio, eliminarServicio,
+  listarComplementos, actualizarComplemento, crearComplemento, eliminarComplemento,
   type ServicioEdit, type ComplementoEdit,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
@@ -36,10 +36,12 @@ export default function EditarServicios() {
   )
 }
 
+// ==================== SERVICIOS ====================
 function ListaServicios() {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['servicios-panel'], queryFn: listarServiciosPanel })
   const [editando, setEditando] = useState<string | null>(null)
+  const [creando, setCreando] = useState(false)
 
   if (q.isLoading) return <div className="space-y-2">
     {Array.from({length:3}).map((_,i) => <Esqueleto key={i} className="h-24" />)}
@@ -48,6 +50,13 @@ function ListaServicios() {
 
   return (
     <div className="space-y-2">
+      {creando ? (
+        <FormularioNuevoServicio
+          onCerrar={() => { setCreando(false); qc.invalidateQueries({ queryKey:['servicios-panel'] }) }} />
+      ) : (
+        <Boton ancho onClick={() => setCreando(true)}>+ Nuevo servicio</Boton>
+      )}
+
       {q.data?.map(s => (
         <ItemServicio key={s.id} servicio={s}
           editando={editando === s.id}
@@ -55,6 +64,56 @@ function ListaServicios() {
           onCerrar={() => { setEditando(null); qc.invalidateQueries({ queryKey:['servicios-panel'] }) }} />
       ))}
     </div>
+  )
+}
+
+function FormularioNuevoServicio({ onCerrar }: { onCerrar: () => void }) {
+  const [nombre, setNombre] = useState('')
+  const [descripcion, setDescripcion] = useState('')
+  const [precio, setPrecio] = useState('')
+  const [duracion, setDuracion] = useState('60')
+  const [buffer, setBuffer] = useState('0')
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function guardar() {
+    setGuardando(true); setError(null)
+    try {
+      if (!nombre.trim()) throw new Error('Escribe el nombre')
+      const p = Number(precio); const d = Number(duracion); const b = Number(buffer)
+      if (isNaN(p) || p < 0) throw new Error('Precio inválido')
+      if (isNaN(d) || d < 15) throw new Error('Duración mínima 15 minutos')
+      if (isNaN(b) || b < 0) throw new Error('Buffer inválido')
+      await crearServicio({
+        name: nombre.trim(),
+        description: descripcion.trim() || null,
+        price: p, duration_minutes: d, buffer_after_minutes: b,
+      })
+      onCerrar()
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setGuardando(false) }
+  }
+
+  return (
+    <Tarjeta className="space-y-3 border-2 border-rosa-300">
+      <div className="text-[14px] font-medium text-rosa-800">Nuevo servicio</div>
+      <Campo label="Nombre" value={nombre} onChange={setNombre} />
+      <label className="block">
+        <span className="block text-[14px] text-tinta-suave mb-1.5">Descripción (opcional)</span>
+        <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={2}
+          className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
+      </label>
+      <div className="grid grid-cols-3 gap-2">
+        <Campo label="Precio" value={precio} onChange={setPrecio} inputMode="decimal" />
+        <Campo label="Min." value={duracion} onChange={setDuracion} inputMode="numeric" />
+        <Campo label="Buffer" value={buffer} onChange={setBuffer} inputMode="numeric" />
+      </div>
+      {error && <Aviso>{error}</Aviso>}
+      <div className="flex gap-2">
+        <Boton variante="secundario" onClick={onCerrar} className="flex-1">Cancelar</Boton>
+        <Boton onClick={guardar} cargando={guardando} className="flex-1">Crear</Boton>
+      </div>
+    </Tarjeta>
   )
 }
 
@@ -69,6 +128,7 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
   const [buffer, setBuffer] = useState(String(servicio.buffer_after_minutes))
   const [activo, setActivo] = useState(servicio.is_active)
   const [guardando, setGuardando] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function guardar() {
@@ -87,6 +147,17 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
       onCerrar()
     } catch (e) { setError(mensajeDeError(e)) }
     finally { setGuardando(false) }
+  }
+
+  async function borrar() {
+    const msg = `¿Eliminar "${servicio.name}"?\n\nSi tiene citas asociadas, en su lugar quedará desactivado para preservar el historial.`
+    if (!confirm(msg)) return
+    setEliminando(true); setError(null)
+    try {
+      await eliminarServicio(servicio.id)
+      onCerrar()
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setEliminando(false) }
   }
 
   if (!editando) return (
@@ -132,14 +203,20 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
         <Boton variante="secundario" onClick={onCerrar} className="flex-1">Cancelar</Boton>
         <Boton onClick={guardar} cargando={guardando} className="flex-1">Guardar</Boton>
       </div>
+      <button onClick={borrar} disabled={eliminando}
+        className="w-full text-[13px] text-estado-error min-h-[36px] disabled:opacity-50">
+        {eliminando ? 'Eliminando…' : '🗑 Eliminar servicio'}
+      </button>
     </Tarjeta>
   )
 }
 
+// ==================== COMPLEMENTOS ====================
 function ListaComplementos() {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['complementos-panel'], queryFn: listarComplementos })
   const [editando, setEditando] = useState<string | null>(null)
+  const [creando, setCreando] = useState(false)
 
   if (q.isLoading) return <div className="space-y-2">
     {Array.from({length:2}).map((_,i) => <Esqueleto key={i} className="h-20" />)}
@@ -148,6 +225,13 @@ function ListaComplementos() {
 
   return (
     <div className="space-y-2">
+      {creando ? (
+        <FormularioNuevoComplemento
+          onCerrar={() => { setCreando(false); qc.invalidateQueries({ queryKey:['complementos-panel'] }) }} />
+      ) : (
+        <Boton ancho onClick={() => setCreando(true)}>+ Nuevo complemento</Boton>
+      )}
+
       {q.data?.map(c => (
         <ItemComplemento key={c.id} complemento={c}
           editando={editando === c.id}
@@ -155,6 +239,45 @@ function ListaComplementos() {
           onCerrar={() => { setEditando(null); qc.invalidateQueries({ queryKey:['complementos-panel'] }) }} />
       ))}
     </div>
+  )
+}
+
+function FormularioNuevoComplemento({ onCerrar }: { onCerrar: () => void }) {
+  const [nombre, setNombre] = useState('')
+  const [precio, setPrecio] = useState('')
+  const [duracion, setDuracion] = useState('0')
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function guardar() {
+    setGuardando(true); setError(null)
+    try {
+      if (!nombre.trim()) throw new Error('Escribe el nombre')
+      const p = Number(precio); const d = Number(duracion)
+      if (isNaN(p) || p < 0) throw new Error('Precio inválido')
+      if (isNaN(d) || d < 0) throw new Error('Duración inválida')
+      await crearComplemento({
+        name: nombre.trim(), extra_price: p, extra_minutes: d,
+      })
+      onCerrar()
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setGuardando(false) }
+  }
+
+  return (
+    <Tarjeta className="space-y-3 border-2 border-rosa-300">
+      <div className="text-[14px] font-medium text-rosa-800">Nuevo complemento</div>
+      <Campo label="Nombre" value={nombre} onChange={setNombre} />
+      <div className="grid grid-cols-2 gap-2">
+        <Campo label="Precio extra" value={precio} onChange={setPrecio} inputMode="decimal" />
+        <Campo label="Minutos extra" value={duracion} onChange={setDuracion} inputMode="numeric" />
+      </div>
+      {error && <Aviso>{error}</Aviso>}
+      <div className="flex gap-2">
+        <Boton variante="secundario" onClick={onCerrar} className="flex-1">Cancelar</Boton>
+        <Boton onClick={guardar} cargando={guardando} className="flex-1">Crear</Boton>
+      </div>
+    </Tarjeta>
   )
 }
 
@@ -167,6 +290,7 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
   const [duracion, setDuracion] = useState(String(complemento.extra_minutes))
   const [activo, setActivo] = useState(complemento.is_active)
   const [guardando, setGuardando] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function guardar() {
@@ -181,6 +305,17 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
       onCerrar()
     } catch (e) { setError(mensajeDeError(e)) }
     finally { setGuardando(false) }
+  }
+
+  async function borrar() {
+    const msg = `¿Eliminar "${complemento.name}"?\n\nSi tiene citas asociadas, en su lugar quedará desactivado para preservar el historial.`
+    if (!confirm(msg)) return
+    setEliminando(true); setError(null)
+    try {
+      await eliminarComplemento(complemento.id)
+      onCerrar()
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setEliminando(false) }
   }
 
   if (!editando) return (
@@ -217,11 +352,15 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
         <Boton variante="secundario" onClick={onCerrar} className="flex-1">Cancelar</Boton>
         <Boton onClick={guardar} cargando={guardando} className="flex-1">Guardar</Boton>
       </div>
+      <button onClick={borrar} disabled={eliminando}
+        className="w-full text-[13px] text-estado-error min-h-[36px] disabled:opacity-50">
+        {eliminando ? 'Eliminando…' : '🗑 Eliminar complemento'}
+      </button>
     </Tarjeta>
   )
 }
 
-// Campo auxiliar compacto
+// ==================== CAMPO ====================
 function Campo({ label, value, onChange, inputMode }: {
   label: string; value: string; onChange: (v: string) => void;
   inputMode?: 'text' | 'numeric' | 'decimal' | 'tel';

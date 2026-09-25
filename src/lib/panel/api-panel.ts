@@ -543,3 +543,93 @@ export async function eliminarFoto(id: string, imageUrl: string) {
     await sb.storage.from('galeria').remove([match[1]])
   }
 }
+
+// ================== CREAR / ELIMINAR SERVICIOS ==================
+function slugificar(texto: string): string {
+  return texto.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // quitar tildes
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-').slice(0, 60) || 'servicio'
+}
+
+export async function crearServicio(args: {
+  name: string; description: string | null;
+  price: number; duration_minutes: number; buffer_after_minutes: number;
+}) {
+  // Calcular un sort_order al final
+  const { data: max } = await sb.from('services').select('sort_order')
+    .eq('business_id', NEGOCIO_ID).order('sort_order', { ascending: false }).limit(1)
+  const nextOrder = (max?.[0]?.sort_order ?? 0) + 10
+
+  // Slug único
+  const base = slugificar(args.name)
+  let slug = base; let intento = 1
+  while (intento < 10) {
+    const { data } = await sb.from('services').select('id')
+      .eq('business_id', NEGOCIO_ID).eq('slug', slug).limit(1)
+    if (!data || data.length === 0) break
+    intento++; slug = `${base}-${intento}`
+  }
+
+  return ejecutar(
+    sb.from('services').insert({
+      business_id: NEGOCIO_ID, name: args.name, slug,
+      description: args.description,
+      price: args.price,
+      duration_minutes: args.duration_minutes,
+      buffer_after_minutes: args.buffer_after_minutes,
+      is_active: true, sort_order: nextOrder,
+    }).select().single()
+  )
+}
+
+export async function eliminarServicio(id: string) {
+  // Comprobar si tiene citas asociadas
+  const { count, error: eCount } = await sb.from('appointment_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('service_id', id)
+  if (eCount) throw eCount
+
+  if ((count ?? 0) > 0) {
+    // No lo borramos: solo desactivamos, para no romper historial
+    return ejecutar(
+      sb.from('services').update({ is_active: false }).eq('id', id).select().single()
+    )
+  }
+
+  // Sin citas: borrado real
+  const { error } = await sb.from('services').delete().eq('id', id)
+  if (error) throw error
+  return { deleted: true }
+}
+
+// ================== CREAR / ELIMINAR COMPLEMENTOS ==================
+export async function crearComplemento(args: {
+  name: string; extra_price: number; extra_minutes: number;
+}) {
+  const { data: max } = await sb.from('service_addons').select('sort_order')
+    .eq('business_id', NEGOCIO_ID).order('sort_order', { ascending: false }).limit(1)
+  const nextOrder = (max?.[0]?.sort_order ?? 0) + 10
+
+  return ejecutar(
+    sb.from('service_addons').insert({
+      business_id: NEGOCIO_ID, name: args.name,
+      extra_price: args.extra_price, extra_minutes: args.extra_minutes,
+      is_active: true, sort_order: nextOrder,
+    }).select().single()
+  )
+}
+
+export async function eliminarComplemento(id: string) {
+  const { count } = await sb.from('appointment_item_addons')
+    .select('*', { count: 'exact', head: true })
+    .eq('addon_id', id)
+  if ((count ?? 0) > 0) {
+    return ejecutar(
+      sb.from('service_addons').update({ is_active: false }).eq('id', id).select().single()
+    )
+  }
+  const { error } = await sb.from('service_addons').delete().eq('id', id)
+  if (error) throw error
+  return { deleted: true }
+}
