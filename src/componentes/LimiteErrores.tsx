@@ -38,13 +38,16 @@ export default class LimiteErrores extends Component<Props, { error: Error | nul
 
   render() {
     if (!this.state.error) return this.props.children
+    const sinConexion = !navigator.onLine
     return (
       <div className="min-h-[70dvh] flex flex-col items-center justify-center text-center px-6 animate-entrada">
         <div className="w-16 h-16 rounded-full bg-rosa-50 border border-rosa-100 text-rosa-600
                         flex items-center justify-center text-[28px] font-display mb-5" aria-hidden>!</div>
-        <h1 className="text-[26px] leading-tight">Algo salió mal</h1>
+        <h1 className="text-[26px] leading-tight">{sinConexion ? 'Sin conexión' : 'Algo salió mal'}</h1>
         <p className="text-tinta-tenue mt-2 max-w-xs text-[15px]">
-          Recarga la página. Si vuelve a pasar, revisa tu conexión e inténtalo en un momento.
+          {sinConexion
+            ? 'Esta página necesita internet la primera vez. Conéctate y vuelve a intentarlo.'
+            : 'Recarga la página. Si vuelve a pasar, revisa tu conexión e inténtalo en un momento.'}
         </p>
         <div className="mt-6 w-full max-w-xs space-y-2.5">
           <button onClick={() => window.location.reload()} className={estiloBoton('primario', true)}>

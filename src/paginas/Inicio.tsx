@@ -22,15 +22,24 @@ export default function Inicio() {
   return (
     <div className="pb-28">
       <header className="flex justify-center pt-5 pb-4">
-        <img src={`${BASE}logo-horizontal-rosa.png`} alt="Nails by Lynn" className="h-11 w-auto" />
+        <picture>
+          <source srcSet={`${BASE}logo-horizontal-rosa.webp`} type="image/webp" />
+          <img src={`${BASE}logo-horizontal-rosa.png`} alt="Nails by Lynn"
+               width={101} height={44} className="h-11 w-auto" />
+        </picture>
       </header>
 
       {/* HERO */}
       <section className="px-4">
         <div className="relative overflow-hidden rounded-xl shadow-lg aspect-[4/5] sm:aspect-[16/10]">
-          <img src={`${BASE}hero-lynn.jpg`} alt="Lynn en su estudio de uñas"
-               className="absolute inset-0 w-full h-full object-cover object-[68%_center]"
-               fetchPriority="high" />
+          {/* En móvil, recorte vertical ya encuadrado (32 KB); en pantallas anchas, la foto completa */}
+          <picture>
+            <source media="(min-width: 640px)" srcSet={`${BASE}hero-lynn.webp`} type="image/webp" />
+            <source srcSet={`${BASE}hero-lynn-movil.webp`} type="image/webp" />
+            <img src={`${BASE}hero-lynn.jpg`} alt="Lynn en su estudio de uñas"
+                 className="absolute inset-0 w-full h-full object-cover object-[60%_center]"
+                 fetchPriority="high" />
+          </picture>
           <div className="absolute inset-0"
                style={{ background:'linear-gradient(to bottom, rgba(43,23,33,0) 35%, rgba(43,23,33,.85) 100%)' }} />
           <div className="absolute inset-x-0 bottom-0 p-6 text-white">

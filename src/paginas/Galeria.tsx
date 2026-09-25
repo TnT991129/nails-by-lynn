@@ -59,7 +59,7 @@ export default function Galeria() {
                     className="w-[70%] shrink-0 snap-start aspect-[4/5] overflow-hidden rounded-xl bg-rosa-100 shadow-suave">
                     <img src={f.thumbnail_url ?? f.image_url}
                          alt={f.alt_text ?? 'Trabajo destacado'}
-                         loading="lazy"
+                         loading="lazy" crossOrigin="anonymous"
                          className="w-full h-full object-cover" />
                   </button>
                 ))}
@@ -99,7 +99,7 @@ export default function Galeria() {
                 className="aspect-square overflow-hidden rounded-lg bg-rosa-100 relative group">
                 <img src={f.thumbnail_url ?? f.image_url}
                      alt={f.alt_text ?? 'Trabajo'}
-                     loading="lazy"
+                     loading="lazy" crossOrigin="anonymous"
                      className="w-full h-full object-cover" />
               </button>
             ))}
@@ -111,7 +111,7 @@ export default function Galeria() {
       {ampliada && (
         <div onClick={() => setAmpliada(null)}
              className="fixed inset-0 bg-tinta/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-entrada">
-          <img src={ampliada} alt=""
+          <img src={ampliada} alt="" crossOrigin="anonymous"
                className="max-w-full max-h-full object-contain rounded-lg" />
           <button onClick={() => setAmpliada(null)} aria-label="Cerrar"
             className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/15 text-white

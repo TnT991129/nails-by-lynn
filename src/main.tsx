@@ -6,12 +6,20 @@ import Inicio from './paginas/Inicio'
 import Navegacion from './componentes/Navegacion'
 import LimiteErrores, { recargarPorVersionNueva } from './componentes/LimiteErrores'
 
+// Páginas públicas: se descargan en segundo plano tras abrir la web para que funcionen sin conexión
+const PAGINAS_PUBLICAS = {
+  reserva:  () => import('./paginas/Reserva'),
+  cita:     () => import('./paginas/Cita'),
+  misCitas: () => import('./paginas/MisCitas'),
+  galeria:  () => import('./paginas/Galeria'),
+}
+
 const Servicios = lazy(() => import('./paginas/Servicios'))
-const Reserva   = lazy(() => import('./paginas/Reserva'))
-const Cita      = lazy(() => import('./paginas/Cita'))
-const MisCitas  = lazy(() => import('./paginas/MisCitas'))
+const Reserva   = lazy(PAGINAS_PUBLICAS.reserva)
+const Cita      = lazy(PAGINAS_PUBLICAS.cita)
+const MisCitas  = lazy(PAGINAS_PUBLICAS.misCitas)
 const Panel     = lazy(() => import('./paginas/panel'))
-const Galeria   = lazy(() => import('./paginas/Galeria'))
+const Galeria   = lazy(PAGINAS_PUBLICAS.galeria)
 
 function Cargando() {
   return (
@@ -23,6 +31,21 @@ function Cargando() {
   )
 }
 import './index.css'
+
+// Service worker: carga instantánea en visitas repetidas y funcionamiento sin conexión.
+// Solo en producción, para no interferir con el servidor de desarrollo.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
+      .catch(e => console.warn('No se pudo registrar el service worker:', e))
+    // Respeta el modo "ahorro de datos" del móvil
+    const conexion = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+    if (!conexion?.saveData) {
+      setTimeout(() => Object.values(PAGINAS_PUBLICAS).forEach(cargar => cargar().catch(() => {})), 3000)
+    }
+  })
+}
 
 // Vite avisa cuando no puede cargar un trozo de la app (típico tras publicar una versión nueva)
 window.addEventListener('vite:preloadError', e => {
