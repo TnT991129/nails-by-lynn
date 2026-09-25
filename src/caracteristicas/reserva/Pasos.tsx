@@ -6,26 +6,25 @@ import { validarNombre, validarTelefono, validarEmail } from './validacion'
 import type { Datos } from './useReserva'
 
 export function Progreso({ paso }: { paso: number }) {
-  const nombres = ['Servicio','Fecha','Hora','Datos','Listo']
+  const nombres = ['Servicio','Extras','Fecha','Hora','Datos','Listo']
   return (
     <div className="px-5 pb-3">
       <div className="flex gap-1.5 mb-2" role="progressbar"
-           aria-valuenow={paso} aria-valuemin={1} aria-valuemax={5}
-           aria-label={`Paso ${paso} de 5`}>
+           aria-valuenow={paso} aria-valuemin={1} aria-valuemax={6}
+           aria-label={`Paso ${paso} de 6`}>
         {nombres.map((_, i) => (
           <div key={i} className={`h-1 flex-1 rounded-full ${i < paso ? 'bg-rosa-600' : 'bg-rosa-100'}`} />
         ))}
       </div>
-      <Etiqueta>{`Paso ${paso} de 5 · ${nombres[paso-1]}`}</Etiqueta>
+      <Etiqueta>{`Paso ${paso} de 6 · ${nombres[paso-1]}`}</Etiqueta>
     </div>
   )
 }
 
 export function PasoServicio({
-  servicios, seleccionados, alternar, addons, addonsElegidos, alternarAddon,
+  servicios, seleccionados, alternar,
 }: {
   servicios: Servicio[]; seleccionados: string[]; alternar: (id: string) => void
-  addons: Addon[]; addonsElegidos: string[]; alternarAddon: (id: string) => void
 }) {
   return (
     <div className="space-y-6 animate-entrada">
@@ -53,26 +52,47 @@ export function PasoServicio({
           )
         })}
       </div>
+    </div>
+  )
+}
 
-      {seleccionados.length > 0 && addons.length > 0 && (
-        <div>
-          <Etiqueta>¿Necesitas algo más?</Etiqueta>
-          <div className="space-y-2 mt-3">
-            {addons.map(a => {
-              const activo = addonsElegidos.includes(a.id)
-              return (
-                <button key={a.id} onClick={() => alternarAddon(a.id)} aria-pressed={activo}
-                  className={`w-full text-left px-4 py-3 rounded border flex items-center justify-between gap-3
-                    ${activo ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
-                  <span className="text-[16px]">{a.name}</span>
-                  <span className="text-[14px] text-tinta-tenue shrink-0">
+// Paso nuevo: complementos separados del paso de servicio
+export function PasoExtras({
+  addons, addonsElegidos, alternarAddon,
+}: {
+  addons: Addon[]; addonsElegidos: string[]; alternarAddon: (id: string) => void
+}) {
+  return (
+    <div className="space-y-6 animate-entrada">
+      <h2 className="text-[24px]">¿Necesitas algo más?</h2>
+      <p className="text-[14px] text-tinta-suave -mt-3">
+        Puedes añadir uno o varios extras. También puedes seguir sin añadir nada.
+      </p>
+      {addons.length === 0 ? (
+        <p className="text-[14px] text-tinta-tenue">
+          No hay extras disponibles para este servicio.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {addons.map(a => {
+            const activo = addonsElegidos.includes(a.id)
+            return (
+              <button key={a.id} onClick={() => alternarAddon(a.id)} aria-pressed={activo}
+                className={`w-full text-left p-4 rounded-lg border flex items-center justify-between gap-3
+                  ${activo ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
+                <div>
+                  <div className="text-[16px] font-medium">{a.name}</div>
+                  <div className="text-[13px] text-tinta-tenue mt-0.5">
                     +{a.extra_minutes} min
                     {Number(a.extra_price) > 0 && ` · ${dinero(Number(a.extra_price))}`}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+                  </div>
+                </div>
+                <span className={`text-[22px] shrink-0 ${activo ? 'text-rosa-600' : 'text-tinta-tenue'}`}>
+                  {activo ? '✓' : '+'}
+                </span>
+              </button>
+            )
+          })}
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@ import type { Servicio, Addon, ItemReserva, CitaCreada } from '../../lib/tipos'
 import { crearCita, crearHold } from '../../lib/api'
 import { tokenSesion, nuevoTokenSesion, idDispositivo, guardarToken } from '../../lib/almacenamiento'
 
-export type Paso = 1 | 2 | 3 | 4 | 5
+export type Paso = 1 | 2 | 3 | 4 | 5 | 6
 
 export type Datos = {
   nombre: string; telefono: string; email: string; instagram: string; nota: string
@@ -100,7 +100,7 @@ export function useReserva(servicios: Servicio[], addons: Addon[]) {
     return cita
   }, [inicio, items, datos])
 
-  const volverAHora = useCallback(() => { setInicio(null); setExpiraEn(null); setPaso(3) }, [])
+  const volverAHora = useCallback(() => { setInicio(null); setExpiraEn(null); setPaso(4) }, [])
 
   return {
     paso, setPaso,

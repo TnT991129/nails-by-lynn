@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { obtenerServicios, obtenerAddons, obtenerDisponibilidad } from '../lib/api'
 import { useReserva } from '../caracteristicas/reserva/useReserva'
-import { Progreso, PasoServicio, PasoFecha, PasoHora, PasoDatos, PasoResumen }
+import { Progreso, PasoServicio, PasoExtras, PasoFecha, PasoHora, PasoDatos, PasoResumen }
   from '../caracteristicas/reserva/Pasos'
 import { validarNombre, validarTelefono, validarEmail } from '../caracteristicas/reserva/validacion'
 import { Boton, Esqueleto, Aviso } from '../componentes/ui'
@@ -34,7 +34,7 @@ export default function Reserva() {
   const qHoras = useQuery({
     queryKey: ['disponibilidad', r.fecha, r.duracionTotal, r.bufferTotal],
     queryFn: () => obtenerDisponibilidad(r.fecha!, r.duracionTotal, r.bufferTotal || undefined),
-    enabled: r.paso === 3 && !!r.fecha && r.duracionTotal > 0,
+    enabled: r.paso === 4 && !!r.fecha && r.duracionTotal > 0,
   })
 
   async function elegirHora(h: string) {
@@ -48,7 +48,7 @@ export default function Reserva() {
     setError(null)
     const fallo = validarNombre(r.datos.nombre) ?? validarTelefono(r.datos.telefono)
                 ?? validarEmail(r.datos.email)
-    if (fallo) { r.setPaso(4); return }
+    if (fallo) { r.setPaso(5); return }
     if (!r.aceptaPoliticas) { setError('Acepta las políticas para continuar.'); return }
     setEnviando(true)
     try {
@@ -74,9 +74,10 @@ export default function Reserva() {
 
   const puedeSeguir =
     (r.paso === 1 && r.seleccionados.length > 0) ||
-    (r.paso === 2 && !!r.fecha) ||
-    (r.paso === 3 && !!r.inicio) ||
-    r.paso === 4 || r.paso === 5
+    r.paso === 2 ||                          // extras es opcional
+    (r.paso === 3 && !!r.fecha) ||
+    (r.paso === 4 && !!r.inicio) ||
+    r.paso === 5 || r.paso === 6
 
   return (
     <div className="min-h-dvh flex flex-col bg-superficie-base">
@@ -96,17 +97,20 @@ export default function Reserva() {
 
         {r.paso === 1 && (
           <PasoServicio servicios={qServicios.data ?? []} seleccionados={r.seleccionados}
-            alternar={r.alternarServicio} addons={r.addonsAplicables}
+            alternar={r.alternarServicio} />
+        )}
+        {r.paso === 2 && (
+          <PasoExtras addons={r.addonsAplicables}
             addonsElegidos={r.addonsElegidos} alternarAddon={r.alternarAddon} />
         )}
-        {r.paso === 2 && <PasoFecha fecha={r.fecha} setFecha={r.setFecha} />}
-        {r.paso === 3 && (
+        {r.paso === 3 && <PasoFecha fecha={r.fecha} setFecha={r.setFecha} />}
+        {r.paso === 4 && (
           <PasoHora horas={qHoras.data ?? []} cargando={qHoras.isLoading}
             error={qHoras.isError ? mensajeDeError(qHoras.error) : null}
             inicio={r.inicio} onElegir={elegirHora} expiraEn={r.expiraEn} />
         )}
-        {r.paso === 4 && <PasoDatos datos={r.datos} setDatos={r.setDatos} intentado={intentado} />}
-        {r.paso === 5 && r.inicio && (
+        {r.paso === 5 && <PasoDatos datos={r.datos} setDatos={r.setDatos} intentado={intentado} />}
+        {r.paso === 6 && r.inicio && (
           <PasoResumen servicios={r.serviciosElegidos}
             addons={r.addonsAplicables.filter(a => r.addonsElegidos.includes(a.id))}
             inicio={r.inicio} duracionMin={r.duracionTotal} total={r.precioTotal}
@@ -123,8 +127,8 @@ export default function Reserva() {
           </p>
         )}
         <Boton ancho cargando={enviando} disabled={!puedeSeguir}
-          onClick={() => r.paso === 5 ? confirmar() : r.setPaso((r.paso + 1) as 2)}>
-          {r.paso === 5 ? 'Confirmar cita' : 'Continuar'}
+          onClick={() => r.paso === 6 ? confirmar() : r.setPaso((r.paso + 1) as 2)}>
+          {r.paso === 6 ? 'Confirmar cita' : (r.paso === 2 && r.addonsElegidos.length === 0 ? 'Continuar sin extras' : 'Continuar')}
         </Boton>
       </footer>
     </div>
