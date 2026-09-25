@@ -53,16 +53,16 @@ export default function Inicio() {
         {n && !n.is_accepting_bookings ? (
           <Aviso tipo="aviso">{n.closed_message ?? 'Ahora mismo no estamos tomando reservas.'}</Aviso>
         ) : (
-          <>
-            <Link to="/reservar"><Boton ancho>Reservar cita</Boton></Link>
-            <Link to="/servicios"><Boton ancho variante="secundario">Ver servicios</Boton></Link>
-          </>
+          <Link to="/reservar"><Boton ancho>Reservar cita</Boton></Link>
         )}
       </div>
 
       <section className="px-5 mt-12">
-        <Etiqueta>Nuestros servicios</Etiqueta>
-        <div className="mt-4 space-y-3">
+        <div className="flex items-baseline justify-between mb-4">
+          <Etiqueta>Nuestros servicios</Etiqueta>
+          <span className="text-[12px] text-tinta-tenue">Toca uno para reservar</span>
+        </div>
+        <div className="space-y-3">
           {qServicios.isLoading && Array.from({length:3}).map((_,i) =>
             <Esqueleto key={i} className="h-20" />)}
           {qServicios.isError && <Aviso>{mensajeDeError(qServicios.error)}</Aviso>}
