@@ -32,7 +32,7 @@ export default function Clientas() {
 
       <div className="space-y-2">
         {q.data?.map(c => (
-          <Link key={c.id} to={`/panel/clientas/${c.id}`}>
+          <Link key={c.id} to={`/panel/clientas/${c.id}`} className="block">
             <Tarjeta className="space-y-1">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-[16px] font-medium truncate">{c.full_name}</div>

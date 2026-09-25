@@ -95,7 +95,7 @@ export default function FichaClienta() {
         )}
         <div className="space-y-2">
           {qCitas.data?.map(x => (
-            <Link key={x.id} to={`/panel/cita/${x.id}`}>
+            <Link key={x.id} to={`/panel/cita/${x.id}`} className="block">
               <Tarjeta className="flex items-center justify-between gap-2">
                 <div>
                   <div className="text-[14px] capitalize">

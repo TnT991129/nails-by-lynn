@@ -95,7 +95,7 @@ export default function Agenda() {
       {vista === 'dia' && (
         <div className="space-y-2">
           {activas.map(c => (
-            <Link key={c.id} to={`/panel/cita/${c.id}`}>
+            <Link key={c.id} to={`/panel/cita/${c.id}`} className="block">
               <Tarjeta className="flex items-center gap-3">
                 <div className="text-center min-w-[64px]">
                   <div className="font-display text-[19px]">{hora(c.starts_at)}</div>
@@ -121,7 +121,7 @@ export default function Agenda() {
               </h3>
               <div className="space-y-2">
                 {citas.sort((a,b) => a.starts_at.localeCompare(b.starts_at)).map(c => (
-                  <Link key={c.id} to={`/panel/cita/${c.id}`}>
+                  <Link key={c.id} to={`/panel/cita/${c.id}`} className="block">
                     <Tarjeta className="flex items-center gap-3">
                       <div className="min-w-[56px] font-display text-[16px]">{hora(c.starts_at)}</div>
                       <div className="flex-1 min-w-0">
