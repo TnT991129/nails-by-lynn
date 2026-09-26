@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { disponibilidad, reagendarCita, type CitaAgenda } from '../../lib/panel/api-panel'
-import { obtenerDiasLaborables } from '../../lib/api'
+import { obtenerDiasLaborables, obtenerDiasCerrados } from '../../lib/api'
+import CalendarioMes from '../../componentes/CalendarioMes'
 import { armarMensaje, enlaceWhatsApp } from '../../lib/panel/whatsapp'
 import { Boton, Tarjeta, Aviso, Esqueleto } from '../../componentes/ui'
-import { fechaISO, fechaLarga, hora, instanteEnHabana, ZONA } from '../../lib/formato'
+import { fechaISO, fechaLarga, hora, instanteEnHabana } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 
 // Mueve una cita a otro día u hora y ofrece avisar a la clienta por WhatsApp
@@ -24,17 +25,11 @@ export default function ReagendarCita({ cita, tokenAcceso, onCerrar }: {
     (new Date(cita.blocked_until).getTime() - new Date(cita.ends_at).getTime()) / 60_000)
 
   const qDias = useQuery({ queryKey: ['dias-laborables'], queryFn: obtenerDiasLaborables })
+  const qCerrados = useQuery({ queryKey: ['dias-cerrados'], queryFn: obtenerDiasCerrados })
   const qHoras = useQuery({
     queryKey: ['disp-reagendar', cita.id, fecha],
     queryFn: () => disponibilidad(fecha, cita.total_duration_minutes, margen),
   })
-
-  const dias = useMemo(() => {
-    const hoy = new Date()
-    return Array.from({ length: 21 }, (_, i) => {
-      const d = new Date(hoy); d.setDate(hoy.getDate() + i); return d
-    })
-  }, [])
 
   const inicioElegido = otraHora ? instanteEnHabana(fecha, otraHora) : horaSel
 
@@ -83,28 +78,9 @@ export default function ReagendarCita({ cita, tokenAcceso, onCerrar }: {
 
       <div>
         <div className="text-[14px] text-tinta-tenue mb-2">Nuevo día</div>
-        <div className="grid grid-cols-4 gap-2">
-          {dias.map(d => {
-            const iso = fechaISO(d)
-            const activo = fecha === iso
-            // Los días sin horario se ven atenuados, pero Lynn puede elegirlos como excepción
-            const cerrado = !!qDias.data && !qDias.data.includes(new Date(`${iso}T12:00:00Z`).getUTCDay())
-            return (
-              <button key={iso} aria-pressed={activo}
-                onClick={() => { setFecha(iso); setHoraSel(''); setOtraHora('') }}
-                className={`min-h-[56px] rounded border flex flex-col items-center justify-center
-                  ${activo ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}
-                  ${cerrado && !activo ? 'opacity-40' : ''}`}>
-                <span className="text-[11px] uppercase opacity-80">
-                  {new Intl.DateTimeFormat('es', { timeZone: ZONA, weekday: 'short' }).format(d)}
-                </span>
-                <span className="text-[17px] font-semibold">
-                  {new Intl.DateTimeFormat('es', { timeZone: ZONA, day: 'numeric' }).format(d)}
-                </span>
-              </button>
-            )
-          })}
-        </div>
+        {/* Los días cerrados se ven tachados, pero Lynn puede elegirlos como excepción */}
+        <CalendarioMes fecha={fecha} setFecha={f => { setFecha(f); setHoraSel(''); setOtraHora('') }}
+          diasLaborables={qDias.data} diasCerrados={qCerrados.data} maxDias={120} permitirCerrados />
       </div>
 
       <div>

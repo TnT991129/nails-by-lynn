@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { catalogoServicios, disponibilidad, crearCitaManual } from '../../lib/panel/api-panel'
-import { obtenerAddons } from '../../lib/api'
+import { obtenerAddons, obtenerDiasLaborables, obtenerDiasCerrados } from '../../lib/api'
+import CalendarioMes, { diaSemana } from '../../componentes/CalendarioMes'
 import { Boton, Campo, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
-import { fechaISO, hora, franja, duracion, dinero } from '../../lib/formato'
+import { fechaISO, hora, franja, duracion, dinero, instanteEnHabana } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
 
@@ -19,6 +20,7 @@ export default function CitaManual() {
   const [addonsSel, setAddonsSel] = useState<string[]>([])
   const [fecha, setFecha] = useState<string>(fechaISO(new Date()))
   const [horaSel, setHoraSel] = useState<string>('')
+  const [otraHora, setOtraHora] = useState('')   // excepción fuera de los turnos
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [nota, setNota] = useState('')
@@ -30,6 +32,8 @@ export default function CitaManual() {
     queryFn: catalogoServicios as () => Promise<Servicio[]>,
   })
   const qAddons = useQuery({ queryKey: ['addons-manual'], queryFn: obtenerAddons })
+  const qDias = useQuery({ queryKey: ['dias-laborables'], queryFn: obtenerDiasLaborables })
+  const qCerrados = useQuery({ queryKey: ['dias-cerrados'], queryFn: obtenerDiasCerrados })
 
   const servicio = qServ.data?.find(s => s.id === servicioId)
   const addonsElegidos = qAddons.data?.filter(a => addonsSel.includes(a.id)) ?? []
@@ -47,26 +51,24 @@ export default function CitaManual() {
     enabled: !!servicio && !!fecha && duracionTotal > 0,
   })
 
-  const dias = useMemo(() => {
-    const hoy = new Date()
-    return Array.from({ length: 21 }, (_, i) => {
-      const d = new Date(hoy); d.setDate(hoy.getDate() + i); return d
-    })
-  }, [])
+  const inicioElegido = otraHora ? instanteEnHabana(fecha, otraHora) : horaSel
+  // Día sin horario o cerrado: Lynn puede agendar igual, poniendo la hora a mano
+  const diaCerrado = (!!qDias.data && !qDias.data.includes(diaSemana(fecha)))
+    || (qCerrados.data ?? []).some(r => fecha >= r.desde && fecha <= r.hasta)
 
   function toggleAddon(id: string) {
     setAddonsSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
-    setHoraSel('')  // los complementos cambian la duración → recalcular horas
+    setHoraSel(''); setOtraHora('')  // los complementos cambian la duración → recalcular horas
   }
 
   async function guardar() {
-    if (!servicio || !horaSel || !nombre.trim() || !telefono.trim()) {
+    if (!servicio || !inicioElegido || !nombre.trim() || !telefono.trim()) {
       setError('Completa servicio, fecha, hora, nombre y teléfono.'); return
     }
     setGuardando(true); setError(null)
     try {
       const r = await crearCitaManual({
-        inicio: horaSel,
+        inicio: inicioElegido,
         items: [{ service_id: servicio.id, addons: addonsSel }],
         nombre: nombre.trim(), telefono: telefono.trim(),
         nota: nota.trim() || undefined,
@@ -140,20 +142,9 @@ export default function CitaManual() {
       {servicio && (
         <section>
           <Etiqueta>Fecha</Etiqueta>
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            {dias.map(d => {
-              const iso = fechaISO(d); const activo = fecha === iso
-              const et = new Intl.DateTimeFormat('es',{ timeZone:'America/Havana', weekday:'short' }).format(d)
-              const num = new Intl.DateTimeFormat('es',{ timeZone:'America/Havana', day:'numeric' }).format(d)
-              return (
-                <button key={iso} onClick={() => { setFecha(iso); setHoraSel('') }}
-                  className={`min-h-[56px] rounded border flex flex-col items-center justify-center
-                    ${activo ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
-                  <span className="text-[11px] uppercase">{et}</span>
-                  <span className="text-[16px] font-semibold">{num}</span>
-                </button>
-              )
-            })}
+          <div className="mt-3">
+            <CalendarioMes fecha={fecha} setFecha={f => { setFecha(f); setHoraSel(''); setOtraHora('') }}
+              diasLaborables={qDias.data} diasCerrados={qCerrados.data} maxDias={120} permitirCerrados />
           </div>
         </section>
       )}
@@ -162,8 +153,13 @@ export default function CitaManual() {
         <section>
           <Etiqueta>Hora</Etiqueta>
           {qHoras.isLoading && <Esqueleto className="h-16 mt-3" />}
-          {qHoras.data && qHoras.data.length === 0 && (
-            <p className="text-[14px] text-tinta-tenue mt-3">No hay huecos ese día.</p>
+          {diaCerrado && (
+            <p className="text-[13px] text-estado-aviso mt-3">
+              Ese día está cerrado. Si quieres atender igual, pon la hora abajo en «Otra hora».
+            </p>
+          )}
+          {qHoras.data && qHoras.data.length === 0 && !diaCerrado && (
+            <p className="text-[14px] text-tinta-tenue mt-3">No quedan turnos libres ese día.</p>
           )}
           {qHoras.data && (['Mañana','Tarde','Noche'] as const).map(f => {
             const grupo = qHoras.data.filter(h => franja(h) === f)
@@ -173,9 +169,9 @@ export default function CitaManual() {
                 <div className="text-[12px] tracking-wider text-tinta-tenue mb-1">{f}</div>
                 <div className="grid grid-cols-3 gap-2">
                   {grupo.map(h => (
-                    <button key={h} onClick={() => setHoraSel(h)}
+                    <button key={h} onClick={() => { setHoraSel(h); setOtraHora('') }}
                       className={`min-h-[44px] rounded border text-[14px]
-                        ${horaSel === h ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
+                        ${horaSel === h && !otraHora ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
                       {hora(h)}
                     </button>
                   ))}
@@ -186,7 +182,24 @@ export default function CitaManual() {
         </section>
       )}
 
-      {horaSel && (
+      {servicio && (
+        <section>
+          <label htmlFor="otra-hora-manual" className="block text-[14px] text-tinta-suave mb-1.5">
+            Otra hora (excepción)
+          </label>
+          <input id="otra-hora-manual" type="time" value={otraHora}
+            onChange={e => { setOtraHora(e.target.value); setHoraSel('') }}
+            className="w-full min-h-[48px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-white
+                       focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
+          {inicioElegido && (
+            <p className="text-[14px] text-rosa-800 mt-2">
+              Cita el <b className="first-letter:uppercase">{new Intl.DateTimeFormat('es', { timeZone: 'America/Havana', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(inicioElegido))}</b> a las <b>{hora(inicioElegido)}</b>
+            </p>
+          )}
+        </section>
+      )}
+
+      {inicioElegido && (
         <section className="space-y-3">
           <Etiqueta>Clienta</Etiqueta>
           <Campo etiqueta="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />

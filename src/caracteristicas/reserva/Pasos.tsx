@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { Servicio, Addon } from '../../lib/tipos'
 import { Tarjeta, Campo, Esqueleto, Aviso, Vacio } from '../../componentes/ui'
-import { IconoCheck, IconoReloj, IconoSol, IconoTarde, IconoCalendario, IconoAtras } from '../../componentes/iconos'
-import { dinero, duracion, fechaLarga, hora, franja, fechaISO, cuentaAtras, descripcionServicio } from '../../lib/formato'
+import { IconoCheck, IconoReloj, IconoSol, IconoTarde, IconoCalendario } from '../../componentes/iconos'
+import { dinero, duracion, fechaLarga, hora, franja, cuentaAtras, descripcionServicio } from '../../lib/formato'
 import { validarNombre, validarTelefono, validarEmail } from './validacion'
 import { EnlacePoliticas } from '../../componentes/Politicas'
 import type { Datos } from './useReserva'
 import { useHorarioPublico } from '../../lib/useHorarioPublico'
+import CalendarioMes from '../../componentes/CalendarioMes'
 
 const NOMBRES_PASOS = ['Servicio','Extras','Fecha','Hora','Datos','Listo']
 
@@ -132,15 +133,6 @@ export function PasoExtras({
   )
 }
 
-const DIAS_SEMANA = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
-const MS_DIA = 86_400_000
-const dos = (n: number) => String(n).padStart(2, '0')
-const mayuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
-const isoDeUTC = (ms: number) => {
-  const d = new Date(ms)
-  return `${d.getUTCFullYear()}-${dos(d.getUTCMonth() + 1)}-${dos(d.getUTCDate())}`
-}
-
 // Calendario mensual. maxDias = 60 coincide con settings.max_advance_days del servidor.
 export function PasoFecha({
   fecha, setFecha, diasLaborables, diasCerrados = [], maxDias = 60,
@@ -149,76 +141,11 @@ export function PasoFecha({
   diasLaborables?: number[]; diasCerrados?: { desde: string; hasta: string }[]; maxDias?: number
 }) {
   const horario = useHorarioPublico()
-  // "Hoy" según La Habana, no según la hora del móvil
-  const hoyISO = fechaISO(new Date())
-  const [y0, m0, d0] = hoyISO.split('-').map(Number)
-  const ultimoISO = isoDeUTC(Date.UTC(y0, m0 - 1, d0) + (maxDias - 1) * MS_DIA)
-
-  // Meses que cubre el rango (normalmente 2 o 3)
-  const meses = useMemo(() => {
-    const [yf, mf] = ultimoISO.split('-').map(Number)
-    const lista: { anio: number; mes: number }[] = []
-    for (let a = y0, m = m0; a < yf || (a === yf && m <= mf); m === 12 ? (a++, m = 1) : m++) {
-      lista.push({ anio: a, mes: m })
-    }
-    return lista
-  }, [y0, m0, ultimoISO])
-
-  const [indice, setIndice] = useState(() => {
-    const i = fecha ? meses.findIndex(x => fecha.startsWith(`${x.anio}-${dos(x.mes)}`)) : 0
-    return Math.max(0, i)
-  })
-  const { anio, mes } = meses[indice]
-  const desfase = (new Date(Date.UTC(anio, mes - 1, 1)).getUTCDay() + 6) % 7   // lunes = 0
-  const diasEnMes = new Date(Date.UTC(anio, mes, 0)).getUTCDate()
-  const nombreMes = mayuscula(new Intl.DateTimeFormat('es', { timeZone: 'UTC', month: 'long', year: 'numeric' })
-    .format(new Date(Date.UTC(anio, mes - 1, 1))))
-
-  const flecha = 'w-11 h-11 rounded-full flex items-center justify-center text-tinta-suave border border-rosa-100 bg-white disabled:opacity-30'
-
   return (
     <div className="space-y-5 animate-entrada">
       <Titulo titulo="¿Qué día te viene bien?" texto={horario.dias ? `Trabajo de ${horario.dias}.` : undefined} />
-
-      <Tarjeta className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={() => setIndice(i => i - 1)} disabled={indice === 0}
-                  className={flecha} aria-label="Mes anterior"><IconoAtras tam={20} /></button>
-          <span className="font-display text-[20px]">{nombreMes}</span>
-          <button onClick={() => setIndice(i => i + 1)} disabled={indice === meses.length - 1}
-                  className={flecha} aria-label="Mes siguiente"><IconoAtras tam={20} className="rotate-180" /></button>
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {DIAS_SEMANA.map(d => (
-            <span key={d} className="text-[11px] font-semibold text-tinta-tenue py-1">{d}</span>
-          ))}
-          {Array.from({ length: desfase }).map((_, i) => <span key={`v${i}`} />)}
-          {Array.from({ length: diasEnMes }, (_, i) => i + 1).map(dia => {
-            const iso = `${anio}-${dos(mes)}-${dos(dia)}`
-            const activo = fecha === iso
-            const esHoy = iso === hoyISO
-            const fueraDeRango = iso < hoyISO || iso > ultimoISO
-            // Mientras carga el horario, todos los días del rango quedan habilitados
-            const cerrado = (!!diasLaborables && !diasLaborables.includes(new Date(`${iso}T12:00:00Z`).getUTCDay()))
-              || diasCerrados.some(r => iso >= r.desde && iso <= r.hasta)   // vacaciones y días cerrados
-            const deshabilitado = fueraDeRango || cerrado
-            return (
-              <button key={iso} onClick={() => setFecha(iso)} aria-pressed={activo} disabled={deshabilitado}
-                aria-label={`${dia} de ${nombreMes}${cerrado && !fueraDeRango ? ', cerrado' : ''}`}
-                className={`relative h-11 rounded-full text-[15px] font-medium transition
-                  ${activo ? 'bg-rosa-600 text-white shadow-boton'
-                    : deshabilitado ? 'text-tinta-tenue/35'
-                    : 'text-tinta hover:bg-rosa-50'}
-                  ${esHoy && !activo ? 'ring-1 ring-rosa-300' : ''}
-                  ${cerrado && !fueraDeRango ? 'line-through decoration-tinta-tenue/40' : ''}`}>
-                {dia}
-              </button>
-            )
-          })}
-        </div>
-      </Tarjeta>
-
+      <CalendarioMes fecha={fecha} setFecha={setFecha} diasLaborables={diasLaborables}
+                     diasCerrados={diasCerrados} maxDias={maxDias} />
       {fecha ? (
         <p className="flex items-center gap-2 text-[15px] bg-rosa-50 text-rosa-800 rounded-lg px-4 py-3">
           <IconoCalendario tam={18} />
