@@ -77,7 +77,9 @@ export default function Cita() {
   const reglasCambio = c.max_reprogramaciones !== undefined && c.horas_minimas_reprogramar !== undefined
   const quedanCambios = reglasCambio && c.reprogramaciones < c.max_reprogramaciones!
   const aTiempo = reglasCambio && horasHasta >= c.horas_minimas_reprogramar!
-  const puedeCambiar = activa && quedanCambios && aTiempo
+  // Un cambio al mes por clienta (lo decide el servidor; si aún no llega el dato, no se limita aquí)
+  const cambioDelMes = c.cambio_mes_disponible !== false
+  const puedeCambiar = activa && quedanCambios && aTiempo && cambioDelMes
 
   // Insistimos en que avise a Lynn: es como ella se entera de la reserva
   const avisada = avisadaAhora || citaAvisada(c.code)
@@ -203,7 +205,9 @@ export default function Cita() {
               <p className="text-[13px] text-tinta-tenue text-center">
                 {!quedanCambios
                   ? `Ya cambiaste esta cita ${c.reprogramaciones} ${c.reprogramaciones === 1 ? 'vez' : 'veces'}, el máximo permitido.`
-                  : `Los cambios se hacen hasta ${c.horas_minimas_reprogramar} horas antes.`}
+                  : !cambioDelMes
+                    ? 'Ya hiciste un cambio de cita este mes (se permite uno al mes).'
+                    : `Los cambios se hacen hasta ${c.horas_minimas_reprogramar} horas antes.`}
                 {' '}Si necesitas moverla, escríbeme por WhatsApp.
               </p>
             )}
