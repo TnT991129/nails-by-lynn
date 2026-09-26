@@ -3,7 +3,7 @@
 
 import { hora, fechaLarga } from '../formato'
 
-export type PlantillaKey = 'confirmacion' | 'recordatorio' | 'retraso' | 'gracias' | 'reagendada'
+export type PlantillaKey = 'confirmacion' | 'recordatorio' | 'retraso' | 'gracias' | 'reagendada' | 'cancelacion'
 
 export type DatosMensaje = {
   cliente_nombre: string
@@ -13,6 +13,7 @@ export type DatosMensaje = {
   currency: string
   code: string                // "NBL-XXXX"
   access_token: string        // para armar enlace /cita/{token}
+  motivo?: string | null      // solo para la cancelación
 }
 
 // Base pública del sitio (se usa para armar el link de la cita)
@@ -83,6 +84,19 @@ ${link}
 
 Si no te viene bien, escríbeme y buscamos otro hueco. ¡Gracias por tu comprensión!`)
 
+    case 'cancelacion':
+      return (
+`Hola ${nombre} 🌸
+
+Lo siento mucho, pero tengo que cancelar tu cita del ${cuando}${d.servicios ? ` (${d.servicios})` : ''}.${d.motivo ? `
+
+Motivo: ${d.motivo}` : ''}
+
+Disculpa las molestias. Puedes reservar otro turno cuando quieras aquí:
+${urlPublica()}reservar
+
+O respóndeme por aquí y te busco un hueco 💗`)
+
     case 'gracias':
       return (
 `¡Muchas gracias por tu visita, ${nombre}! 💅✨
@@ -115,6 +129,7 @@ export const ETIQUETAS: Record<PlantillaKey, { titulo: string; icono: string; de
   retraso:      { titulo: 'Avisar de retraso',   icono: '⏰', descripcion: 'Si vas con demora hoy' },
   gracias:      { titulo: 'Enviar agradecimiento', icono: '💖', descripcion: 'Después de completar' },
   reagendada:   { titulo: 'Avisar del cambio',     icono: '📅', descripcion: 'Tras reagendar la cita' },
+  cancelacion:  { titulo: 'Avisar de la cancelación', icono: '❌', descripcion: 'Cuando cancelas tú la cita' },
 }
 
 // Mensaje para avisar a una clienta de la lista de espera que se liberó un turno

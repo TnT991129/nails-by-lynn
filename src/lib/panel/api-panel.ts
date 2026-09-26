@@ -36,12 +36,13 @@ export function citasEnRango(desde: string, hasta: string) {
 }
 
 export function cambiarEstadoCita(id: string, nuevoEstado:
-  'CONFIRMADA'|'EN_CURSO'|'COMPLETADA'|'NO_SHOW'|'CANCELADA_NEGOCIO') {
+  'CONFIRMADA'|'EN_CURSO'|'COMPLETADA'|'NO_SHOW'|'CANCELADA_NEGOCIO', motivo?: string) {
   const parche: Record<string, unknown> = { status: nuevoEstado, updated_at: new Date().toISOString() }
   if (nuevoEstado === 'COMPLETADA') parche.completed_at = new Date().toISOString()
   if (nuevoEstado === 'CANCELADA_NEGOCIO') {
     parche.cancelled_at = new Date().toISOString()
     parche.cancelled_by = 'PROFESIONAL'
+    if (motivo) parche.cancellation_reason = motivo
   }
   return ejecutar(sb.from('appointments').update(parche).eq('id', id).select().single())
 }

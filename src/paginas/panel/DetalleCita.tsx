@@ -7,9 +7,11 @@ import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, duracion, dinero } from '../../lib/formato'
 import BloqueMensajes from './BloqueMensajes'
 import ReagendarCita from './ReagendarCita'
+import AvisoCancelacion from './AvisoCancelacion'
 import { mensajeDeError } from '../../lib/errores'
 import { numeroWhatsApp } from '../../lib/panel/whatsapp'
 import { Volver } from './comunes'
+import { IconoCalendario } from '../../componentes/iconos'
 
 export default function DetalleCita() {
   const { id = '' } = useParams()
@@ -19,6 +21,8 @@ export default function DetalleCita() {
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reagendando, setReagendando] = useState(false)
+  const [cancelando, setCancelando] = useState(false)
+  const [motivo, setMotivo] = useState('')
 
   // Cargamos todas las citas de un rango amplio y filtramos, para reutilizar cache
   const q = useQuery({
@@ -37,9 +41,10 @@ export default function DetalleCita() {
   const qToken = useQuery({
     queryKey: ['token-cita', id],
     queryFn: async () => {
-      const { data, error } = await sb.from('appointments').select('access_token').eq('id', id).single()
+      const { data, error } = await sb.from('appointments')
+        .select('access_token, cancellation_reason').eq('id', id).single()
       if (error) throw error
-      return data.access_token as string
+      return { token: data.access_token as string, motivo: data.cancellation_reason as string | null }
     },
     enabled: !!q.data,
   })
@@ -52,7 +57,8 @@ export default function DetalleCita() {
   async function cambiar(estado: 'CONFIRMADA'|'EN_CURSO'|'COMPLETADA'|'NO_SHOW'|'CANCELADA_NEGOCIO') {
     setTrabajando(true); setError(null)
     try {
-      await cambiarEstadoCita(id, estado)
+      await cambiarEstadoCita(id, estado, estado === 'CANCELADA_NEGOCIO' ? motivo.trim() || undefined : undefined)
+      setCancelando(false)
       qc.invalidateQueries()
     } catch (e) { setError(mensajeDeError(e)) }
     finally { setTrabajando(false) }
@@ -118,13 +124,18 @@ export default function DetalleCita() {
         )}
       </Tarjeta>
 
-      {qToken.data && <BloqueMensajes cita={c} tokenAcceso={qToken.data} />}
+      {c.status === 'CANCELADA_NEGOCIO' && qToken.data && (
+        <AvisoCancelacion cita={c} tokenAcceso={qToken.data.token} motivo={qToken.data.motivo} />
+      )}
+
+      {/* Recordatorio y retraso solo tienen sentido con la cita activa */}
+      {activa && qToken.data && <BloqueMensajes cita={c} tokenAcceso={qToken.data.token} />}
 
       {error && <Aviso>{error}</Aviso>}
 
       {activa && (reagendando
-        ? <ReagendarCita cita={c} tokenAcceso={qToken.data} onCerrar={() => setReagendando(false)} />
-        : <Boton variante="secundario" ancho onClick={() => setReagendando(true)}>📅 Reagendar</Boton>
+        ? <ReagendarCita cita={c} tokenAcceso={qToken.data?.token} onCerrar={() => setReagendando(false)} />
+        : <Boton variante="secundario" ancho onClick={() => setReagendando(true)}><IconoCalendario tam={18} /> Reagendar</Boton>
       )}
 
       {activa && (
@@ -148,11 +159,31 @@ export default function DetalleCita() {
             <Boton variante="peligro" onClick={() => cambiar('NO_SHOW')} cargando={trabajando}>
               No asistió
             </Boton>
-            <Boton variante="peligro" onClick={() => cambiar('CANCELADA_NEGOCIO')}
-                   cargando={trabajando}>
+            <Boton variante="peligro" onClick={() => setCancelando(true)} disabled={cancelando}>
               Cancelar cita
             </Boton>
           </div>
+
+          {cancelando && (
+            <Tarjeta className="space-y-3 border border-estado-error/40 animate-entrada">
+              <div className="text-[16px] font-semibold">¿Cancelar la cita de {c.cliente_nombre.trim().split(/\s+/)[0]}?</div>
+              <label className="block">
+                <span className="block text-[14px] text-tinta-suave mb-1.5">
+                  Motivo (opcional, va en el mensaje a la clienta)
+                </span>
+                <textarea value={motivo} onChange={e => setMotivo(e.target.value)} rows={2}
+                  placeholder="Ej: me surgió un imprevisto de salud"
+                  className="w-full px-3 py-2 rounded-lg border border-rosa-200 text-[16px] bg-white
+                             focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
+              </label>
+              <div className="flex gap-2">
+                <Boton variante="secundario" onClick={() => setCancelando(false)} className="flex-1">No, volver</Boton>
+                <Boton variante="peligro" onClick={() => cambiar('CANCELADA_NEGOCIO')} cargando={trabajando}
+                       className="flex-1">Sí, cancelar</Boton>
+              </div>
+              <p className="text-[12px] text-tinta-tenue">Después podrás avisarle por WhatsApp con un toque.</p>
+            </Tarjeta>
+          )}
         </div>
       )}
 
