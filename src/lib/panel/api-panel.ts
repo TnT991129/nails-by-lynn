@@ -1,5 +1,6 @@
 import { sb, NEGOCIO_ID } from './supabase-panel'
 import { fechaISO, instanteEnHabana } from '../formato'
+import { reducirImagen } from './imagen'
 
 export type CitaAgenda = {
   id: string; code: string; starts_at: string; ends_at: string; blocked_until: string
@@ -218,6 +219,8 @@ export async function disponibilidad(fecha: string, duracion: number, buffer?: n
 export type ServicioEdit = {
   id: string; name: string; slug: string;
   description: string | null;
+  short_description: string | null;   // la que ve la clienta en la web
+  cover_image_url: string | null;
   price: number; currency: string;
   duration_minutes: number; buffer_after_minutes: number;
   is_active: boolean; sort_order: number;
@@ -550,8 +553,10 @@ export type FotoPanel = {
   sort_order: number; created_at: string;
 }
 
-// Subir un archivo al bucket 'galeria' y devolver su URL pública
-export async function subirImagen(archivo: File): Promise<{ url: string; path: string }> {
+// Subir un archivo al bucket 'galeria' y devolver su URL pública.
+// Antes se reduce en el móvil (maxLado px, WebP) para ahorrar datos al subir y al ver.
+export async function subirImagen(original: File, maxLado = 1600): Promise<{ url: string; path: string }> {
+  const archivo = await reducirImagen(original, maxLado)
   const ext = archivo.name.split('.').pop()?.toLowerCase() ?? 'jpg'
   const nombre = `${crypto.randomUUID()}.${ext}`
   const path = `${NEGOCIO_ID}/${nombre}`
@@ -615,12 +620,23 @@ export async function eliminarFoto(id: string, imageUrl: string) {
   const { error: e1 } = await sb.from('gallery_photos').delete().eq('id', id)
   if (e1) throw e1
 
-  // Intentar borrar del storage (si falla, no es crítico)
+  await borrarArchivoGaleria(imageUrl)
+}
+
+// Borra el archivo del bucket a partir de su URL pública (si falla, no es crítico)
+async function borrarArchivoGaleria(url: string) {
   // La URL viene como https://xxx.supabase.co/storage/v1/object/public/galeria/PATH
-  const match = imageUrl.match(/\/galeria\/(.+)$/)
-  if (match) {
-    await sb.storage.from('galeria').remove([match[1]])
-  }
+  const match = url.match(/\/galeria\/(.+)$/)
+  if (match) await sb.storage.from('galeria').remove([match[1]])
+}
+
+// Foto de portada de un servicio: se sube, se guarda en el servicio y se borra la anterior
+export async function cambiarFotoServicio(servicio: ServicioEdit, archivo: File | null): Promise<string | null> {
+  let url: string | null = null
+  if (archivo) url = (await subirImagen(archivo, 900)).url
+  await actualizarServicio(servicio.id, { cover_image_url: url })
+  if (servicio.cover_image_url) await borrarArchivoGaleria(servicio.cover_image_url).catch(() => {})
+  return url
 }
 
 // ================== CREAR / ELIMINAR SERVICIOS ==================
@@ -632,7 +648,7 @@ function slugificar(texto: string): string {
 }
 
 export async function crearServicio(args: {
-  name: string; description: string | null;
+  name: string; description: string | null; short_description?: string | null;
   price: number; duration_minutes: number; buffer_after_minutes: number;
 }) {
   // Calcular un sort_order al final
@@ -654,6 +670,7 @@ export async function crearServicio(args: {
     sb.from('services').insert({
       business_id: NEGOCIO_ID, name: args.name, slug,
       description: args.description,
+      short_description: args.short_description ?? args.description,
       price: args.price,
       duration_minutes: args.duration_minutes,
       buffer_after_minutes: args.buffer_after_minutes,

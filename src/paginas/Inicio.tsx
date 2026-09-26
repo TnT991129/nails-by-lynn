@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { obtenerNegocio, obtenerServicios } from '../lib/api'
 import { Etiqueta, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
 import { IconoReloj, IconoUbicacion, IconoFlecha, IconoWhatsApp, IconoCalendario } from '../componentes/iconos'
-import { dinero, duracion } from '../lib/formato'
+import { dinero, duracion, descripcionServicio } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
 
 const PASOS = [
@@ -102,13 +102,17 @@ export default function Inicio() {
               className="group block bg-white rounded-xl border border-rosa-100/80 shadow-suave p-4
                          active:scale-[0.99] transition">
               <div className="flex items-center gap-4">
+                {s.cover_image_url && (
+                  <img src={s.cover_image_url} alt={s.name} loading="lazy" crossOrigin="anonymous"
+                       className="w-20 h-20 rounded-lg object-cover shrink-0 bg-rosa-50" />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="text-[18px] font-semibold">{s.name}</div>
                   <div className="flex items-center gap-1.5 text-[13px] text-tinta-tenue mt-1">
                     <IconoReloj tam={15} /> {duracion(s.duration_minutes)}
                   </div>
-                  {s.short_description && (
-                    <p className="text-[14px] text-tinta-suave mt-2 line-clamp-2">{s.short_description}</p>
+                  {descripcionServicio(s.short_description) && (
+                    <p className="text-[14px] text-tinta-suave mt-2 line-clamp-2">{descripcionServicio(s.short_description)}</p>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">

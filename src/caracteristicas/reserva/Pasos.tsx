@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Servicio, Addon } from '../../lib/tipos'
 import { Tarjeta, Campo, Esqueleto, Aviso, Vacio } from '../../componentes/ui'
 import { IconoCheck, IconoReloj, IconoSol, IconoTarde, IconoCalendario, IconoAtras } from '../../componentes/iconos'
-import { dinero, duracion, fechaLarga, hora, franja, fechaISO, cuentaAtras } from '../../lib/formato'
+import { dinero, duracion, fechaLarga, hora, franja, fechaISO, cuentaAtras, descripcionServicio } from '../../lib/formato'
 import { validarNombre, validarTelefono, validarEmail } from './validacion'
 import { EnlacePoliticas } from '../../componentes/Politicas'
 import type { Datos } from './useReserva'
@@ -66,6 +66,10 @@ export function PasoServicio({
             <button key={s.id} onClick={() => alternar(s.id)} aria-pressed={activo} className={opcion(activo)}>
               <div className="flex items-start gap-3">
                 <Marca activo={activo} />
+                {s.cover_image_url && (
+                  <img src={s.cover_image_url} alt="" loading="lazy" crossOrigin="anonymous"
+                       className="w-14 h-14 rounded-lg object-cover shrink-0 bg-rosa-50" />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-[17px] font-semibold">{s.name}</span>
@@ -76,8 +80,8 @@ export function PasoServicio({
                   <div className="flex items-center gap-1.5 text-[13px] text-tinta-tenue mt-1">
                     <IconoReloj tam={14} /> {duracion(s.duration_minutes)}
                   </div>
-                  {s.short_description && (
-                    <p className="text-[14px] text-tinta-suave mt-2">{s.short_description}</p>
+                  {descripcionServicio(s.short_description) && (
+                    <p className="text-[14px] text-tinta-suave mt-2">{descripcionServicio(s.short_description)}</p>
                   )}
                 </div>
               </div>

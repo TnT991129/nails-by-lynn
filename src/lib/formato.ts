@@ -66,6 +66,12 @@ export function instanteEnHabana(fecha: string, hhmm: string): string {
   return new Date(supuesto - (pared - supuesto)).toISOString()
 }
 
+/** Descripción de un servicio apta para mostrar ("Por definir" es texto de relleno inicial) */
+export function descripcionServicio(texto: string | null | undefined): string | null {
+  const t = texto?.trim()
+  return t && t.toLowerCase() !== 'por definir' ? t : null
+}
+
 export function cuentaAtras(hasta: string): string {
   const s = Math.max(0, Math.floor((new Date(hasta).getTime() - Date.now()) / 1000))
   return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`

@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  listarServiciosPanel, actualizarServicio, crearServicio, eliminarServicio,
+  listarServiciosPanel, actualizarServicio, crearServicio, eliminarServicio, cambiarFotoServicio,
   listarComplementos, actualizarComplemento, crearComplemento, eliminarComplemento,
   type ServicioEdit, type ComplementoEdit,
 } from '../../lib/panel/api-panel'
@@ -87,6 +87,7 @@ function FormularioNuevoServicio({ onCerrar }: { onCerrar: () => void }) {
       await crearServicio({
         name: nombre.trim(),
         description: descripcion.trim() || null,
+        short_description: descripcion.trim() || null,
         price: p, duration_minutes: d, buffer_after_minutes: b,
       })
       onCerrar()
@@ -99,7 +100,7 @@ function FormularioNuevoServicio({ onCerrar }: { onCerrar: () => void }) {
       <div className="text-[14px] font-medium text-rosa-800">Nuevo servicio</div>
       <Campo label="Nombre" value={nombre} onChange={setNombre} />
       <label className="block">
-        <span className="block text-[14px] text-tinta-suave mb-1.5">Descripción (opcional)</span>
+        <span className="block text-[14px] text-tinta-suave mb-1.5">Descripción (la ven las clientas)</span>
         <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={2}
           className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
       </label>
@@ -122,7 +123,10 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
   onEditar: () => void; onCerrar: () => void;
 }) {
   const [nombre, setNombre] = useState(servicio.name)
-  const [descripcion, setDescripcion] = useState(servicio.description ?? '')
+  // La web muestra short_description; si estaba vacía o de relleno, se aprovecha lo escrito en description
+  const [descripcion, setDescripcion] = useState(
+    (servicio.short_description && servicio.short_description !== 'Por definir' ? servicio.short_description : null)
+      ?? servicio.description ?? '')
   const [precio, setPrecio] = useState(String(servicio.price))
   const [duracion, setDuracion] = useState(String(servicio.duration_minutes))
   const [buffer, setBuffer] = useState(String(servicio.buffer_after_minutes))
@@ -141,6 +145,7 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
       await actualizarServicio(servicio.id, {
         name: nombre.trim(),
         description: descripcion.trim() || null,
+        short_description: descripcion.trim() || null,
         price: p, duration_minutes: d, buffer_after_minutes: b,
         is_active: activo,
       })
@@ -162,6 +167,15 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
 
   if (!editando) return (
     <Tarjeta className="flex items-start justify-between gap-3">
+      {servicio.cover_image_url ? (
+        <img src={servicio.cover_image_url} alt="" loading="lazy" crossOrigin="anonymous"
+             className="w-14 h-14 rounded-lg object-cover shrink-0 bg-rosa-50" />
+      ) : (
+        <span className="w-14 h-14 rounded-lg bg-rosa-50 border border-dashed border-rosa-200 shrink-0
+                         flex items-center justify-center text-[11px] text-tinta-tenue text-center leading-tight">
+          Sin foto
+        </span>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-[16px] font-medium truncate">{servicio.name}</span>
@@ -172,8 +186,10 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
         <div className="text-[14px] text-tinta-tenue">
           {servicio.duration_minutes} min · {Number(servicio.price).toLocaleString('es-CU')} {servicio.currency}
         </div>
-        {servicio.description && (
-          <div className="text-[13px] text-tinta-suave mt-1 line-clamp-2">{servicio.description}</div>
+        {(servicio.short_description ?? servicio.description) && (
+          <div className="text-[13px] text-tinta-suave mt-1 line-clamp-2">
+            {servicio.short_description ?? servicio.description}
+          </div>
         )}
       </div>
       <Boton variante="secundario" onClick={onEditar}>Editar</Boton>
@@ -182,10 +198,12 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
 
   return (
     <Tarjeta className="space-y-3">
+      <FotoServicio servicio={servicio} />
       <Campo label="Nombre" value={nombre} onChange={setNombre} />
       <label className="block">
-        <span className="block text-[14px] text-tinta-suave mb-1.5">Descripción</span>
+        <span className="block text-[14px] text-tinta-suave mb-1.5">Descripción (la ven las clientas)</span>
         <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={2}
+          placeholder="Ej: Uñas esculpidas, resistentes y con acabado natural."
           className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
       </label>
       <div className="grid grid-cols-3 gap-2">
@@ -208,6 +226,55 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
         {eliminando ? 'Eliminando…' : '🗑 Eliminar servicio'}
       </button>
     </Tarjeta>
+  )
+}
+
+// Foto de portada del servicio: se guarda al momento, sin esperar a «Guardar»
+function FotoServicio({ servicio }: { servicio: ServicioEdit }) {
+  const qc = useQueryClient()
+  const entrada = useRef<HTMLInputElement>(null)
+  const [url, setUrl] = useState(servicio.cover_image_url)
+  const [trabajando, setTrabajando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function cambiar(archivo: File | null) {
+    setTrabajando(true); setError(null)
+    try {
+      setUrl(await cambiarFotoServicio({ ...servicio, cover_image_url: url }, archivo))
+      qc.invalidateQueries({ queryKey: ['servicios-panel'] })
+      qc.invalidateQueries({ queryKey: ['servicios'] })
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setTrabajando(false); if (entrada.current) entrada.current.value = '' }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3">
+        {url ? (
+          <img src={url} alt="" crossOrigin="anonymous" className="w-20 h-20 rounded-lg object-cover bg-rosa-50" />
+        ) : (
+          <span className="w-20 h-20 rounded-lg bg-rosa-50 border border-dashed border-rosa-200
+                           flex items-center justify-center text-[12px] text-tinta-tenue">Sin foto</span>
+        )}
+        <div className="flex-1 space-y-1">
+          <input ref={entrada} type="file" accept="image/*" className="hidden"
+                 onChange={e => e.target.files?.[0] && cambiar(e.target.files[0])} />
+          <Boton variante="secundario" cargando={trabajando} onClick={() => entrada.current?.click()}
+                 className="w-full !min-h-[44px] !text-[14px]">
+            {url ? 'Cambiar foto' : 'Subir foto'}
+          </Boton>
+          {url && !trabajando && (
+            <button onClick={() => cambiar(null)} className="w-full text-[13px] text-estado-error min-h-[32px]">
+              Quitar foto
+            </button>
+          )}
+        </div>
+      </div>
+      <p className="text-[12px] text-tinta-tenue">
+        Se muestra en la web al elegir el servicio. Usa una foto de un trabajo tuyo, bien iluminada.
+      </p>
+      {error && <Aviso>{error}</Aviso>}
+    </div>
   )
 }
 
