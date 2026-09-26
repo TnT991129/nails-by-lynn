@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { obtenerClienta, citasDeClienta, actualizarNotasInternas, bloquearClienta,
+import { obtenerClienta, citasDeClienta, actualizarNotasInternas, bloquearClienta, contadoresClientas,
   resumenHistorialClienta, eliminarClientaConHistorial } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, dinero } from '../../lib/formato'
@@ -22,6 +22,7 @@ export default function FichaClienta() {
 
   const qCli = useQuery({ queryKey:['cli', id], queryFn: () => obtenerClienta(id) })
   const qCitas = useQuery({ queryKey:['cli-citas', id], queryFn: () => citasDeClienta(id) })
+  const qCont = useQuery({ queryKey: ['contadores-clientas'], queryFn: contadoresClientas })
   const qHist = useQuery({
     queryKey: ['cli-historial', id],
     queryFn: () => resumenHistorialClienta(id),
@@ -103,8 +104,18 @@ export default function FichaClienta() {
           <div className="font-display text-[20px]">{dinero(Number(c.total_spent_cup))}</div>
         </Tarjeta>
         <Tarjeta className="py-3">
-          <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">No-show</div>
-          <div className="font-display text-[24px]">{c.total_no_shows}</div>
+          <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">No vino</div>
+          <div className="font-display text-[24px]">{qCont.data?.[c.id]?.noAsistio ?? c.total_no_shows}</div>
+        </Tarjeta>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-center -mt-2">
+        <Tarjeta className="py-3">
+          <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Canceló ella</div>
+          <div className="font-display text-[24px]">{qCont.data?.[c.id]?.canceladas ?? c.total_cancellations}</div>
+        </Tarjeta>
+        <Tarjeta className="py-3">
+          <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Cambió de fecha</div>
+          <div className="font-display text-[24px]">{qCont.data?.[c.id]?.reagendadas ?? 0}</div>
         </Tarjeta>
       </div>
 

@@ -16,6 +16,8 @@ export type Cliente = {
   internal_notes: string | null
   total_appointments: number; total_no_shows: number; total_cancellations: number
   total_spent_cup: number; is_blocked: boolean
+  // Descuento para su próxima cita (columnas de supabase/turnos_descuentos_cambios.sql)
+  next_discount_percent?: number | null; next_discount_note?: string | null
   last_appointment_at: string | null; first_seen_at: string
 }
 
@@ -812,4 +814,23 @@ export function guardarTurnosFijos(turnos: string[]) {
 export function turnosDelDia(reglas: { start_time: string; end_time: string; is_active?: boolean }[], turnos: string[]) {
   return turnos.filter(t => reglas.some(r => r.is_active !== false
     && t >= r.start_time.slice(0, 5) && t < r.end_time.slice(0, 5)))
+}
+
+// ================== CONTADORES POR CLIENTA ==================
+// Calculados desde sus citas: cancelaciones hechas por ella y cambios de fecha que hizo ella misma.
+export type ContadoresClienta = { canceladas: number; reagendadas: number; noAsistio: number }
+
+export async function contadoresClientas(): Promise<Record<string, ContadoresClienta>> {
+  const { data, error } = await sb.from('appointments')
+    .select('client_id, status, reschedule_count')
+    .eq('business_id', NEGOCIO_ID).limit(5000)
+  if (error) throw error
+  const r: Record<string, ContadoresClienta> = {}
+  for (const f of (data ?? []) as { client_id: string; status: string; reschedule_count: number }[]) {
+    const c = (r[f.client_id] ??= { canceladas: 0, reagendadas: 0, noAsistio: 0 })
+    if (f.status === 'CANCELADA_CLIENTA') c.canceladas++
+    if (f.status === 'NO_SHOW') c.noAsistio++
+    c.reagendadas += f.reschedule_count ?? 0
+  }
+  return r
 }
