@@ -93,3 +93,9 @@ export default function CalendarioMes({
     </Tarjeta>
   )
 }
+
+/** Suma días a una fecha 'YYYY-MM-DD' */
+export function sumarDias(iso: string, n: number) {
+  const [y, m, d] = iso.split('-').map(Number)
+  return isoDeUTC(Date.UTC(y, m - 1, d) + n * MS_DIA)
+}

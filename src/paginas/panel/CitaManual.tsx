@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { catalogoServicios, disponibilidad, crearCitaManual } from '../../lib/panel/api-panel'
 import { obtenerAddons, obtenerDiasLaborables, obtenerDiasCerrados } from '../../lib/api'
@@ -18,7 +18,12 @@ export default function CitaManual() {
   const navegar = useNavigate()
   const [servicioId, setServicioId] = useState<string>('')
   const [addonsSel, setAddonsSel] = useState<string[]>([])
-  const [fecha, setFecha] = useState<string>(fechaISO(new Date()))
+  const [params] = useSearchParams()
+  // Desde la Agenda se puede llegar con el día ya elegido (?fecha=YYYY-MM-DD)
+  const [fecha, setFecha] = useState<string>(() => {
+    const f = params.get('fecha')
+    return f && /^\d{4}-\d{2}-\d{2}$/.test(f) && f >= fechaISO(new Date()) ? f : fechaISO(new Date())
+  })
   const [horaSel, setHoraSel] = useState<string>('')
   const [otraHora, setOtraHora] = useState('')   // excepción fuera de los turnos
   const [nombre, setNombre] = useState('')
