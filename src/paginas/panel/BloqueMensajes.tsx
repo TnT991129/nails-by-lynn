@@ -71,7 +71,7 @@ export default function BloqueMensajes({ cita, tokenAcceso }: {
       {error && <Aviso>{error}</Aviso>}
 
       {sugerida && !enviados.has(sugerida) && (
-        <div className="p-3 rounded-sm bg-rosa-50 border border-rosa-200 space-y-2">
+        <div className="p-3 rounded bg-rosa-50 border border-rosa-200 space-y-2">
           <div className="text-[13px] text-rosa-900">
             💡 Sugerido ahora: <b>{ETIQUETAS[sugerida].titulo}</b>
           </div>
@@ -87,7 +87,7 @@ export default function BloqueMensajes({ cita, tokenAcceso }: {
           return (
             <button key={k} onClick={() => abrir(k)}
               disabled={enviando !== null}
-              className={`p-3 rounded-sm border text-left min-h-[64px] disabled:opacity-60
+              className={`p-3 rounded border text-left min-h-[64px] disabled:opacity-60
                 ${enviado ? 'border-rosa-200 bg-rosa-50/50' : 'border-rosa-200 bg-white'}`}>
               <div className="flex items-center justify-between">
                 <span className="text-[13px] font-medium">{ETIQUETAS[k].icono} {ETIQUETAS[k].titulo}</span>

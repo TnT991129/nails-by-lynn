@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { citasEnRango, cambiarEstadoCita, actualizarNotaInterna } from '../../lib/panel/api-panel'
 import { sb } from '../../lib/panel/supabase-panel'
@@ -9,10 +9,10 @@ import BloqueMensajes from './BloqueMensajes'
 import ReagendarCita from './ReagendarCita'
 import { mensajeDeError } from '../../lib/errores'
 import { numeroWhatsApp } from '../../lib/panel/whatsapp'
+import { Volver } from './comunes'
 
 export default function DetalleCita() {
   const { id = '' } = useParams()
-  const navegar = useNavigate()
   const qc = useQueryClient()
   const [nota, setNota] = useState<string>('')
   const [notaCargada, setNotaCargada] = useState(false)
@@ -75,7 +75,7 @@ export default function DetalleCita() {
 
   return (
     <div className="p-5 space-y-4">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
+      <Volver />
 
       <Tarjeta className="space-y-3">
         <div className="flex items-center justify-between">
@@ -160,7 +160,7 @@ export default function DetalleCita() {
         <label className="block text-[14px] text-tinta-tenue">Nota de esta cita</label>
         <textarea value={nota} onChange={e => setNota(e.target.value)} rows={3}
           placeholder="Ej: trajo su propio esmalte, necesita salir a las 4…"
-          className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
+          className="w-full px-3 py-2 rounded border border-rosa-200 text-[16px]" />
         <Boton variante="secundario" onClick={guardarNota} cargando={trabajando}>
           Guardar nota
         </Boton>

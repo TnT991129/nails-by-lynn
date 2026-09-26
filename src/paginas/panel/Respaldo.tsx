@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   exportarRespaldoCompleto, citasParaCsv, clientasParaCsv, gastosParaCsv,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Aviso } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 function descargar(nombre: string, contenido: string, mime: string) {
   const blob = new Blob([contenido], { type: mime })
@@ -37,7 +37,6 @@ function fechaSlug(): string {
 type Op = 'completo' | 'citas' | 'clientas' | 'gastos' | null
 
 export default function Respaldo() {
-  const navegar = useNavigate()
   const [op, setOp] = useState<Op>(null)
   const [error, setError] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
@@ -73,8 +72,8 @@ export default function Respaldo() {
 
   return (
     <div className="p-5 space-y-5 pb-24">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
-      <h1 className="font-display text-[30px]">Respaldo</h1>
+      <Volver />
+      <h1 className="text-[30px] leading-tight">Respaldo</h1>
 
       <p className="text-[14px] text-tinta-suave">
         Descarga una copia de tus datos en tu teléfono o computadora.

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   listarFotosPanel, subirImagen, crearFoto, actualizarFoto, eliminarFoto,
@@ -7,11 +6,11 @@ import {
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 type Servicio = { id: string; name: string }
 
 export default function GaleriaPanel() {
-  const navegar = useNavigate()
   const qc = useQueryClient()
   const qFotos = useQuery({ queryKey: ['fotos-panel'], queryFn: listarFotosPanel })
   const qServ = useQuery<Servicio[]>({ queryKey: ['cat-serv'], queryFn: catalogoServicios as () => Promise<Servicio[]> })
@@ -62,15 +61,15 @@ export default function GaleriaPanel() {
 
   return (
     <div className="p-5 space-y-5 pb-24">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
-      <h1 className="font-display text-[30px]">Galería</h1>
+      <Volver />
+      <h1 className="text-[30px] leading-tight">Galería</h1>
 
       {/* Subir foto */}
       <Tarjeta className="space-y-3">
         <div className="text-[14px] font-medium">Subir foto nueva</div>
 
         {!previa && (
-          <label className="block w-full border-2 border-dashed border-rosa-300 rounded-sm
+          <label className="block w-full border-2 border-dashed border-rosa-300 rounded
                             p-6 text-center cursor-pointer hover:bg-rosa-50 min-h-[100px]
                             flex flex-col items-center justify-center">
             <span className="text-[24px] mb-1">📷</span>
@@ -83,7 +82,7 @@ export default function GaleriaPanel() {
 
         {previa && (
           <div className="space-y-2">
-            <div className="aspect-square overflow-hidden rounded-sm bg-rosa-100 relative">
+            <div className="aspect-square overflow-hidden rounded bg-rosa-100 relative">
               <img src={previa} alt="" className="w-full h-full object-cover" />
               <button onClick={() => elegirArchivo(null)}
                 className="absolute top-2 right-2 w-9 h-9 rounded-full bg-black/60 text-white text-[18px]">✕</button>
@@ -96,7 +95,7 @@ export default function GaleriaPanel() {
             <label className="block">
               <span className="block text-[14px] text-tinta-suave mb-1.5">Servicio (opcional)</span>
               <select value={servicioId} onChange={e => setServicioId(e.target.value)}
-                className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px] bg-white">
+                className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-white">
                 <option value="">— Sin categoría —</option>
                 {qServ.data?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -106,10 +105,10 @@ export default function GaleriaPanel() {
               <span className="block text-[14px] text-tinta-suave mb-1.5">Título o comentario (opcional)</span>
               <input value={caption} onChange={e => setCaption(e.target.value)}
                 placeholder="Ej: uñas en tono nude con detalle dorado"
-                className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px]" />
+                className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
             </label>
 
-            <label className="flex items-start gap-2 p-3 rounded-sm border border-rosa-200 bg-rosa-50/50">
+            <label className="flex items-start gap-2 p-3 rounded border border-rosa-200 bg-rosa-50/50">
               <input type="checkbox" checked={tieneConsentimiento}
                 onChange={e => setTieneConsentimiento(e.target.checked)}
                 className="w-5 h-5 accent-rosa-600 mt-0.5" />
@@ -181,7 +180,7 @@ function ThumbFoto({ foto }: { foto: FotoPanel }) {
   return (
     <>
       <button onClick={() => setAbierto(true)}
-        className="aspect-square overflow-hidden rounded-sm bg-rosa-100 relative">
+        className="aspect-square overflow-hidden rounded bg-rosa-100 relative">
         <img src={foto.thumbnail_url ?? foto.image_url}
              alt={foto.alt_text ?? ''}
              loading="lazy"
@@ -202,7 +201,7 @@ function ThumbFoto({ foto }: { foto: FotoPanel }) {
           <div onClick={e => e.stopPropagation()}
                className="bg-white w-full max-w-md rounded-t-lg sm:rounded-lg p-4 space-y-3">
             <img src={foto.image_url} alt=""
-                 className="w-full aspect-square object-cover rounded-sm" />
+                 className="w-full aspect-square object-cover rounded" />
             {foto.caption && <p className="text-[14px] text-tinta-suave">{foto.caption}</p>}
             <div className="grid grid-cols-2 gap-2">
               <Boton variante="secundario" onClick={() => toggle('is_featured')} cargando={trabajando}>

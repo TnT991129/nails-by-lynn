@@ -1,15 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { listarListaEspera, marcarAvisoEspera, quitarDeEspera, disponibilidad, type EnEspera } from '../../lib/panel/api-panel'
 import { enlaceWhatsApp, mensajeListaEspera } from '../../lib/panel/whatsapp'
 import { Tarjeta, Esqueleto, Aviso, Vacio } from '../../componentes/ui'
 import { fechaLarga, hora } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 // Clientas que pidieron que las avisen si se libera un turno en un día concreto
 export default function ListaEspera() {
-  const navegar = useNavigate()
   const qc = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const q = useQuery({ queryKey: ['lista-espera'], queryFn: listarListaEspera })
@@ -44,9 +43,9 @@ export default function ListaEspera() {
 
   return (
     <div className="p-5 space-y-4">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
+      <Volver />
       <div>
-        <h1 className="font-display text-[30px]">Lista de espera</h1>
+        <h1 className="text-[30px] leading-tight">Lista de espera</h1>
         <p className="text-[14px] text-tinta-tenue mt-1">
           Clientas que quieren un turno en un día que estaba lleno. Si alguien cancela, avísalas.
         </p>

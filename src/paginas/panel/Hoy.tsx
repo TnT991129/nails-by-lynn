@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { citasEnRango } from '../../lib/panel/api-panel'
-import { Boton, Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
+import { Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
+import { IconoFlecha } from '../../componentes/iconos'
 import { hora, duracion, fechaLarga } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 
@@ -23,7 +24,9 @@ export default function Hoy() {
   const ahora = Date.now()
   const activas = (q.data ?? []).filter(c =>
     c.status !== 'CANCELADA_CLIENTA' && c.status !== 'CANCELADA_NEGOCIO')
-  const proxima = activas.find(c => new Date(c.starts_at).getTime() >= ahora)
+  // Próxima = la primera que aún no ha terminado y sigue pendiente de atender
+  const proxima = activas.find(c => ['PENDIENTE', 'CONFIRMADA', 'EN_CURSO'].includes(c.status)
+    && new Date(c.ends_at).getTime() >= ahora)
   const ingresoDia = activas
     .filter(c => c.status === 'COMPLETADA')
     .reduce((t, c) => t + Number(c.total_amount), 0)
@@ -32,7 +35,7 @@ export default function Hoy() {
     <div className="p-5 space-y-5">
       <div>
         <p className="text-[14px] text-tinta-tenue first-letter:uppercase">{fechaLarga(new Date().toISOString())}</p>
-        <h1 className="font-display text-[30px] mt-1">Hoy</h1>
+        <h1 className="text-[30px] leading-tight mt-1">Hoy</h1>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -49,18 +52,19 @@ export default function Hoy() {
       </div>
 
       {proxima && (
-        <Tarjeta className="border border-rosa-200 bg-rosa-50">
-          <div className="text-[12px] tracking-wider uppercase text-tinta-tenue mb-2">Próxima cita</div>
-          <div className="text-[24px] font-display">{hora(proxima.starts_at)}</div>
-          <div className="text-[16px] mt-1">{proxima.cliente_nombre}</div>
-          <div className="text-[14px] text-tinta-suave">{proxima.servicios}</div>
-          <div className="text-[14px] text-tinta-tenue mt-1">
-            {duracion(proxima.total_duration_minutes)}
+        <Link to={`/panel/cita/${proxima.id}`}
+          className="block rounded-xl bg-gradient-to-br from-rosa-600 to-rosa-800 text-white p-5 shadow-boton
+                     active:scale-[0.99] transition">
+          <div className="text-[11px] font-semibold tracking-[0.2em] uppercase text-white/75">Próxima cita</div>
+          <div className="font-display text-[36px] leading-none mt-2">{hora(proxima.starts_at)}</div>
+          <div className="text-[17px] font-medium mt-2">{proxima.cliente_nombre}</div>
+          <div className="text-[14px] text-white/80">
+            {proxima.servicios} · {duracion(proxima.total_duration_minutes)}
           </div>
-          <Link to="/panel/agenda" className="block mt-3">
-            <Boton ancho variante="secundario">Abrir agenda</Boton>
-          </Link>
-        </Tarjeta>
+          <div className="mt-3 text-[13px] font-semibold inline-flex items-center gap-1.5">
+            Ver detalle <IconoFlecha tam={15} />
+          </div>
+        </Link>
       )}
 
       <section>

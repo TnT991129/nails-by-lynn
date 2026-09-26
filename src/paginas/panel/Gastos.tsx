@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listarGastos, crearGasto, eliminarGasto, type CategoriaGasto } from '../../lib/panel/api-panel'
 import { Boton, Campo, Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
 import { fechaLarga } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 const CATEGORIAS: { key: CategoriaGasto; etiqueta: string; icono: string }[] = [
   { key: 'MATERIAL',    etiqueta: 'Material',    icono: '💅' },
@@ -23,7 +23,6 @@ function etiquetaCat(c: string) {
 }
 
 export default function Gastos() {
-  const navegar = useNavigate()
   const qc = useQueryClient()
   const [nuevo, setNuevo] = useState(false)
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
@@ -68,8 +67,8 @@ export default function Gastos() {
 
   return (
     <div className="p-5 space-y-4">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
-      <h1 className="font-display text-[30px]">Gastos</h1>
+      <Volver />
+      <h1 className="text-[30px] leading-tight">Gastos</h1>
 
       {!nuevo && <Boton ancho onClick={() => setNuevo(true)}>+ Nuevo gasto</Boton>}
 
@@ -80,7 +79,7 @@ export default function Gastos() {
             <div className="grid grid-cols-3 gap-2 mt-2">
               {CATEGORIAS.map(c => (
                 <button key={c.key} onClick={() => setCategoria(c.key)}
-                  className={`p-3 rounded-sm border min-h-[64px] text-center
+                  className={`p-3 rounded border min-h-[64px] text-center
                     ${categoria === c.key ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
                   <div className="text-[20px]">{c.icono}</div>
                   <div className="text-[11px] mt-1">{c.etiqueta}</div>
@@ -96,19 +95,19 @@ export default function Gastos() {
             <span className="block text-[14px] text-tinta-suave mb-1.5">Qué compraste</span>
             <input value={descripcion} onChange={e => setDescripcion(e.target.value)}
               placeholder="Ej: esmalte rosa Kiara Sky, alcohol 90%…"
-              className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px]" />
+              className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
           </label>
 
           <div className="grid grid-cols-3 gap-2">
             <label className="block col-span-2">
               <span className="block text-[14px] text-tinta-suave mb-1.5">Monto</span>
               <input value={monto} onChange={e => setMonto(e.target.value)} inputMode="decimal"
-                className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px]" />
+                className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
             </label>
             <label className="block">
               <span className="block text-[14px] text-tinta-suave mb-1.5">Moneda</span>
               <select value={moneda} onChange={e => setMoneda(e.target.value as 'CUP' | 'USD')}
-                className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px] bg-white">
+                className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-white">
                 <option value="CUP">CUP</option>
                 <option value="USD">USD</option>
               </select>

@@ -1,16 +1,15 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { resumenMes, topServiciosMes, topClientasMes } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
 import { dinero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
 export default function Estadisticas() {
-  const navegar = useNavigate()
   const hoy = new Date()
   const [año, setAño] = useState(hoy.getFullYear())
   const [mes, setMes] = useState(hoy.getMonth())
@@ -39,8 +38,8 @@ export default function Estadisticas() {
 
   return (
     <div className="p-5 space-y-5">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
-      <h1 className="font-display text-[30px]">Estadísticas</h1>
+      <Volver />
+      <h1 className="text-[30px] leading-tight">Estadísticas</h1>
 
       <div className="flex items-center justify-between">
         <button onClick={() => mover(-1)} className="min-h-[44px] px-4 text-tinta-suave">←</button>

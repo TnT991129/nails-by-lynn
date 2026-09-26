@@ -5,6 +5,7 @@ import { obtenerClienta, crearClienta, actualizarClienta } from '../../lib/panel
 import { validarNombre, validarTelefono, validarEmail } from '../../caracteristicas/reserva/validacion'
 import { Boton, Campo, Aviso, Esqueleto } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 // Alta y edición de clientas. Sin :id en la ruta es una clienta nueva.
 export default function FormClienta() {
@@ -63,8 +64,8 @@ export default function FormClienta() {
 
   return (
     <div className="p-5 space-y-4">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
-      <h1 className="font-display text-[30px]">{id ? 'Editar clienta' : 'Nueva clienta'}</h1>
+      <Volver />
+      <h1 className="text-[30px] leading-tight">{id ? 'Editar clienta' : 'Nueva clienta'}</h1>
 
       <Campo etiqueta="Nombre" value={nombre} onChange={e => setNombre(e.target.value)}
         autoComplete="off" error={intentado ? errNombre ?? undefined : undefined} />

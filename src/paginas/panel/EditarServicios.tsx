@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   listarServiciosPanel, actualizarServicio, crearServicio, eliminarServicio, cambiarFotoServicio,
@@ -8,25 +7,25 @@ import {
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 export default function EditarServicios() {
-  const navegar = useNavigate()
   const [pestaña, setPestaña] = useState<'servicios' | 'complementos'>('servicios')
 
   return (
     <div className="p-5 space-y-4">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
-      <h1 className="font-display text-[30px]">Servicios</h1>
+      <Volver />
+      <h1 className="text-[30px] leading-tight">Servicios</h1>
 
-      <div className="flex gap-1 bg-white rounded-sm border border-rosa-200 p-1 w-full">
+      <div className="flex gap-1 bg-rosa-50 rounded-full border border-rosa-100 p-1 w-full">
         <button onClick={() => setPestaña('servicios')}
-          className={`flex-1 px-3 py-2 rounded-sm text-[14px] min-h-[40px]
-            ${pestaña === 'servicios' ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
+          className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
+            ${pestaña === 'servicios' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Servicios
         </button>
         <button onClick={() => setPestaña('complementos')}
-          className={`flex-1 px-3 py-2 rounded-sm text-[14px] min-h-[40px]
-            ${pestaña === 'complementos' ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
+          className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
+            ${pestaña === 'complementos' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Complementos
         </button>
       </div>
@@ -102,7 +101,7 @@ function FormularioNuevoServicio({ onCerrar }: { onCerrar: () => void }) {
       <label className="block">
         <span className="block text-[14px] text-tinta-suave mb-1.5">Descripción (la ven las clientas)</span>
         <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={2}
-          className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
+          className="w-full px-3 py-2 rounded border border-rosa-200 text-[16px]" />
       </label>
       <div className="grid grid-cols-3 gap-2">
         <Campo label="Precio" value={precio} onChange={setPrecio} inputMode="decimal" />
@@ -180,7 +179,7 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
         <div className="flex items-center gap-2">
           <span className="text-[16px] font-medium truncate">{servicio.name}</span>
           {!servicio.is_active && (
-            <span className="text-[11px] px-2 py-0.5 bg-tinta-tenue/20 rounded-sm">Inactivo</span>
+            <span className="text-[11px] px-2 py-0.5 bg-tinta-tenue/20 rounded">Inactivo</span>
           )}
         </div>
         <div className="text-[14px] text-tinta-tenue">
@@ -204,7 +203,7 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
         <span className="block text-[14px] text-tinta-suave mb-1.5">Descripción (la ven las clientas)</span>
         <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={2}
           placeholder="Ej: Uñas esculpidas, resistentes y con acabado natural."
-          className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
+          className="w-full px-3 py-2 rounded border border-rosa-200 text-[16px]" />
       </label>
       <div className="grid grid-cols-3 gap-2">
         <Campo label="Precio" value={precio} onChange={setPrecio} inputMode="decimal" />
@@ -391,7 +390,7 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
         <div className="flex items-center gap-2">
           <span className="text-[16px] font-medium truncate">{complemento.name}</span>
           {!complemento.is_active && (
-            <span className="text-[11px] px-2 py-0.5 bg-tinta-tenue/20 rounded-sm">Inactivo</span>
+            <span className="text-[11px] px-2 py-0.5 bg-tinta-tenue/20 rounded">Inactivo</span>
           )}
         </div>
         <div className="text-[14px] text-tinta-tenue">
@@ -436,7 +435,7 @@ function Campo({ label, value, onChange, inputMode }: {
     <label className="block">
       <span className="block text-[12px] text-tinta-suave mb-1">{label}</span>
       <input value={value} onChange={e => onChange(e.target.value)} inputMode={inputMode ?? 'text'}
-        className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px]" />
+        className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
     </label>
   )
 }

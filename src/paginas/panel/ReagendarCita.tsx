@@ -131,7 +131,7 @@ export default function ReagendarCita({ cita, tokenAcceso, onCerrar }: {
         </label>
         <input id="otra-hora" type="time" value={otraHora}
           onChange={e => { setOtraHora(e.target.value); setHoraSel('') }}
-          className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px] bg-white" />
+          className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-white" />
       </div>
 
       {error && <Aviso>{error}</Aviso>}

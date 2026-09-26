@@ -6,6 +6,7 @@ import { obtenerClienta, citasDeClienta, actualizarNotasInternas, bloquearClient
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, dinero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 export default function FichaClienta() {
   const { id = '' } = useParams()
@@ -72,7 +73,7 @@ export default function FichaClienta() {
 
   return (
     <div className="p-5 space-y-4">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
+      <Volver />
 
       <div>
         <div className="flex items-start justify-between gap-2">
@@ -121,7 +122,7 @@ export default function FichaClienta() {
         <label className="block text-[14px] text-tinta-tenue">Sobre esta clienta</label>
         <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={4}
           placeholder="Alergias, preferencias, cómo prefiere que la trates…"
-          className="w-full px-3 py-2 rounded-sm border border-rosa-200 text-[16px]" />
+          className="w-full px-3 py-2 rounded border border-rosa-200 text-[16px]" />
         {error && <Aviso>{error}</Aviso>}
         <Boton variante="secundario" onClick={guardar} cargando={guardando}>Guardar notas</Boton>
       </Tarjeta>
@@ -161,7 +162,7 @@ export default function FichaClienta() {
             Eliminar clienta
           </Boton>
         ) : (
-          <div className="p-3 rounded-sm border border-rosa-200 bg-rosa-50 space-y-2">
+          <div className="p-3 rounded border border-rosa-200 bg-rosa-50 space-y-2">
             {qHist.isLoading && <Esqueleto className="h-12" />}
             {qHist.isError && <Aviso>{mensajeDeError(qHist.error)}</Aviso>}
             {h && (h.activas > 0 ? (

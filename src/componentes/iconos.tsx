@@ -56,3 +56,21 @@ export const IconoWhatsApp = ({ tam = 22, ...p }: Props) => (
     <path d="M17.5 14.4c-.3-.15-1.7-.85-2-.95s-.5-.15-.7.15-.8.95-1 1.15-.35.2-.65.05-1.25-.45-2.4-1.45c-.9-.8-1.5-1.75-1.65-2.05s-.05-.45.1-.6c.15-.15.3-.35.45-.55s.2-.3.3-.5.05-.35 0-.5-.7-1.7-1-2.35c-.25-.6-.5-.55-.7-.55h-.6c-.2 0-.55.05-.85.4s-1.1 1.05-1.1 2.55 1.15 2.95 1.3 3.15c.15.2 2.25 3.45 5.5 4.85.75.35 1.35.55 1.85.7.75.25 1.45.2 2 .1.6-.1 1.7-.7 2-1.35s.3-1.2.2-1.35c-.1-.15-.3-.25-.6-.4zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 4.95L2 22l5.25-1.35C8.65 21.5 10.3 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z" />
   </svg>
 )
+export const IconoPersonas = (p: Props) => (
+  <Base {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5" /></Base>
+)
+export const IconoCuadricula = (p: Props) => (
+  <Base {...p}><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></Base>
+)
+export const IconoGrafico = (p: Props) => (
+  <Base {...p}><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></Base>
+)
+export const IconoBillete = (p: Props) => (
+  <Base {...p}><rect x="2.5" y="6" width="19" height="12" rx="2.5" /><circle cx="12" cy="12" r="2.5" /><path d="M6 9.5v5M18 9.5v5" /></Base>
+)
+export const IconoDescarga = (p: Props) => (
+  <Base {...p}><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" /><path d="M4 16.5V19a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 19v-2.5" /></Base>
+)
+export const IconoSalir = (p: Props) => (
+  <Base {...p}><path d="M14 4.5h3.5A1.5 1.5 0 0 1 19 6v12a1.5 1.5 0 0 1-1.5 1.5H14" /><path d="M10 16.5 5.5 12 10 7.5M5.5 12H15" /></Base>
+)

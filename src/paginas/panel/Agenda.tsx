@@ -56,11 +56,11 @@ export default function Agenda() {
   return (
     <div className="p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-[30px]">Agenda</h1>
-        <div className="flex gap-1 bg-white rounded-sm border border-rosa-200 p-1">
+        <h1 className="text-[30px] leading-tight">Agenda</h1>
+        <div className="flex gap-1 bg-white rounded border border-rosa-200 p-1">
           {(['dia','semana'] as Vista[]).map(v => (
             <button key={v} onClick={() => setVista(v)}
-              className={`px-3 py-1.5 rounded-sm text-[14px] min-h-[36px]
+              className={`px-3 py-1.5 rounded text-[14px] min-h-[36px]
                 ${vista === v ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
               {v === 'dia' ? 'Día' : 'Semana'}
             </button>

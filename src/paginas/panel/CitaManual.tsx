@@ -6,6 +6,7 @@ import { obtenerAddons } from '../../lib/api'
 import { Boton, Campo, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
 import { fechaISO, hora, franja, duracion, dinero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 type Servicio = {
   id: string; name: string; duration_minutes: number;
@@ -77,8 +78,8 @@ export default function CitaManual() {
 
   return (
     <div className="p-5 space-y-5 pb-32">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
-      <h1 className="font-display text-[30px]">Nueva cita manual</h1>
+      <Volver />
+      <h1 className="text-[30px] leading-tight">Nueva cita manual</h1>
 
       {error && <Aviso>{error}</Aviso>}
 
@@ -90,7 +91,7 @@ export default function CitaManual() {
             <button key={s.id} onClick={() => {
               setServicioId(s.id); setHoraSel(''); setAddonsSel([])
             }}
-              className={`w-full text-left px-4 py-3 rounded-sm border
+              className={`w-full text-left px-4 py-3 rounded border
                 ${servicioId === s.id ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
               <div className="flex justify-between">
                 <span>{s.name}</span>
@@ -111,7 +112,7 @@ export default function CitaManual() {
               const activo = addonsSel.includes(a.id)
               return (
                 <button key={a.id} onClick={() => toggleAddon(a.id)}
-                  className={`w-full text-left px-4 py-3 rounded-sm border
+                  className={`w-full text-left px-4 py-3 rounded border
                     ${activo ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
                   <div className="flex justify-between items-center">
                     <div>
@@ -146,7 +147,7 @@ export default function CitaManual() {
               const num = new Intl.DateTimeFormat('es',{ timeZone:'America/Havana', day:'numeric' }).format(d)
               return (
                 <button key={iso} onClick={() => { setFecha(iso); setHoraSel('') }}
-                  className={`min-h-[56px] rounded-sm border flex flex-col items-center justify-center
+                  className={`min-h-[56px] rounded border flex flex-col items-center justify-center
                     ${activo ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
                   <span className="text-[11px] uppercase">{et}</span>
                   <span className="text-[16px] font-semibold">{num}</span>
@@ -173,7 +174,7 @@ export default function CitaManual() {
                 <div className="grid grid-cols-3 gap-2">
                   {grupo.map(h => (
                     <button key={h} onClick={() => setHoraSel(h)}
-                      className={`min-h-[44px] rounded-sm border text-[14px]
+                      className={`min-h-[44px] rounded border text-[14px]
                         ${horaSel === h ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
                       {hora(h)}
                     </button>
@@ -194,7 +195,7 @@ export default function CitaManual() {
           <label className="block">
             <span className="block text-[14px] text-tinta-suave mb-1.5">Nota (opcional)</span>
             <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2}
-              className="w-full px-4 py-3 rounded-sm border border-rosa-200 text-[16px]" />
+              className="w-full px-4 py-3 rounded border border-rosa-200 text-[16px]" />
           </label>
           <Boton ancho onClick={guardar} cargando={guardando}>Crear cita</Boton>
         </section>

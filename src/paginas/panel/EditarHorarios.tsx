@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   listarHorarios, guardarHorariosDia,
@@ -10,32 +9,32 @@ import {
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, fechaISO, instanteEnHabana } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
+import { Volver } from './comunes'
 
 const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
 
 export default function EditarHorarios() {
-  const navegar = useNavigate()
   const [pestaña, setPestaña] = useState<'horario' | 'cerrados' | 'bloqueos'>('horario')
 
   return (
     <div className="p-5 space-y-4">
-      <button onClick={() => navegar(-1)} className="text-tinta-suave min-h-[44px]">← Volver</button>
-      <h1 className="font-display text-[30px]">Horarios</h1>
+      <Volver />
+      <h1 className="text-[30px] leading-tight">Horarios</h1>
 
-      <div className="flex gap-1 bg-white rounded-sm border border-rosa-200 p-1 w-full">
+      <div className="flex gap-1 bg-rosa-50 rounded-full border border-rosa-100 p-1 w-full">
         <button onClick={() => setPestaña('horario')}
-          className={`flex-1 px-3 py-2 rounded-sm text-[14px] min-h-[40px]
-            ${pestaña === 'horario' ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
+          className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
+            ${pestaña === 'horario' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Semanal
         </button>
         <button onClick={() => setPestaña('cerrados')}
-          className={`flex-1 px-3 py-2 rounded-sm text-[14px] min-h-[40px]
-            ${pestaña === 'cerrados' ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
+          className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
+            ${pestaña === 'cerrados' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Días cerrados
         </button>
         <button onClick={() => setPestaña('bloqueos')}
-          className={`flex-1 px-3 py-2 rounded-sm text-[14px] min-h-[40px]
-            ${pestaña === 'bloqueos' ? 'bg-rosa-600 text-white' : 'text-tinta-suave'}`}>
+          className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
+            ${pestaña === 'bloqueos' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Horas
         </button>
       </div>
@@ -128,17 +127,17 @@ function DiaEditor({ weekday, reglas }: { weekday: number; reglas: ReglaHorario[
             <div key={i} className="flex gap-2 items-center">
               <input type="time" value={t.start_time}
                 onChange={e => editar(i, 'start_time', e.target.value)}
-                className="flex-1 min-h-[44px] px-2 rounded-sm border border-rosa-200 text-[16px]" />
+                className="flex-1 min-h-[44px] px-2 rounded border border-rosa-200 text-[16px]" />
               <span>–</span>
               <input type="time" value={t.end_time}
                 onChange={e => editar(i, 'end_time', e.target.value)}
-                className="flex-1 min-h-[44px] px-2 rounded-sm border border-rosa-200 text-[16px]" />
+                className="flex-1 min-h-[44px] px-2 rounded border border-rosa-200 text-[16px]" />
               <button onClick={() => quitarTurno(i)}
                 className="min-w-[44px] min-h-[44px] text-estado-error">✕</button>
             </div>
           ))}
           <button onClick={nuevoTurno}
-            className="w-full min-h-[44px] text-rosa-800 text-[14px] border border-dashed border-rosa-300 rounded-sm">
+            className="w-full min-h-[44px] text-rosa-800 text-[14px] border border-dashed border-rosa-300 rounded">
             + Añadir turno
           </button>
           {error && <Aviso>{error}</Aviso>}
@@ -204,7 +203,7 @@ function Bloqueos() {
             <span className="block text-[14px] text-tinta-suave mb-1.5">Fecha</span>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
               min={new Date().toISOString().slice(0,10)}
-              className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px]" />
+              className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
           </label>
           <label className="flex items-center gap-2 min-h-[44px]">
             <input type="checkbox" checked={diaCompleto} onChange={e => setDiaCompleto(e.target.checked)}
@@ -214,17 +213,17 @@ function Bloqueos() {
           {!diaCompleto && (
             <div className="flex gap-2 items-center">
               <input type="time" value={ini} onChange={e => setIni(e.target.value)}
-                className="flex-1 min-h-[44px] px-2 rounded-sm border border-rosa-200 text-[16px]" />
+                className="flex-1 min-h-[44px] px-2 rounded border border-rosa-200 text-[16px]" />
               <span>–</span>
               <input type="time" value={fin} onChange={e => setFin(e.target.value)}
-                className="flex-1 min-h-[44px] px-2 rounded-sm border border-rosa-200 text-[16px]" />
+                className="flex-1 min-h-[44px] px-2 rounded border border-rosa-200 text-[16px]" />
             </div>
           )}
           <label className="block">
             <span className="block text-[14px] text-tinta-suave mb-1.5">Motivo (para tu registro)</span>
             <input value={motivo} onChange={e => setMotivo(e.target.value)}
               placeholder="Ej: viaje, consulta médica…"
-              className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px]" />
+              className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
           </label>
           {error && <Aviso>{error}</Aviso>}
           <div className="flex gap-2">
@@ -324,20 +323,20 @@ function DiasCerrados() {
               <span className="block text-[14px] text-tinta-suave mb-1.5">Desde</span>
               <input type="date" value={desde} min={hoy}
                 onChange={e => { setDesde(e.target.value); setCitas(null) }}
-                className="w-full min-h-[44px] px-2 rounded-sm border border-rosa-200 text-[16px]" />
+                className="w-full min-h-[44px] px-2 rounded border border-rosa-200 text-[16px]" />
             </label>
             <label className="block">
               <span className="block text-[14px] text-tinta-suave mb-1.5">Hasta</span>
               <input type="date" value={hasta} min={desde || hoy}
                 onChange={e => { setHasta(e.target.value); setCitas(null) }}
-                className="w-full min-h-[44px] px-2 rounded-sm border border-rosa-200 text-[16px]" />
+                className="w-full min-h-[44px] px-2 rounded border border-rosa-200 text-[16px]" />
             </label>
           </div>
           <p className="text-[12px] text-tinta-tenue -mt-1">Para un solo día deja «Hasta» vacío.</p>
           <label className="block">
             <span className="block text-[14px] text-tinta-suave mb-1.5">Motivo (solo lo ves tú)</span>
             <input value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ej: vacaciones"
-              className="w-full min-h-[44px] px-3 rounded-sm border border-rosa-200 text-[16px]" />
+              className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
           </label>
           {citas !== null && (
             <Aviso tipo="aviso">
