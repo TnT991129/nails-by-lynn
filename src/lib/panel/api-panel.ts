@@ -793,3 +793,23 @@ export function marcarAvisoEspera(id: string) {
 export function quitarDeEspera(id: string) {
   return ejecutar(sb.from('waitlist').update({ status: 'CERRADA' }).eq('id', id))
 }
+
+// ================== TURNOS FIJOS (horas de inicio que ven las clientas) ==================
+export async function obtenerTurnosFijos(): Promise<string[]> {
+  const { data, error } = await sb.from('settings').select('fixed_slot_times')
+    .eq('business_id', NEGOCIO_ID).single()
+  if (error) throw error
+  return ((data?.fixed_slot_times ?? []) as string[]).map(t => t.slice(0, 5)).sort()
+}
+
+export function guardarTurnosFijos(turnos: string[]) {
+  const limpios = [...new Set(turnos.filter(Boolean))].sort()
+  return ejecutar(sb.from('settings').update({ fixed_slot_times: limpios, updated_at: new Date().toISOString() })
+    .eq('business_id', NEGOCIO_ID).select('business_id').single())
+}
+
+/** Turnos que caen dentro del horario de apertura de un día */
+export function turnosDelDia(reglas: { start_time: string; end_time: string; is_active?: boolean }[], turnos: string[]) {
+  return turnos.filter(t => reglas.some(r => r.is_active !== false
+    && t >= r.start_time.slice(0, 5) && t < r.end_time.slice(0, 5)))
+}

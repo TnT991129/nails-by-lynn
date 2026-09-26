@@ -4,10 +4,11 @@ import {
   listarHorarios, guardarHorariosDia,
   listarBloqueosFuturos, crearBloqueo, eliminarBloqueo,
   listarDiasCerrados, crearDiasCerrados, eliminarDiasCerrados, citasActivasEntre,
+  obtenerTurnosFijos, guardarTurnosFijos, turnosDelDia,
   type ReglaHorario,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
-import { fechaLarga, hora, fechaISO, instanteEnHabana } from '../../lib/formato'
+import { fechaLarga, hora, fechaISO, instanteEnHabana, horaDeTurno } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
 
@@ -48,27 +49,108 @@ export default function EditarHorarios() {
 
 function HorarioSemanal() {
   const q = useQuery({ queryKey: ['horarios'], queryFn: listarHorarios })
-  if (q.isLoading) return <Esqueleto className="h-96" />
+  const qTurnos = useQuery({ queryKey: ['turnos-fijos'], queryFn: obtenerTurnosFijos })
+  if (q.isLoading || qTurnos.isLoading) return <Esqueleto className="h-96" />
   if (q.isError) return <Aviso>{mensajeDeError(q.error)}</Aviso>
 
   // Agrupar reglas por dia
   const porDia: Record<number, ReglaHorario[]> = {}
   for (let d = 0; d < 7; d++) porDia[d] = []
   q.data?.forEach(r => porDia[r.weekday]?.push(r))
+  const turnos = qTurnos.data ?? []
 
   return (
     <div className="space-y-3">
-      <p className="text-[13px] text-tinta-tenue">
-        Toca un día para editarlo. Sin turnos = día cerrado.
+      <EditorTurnos turnos={turnos} porDia={porDia} />
+      <p className="text-[13px] text-tinta-tenue pt-2">
+        Tu semana. Toca un día para cambiar su horario de apertura; sin horario, el día queda cerrado.
       </p>
       {[1,2,3,4,5,6,0].map(dia => (
-        <DiaEditor key={dia} weekday={dia} reglas={porDia[dia]} />
+        <DiaEditor key={dia} weekday={dia} reglas={porDia[dia]} turnosFijos={turnos} />
       ))}
     </div>
   )
 }
 
-function DiaEditor({ weekday, reglas }: { weekday: number; reglas: ReglaHorario[] }) {
+// Horas de inicio de los turnos que ven las clientas (iguales todos los días)
+function EditorTurnos({ turnos, porDia }: { turnos: string[]; porDia: Record<number, ReglaHorario[]> }) {
+  const qc = useQueryClient()
+  const [editando, setEditando] = useState(false)
+  const [lista, setLista] = useState<string[]>(turnos)
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => { if (!editando) setLista(turnos) }, [turnos, editando])
+
+  // Días abiertos en los que algún turno queda fuera del horario de apertura
+  const fuera = [1,2,3,4,5,6,0].filter(d => porDia[d].length > 0 && turnosDelDia(porDia[d], lista).length < lista.length)
+
+  async function guardar() {
+    setGuardando(true); setError(null)
+    try {
+      if (lista.filter(Boolean).length === 0) throw new Error('Deja al menos un turno.')
+      await guardarTurnosFijos(lista)
+      qc.invalidateQueries({ queryKey: ['turnos-fijos'] })
+      qc.invalidateQueries({ queryKey: ['turnos'] })
+      setEditando(false)
+    } catch (e) { setError(e instanceof Error && !('code' in e) ? e.message : mensajeDeError(e)) }
+    finally { setGuardando(false) }
+  }
+
+  return (
+    <Tarjeta className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <div className="text-[16px] font-semibold">Horas de los turnos</div>
+          <div className="text-[13px] text-tinta-tenue">Las clientas solo pueden reservar a estas horas.</div>
+        </div>
+        {!editando && <Boton variante="secundario" onClick={() => setEditando(true)} className="!min-h-[40px] !px-4 !text-[14px]">Cambiar</Boton>}
+      </div>
+
+      {!editando ? (
+        <div className="flex flex-wrap gap-2">
+          {turnos.length === 0
+            ? <span className="text-[14px] text-tinta-tenue">Sin turnos fijos: se reserva a cualquier hora libre.</span>
+            : turnos.map(t => (
+              <span key={t} className="px-3 py-1.5 rounded-full bg-rosa-50 text-rosa-800 text-[14px] font-semibold">{horaDeTurno(t)}</span>
+            ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {lista.map((t, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <input type="time" value={t} step={900}
+                onChange={e => setLista(lista.map((x, j) => j === i ? e.target.value : x))}
+                className="flex-1 min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-white focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
+              <button onClick={() => setLista(lista.filter((_, j) => j !== i))} aria-label="Quitar turno"
+                className="min-w-[44px] min-h-[44px] text-estado-error">✕</button>
+            </div>
+          ))}
+          <button onClick={() => setLista([...lista, '16:00'])}
+            className="w-full min-h-[44px] text-rosa-800 text-[14px] border border-dashed border-rosa-300 rounded-lg">
+            + Añadir turno
+          </button>
+          {fuera.length > 0 && (
+            <Aviso tipo="aviso">
+              Algún turno queda fuera del horario de apertura de: {fuera.map(d => DIAS[d]).join(', ')}.
+              Ese día no se ofrecerá; amplía su horario si quieres que salga.
+            </Aviso>
+          )}
+          <p className="text-[12px] text-tinta-tenue">
+            Las citas ya reservadas no cambian de hora. Revísalas en la Agenda si hace falta.
+          </p>
+          {error && <Aviso>{error}</Aviso>}
+          <div className="flex gap-2">
+            <Boton variante="secundario" onClick={() => { setEditando(false); setError(null) }} className="flex-1">Cancelar</Boton>
+            <Boton onClick={guardar} cargando={guardando} className="flex-1">Guardar</Boton>
+          </div>
+        </div>
+      )}
+    </Tarjeta>
+  )
+}
+
+function DiaEditor({ weekday, reglas, turnosFijos }: { weekday: number; reglas: ReglaHorario[]; turnosFijos: string[] }) {
   const qc = useQueryClient()
   const [abierto, setAbierto] = useState(false)
   const [turnos, setTurnos] = useState<{ start_time: string; end_time: string }[]>([])
@@ -106,19 +188,31 @@ function DiaEditor({ weekday, reglas }: { weekday: number; reglas: ReglaHorario[
     finally { setGuardando(false) }
   }
 
-  const resumen = reglas.length === 0
-    ? 'Cerrado'
-    : reglas.map(r => `${r.start_time.slice(0,5)} – ${r.end_time.slice(0,5)}`).join(', ')
+  const apertura = reglas.map(r => `${r.start_time.slice(0,5)} – ${r.end_time.slice(0,5)}`).join(', ')
+  const delDia = turnosDelDia(reglas, turnosFijos)
 
   return (
     <Tarjeta className="space-y-3">
       <button onClick={() => setAbierto(!abierto)}
         className="w-full text-left flex justify-between items-center min-h-[44px]">
-        <div>
+        <div className="min-w-0">
           <div className="text-[16px] font-medium">{DIAS[weekday]}</div>
-          <div className="text-[14px] text-tinta-tenue">{resumen}</div>
+          {reglas.length === 0 ? (
+            <div className="text-[14px] text-tinta-tenue">Cerrado</div>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {delDia.length > 0 ? delDia.map(t => (
+                  <span key={t} className="px-2.5 py-0.5 rounded-full bg-rosa-50 text-rosa-800 text-[13px] font-semibold">
+                    {horaDeTurno(t)}
+                  </span>
+                )) : <span className="text-[13px] text-estado-aviso">Ningún turno cabe en este horario</span>}
+              </div>
+              <div className="text-[12px] text-tinta-tenue mt-1">Abierto {apertura}</div>
+            </>
+          )}
         </div>
-        <span className="text-tinta-tenue">{abierto ? '▲' : '▼'}</span>
+        <span className="text-tinta-tenue text-[13px] shrink-0">{abierto ? 'Cerrar' : 'Editar'}</span>
       </button>
 
       {abierto && (
@@ -136,9 +230,10 @@ function DiaEditor({ weekday, reglas }: { weekday: number; reglas: ReglaHorario[
                 className="min-w-[44px] min-h-[44px] text-estado-error">✕</button>
             </div>
           ))}
+          <div className="text-[13px] text-tinta-tenue">Horario de apertura de este día</div>
           <button onClick={nuevoTurno}
             className="w-full min-h-[44px] text-rosa-800 text-[14px] border border-dashed border-rosa-300 rounded">
-            + Añadir turno
+            + Añadir franja horaria
           </button>
           {error && <Aviso>{error}</Aviso>}
           <div className="flex gap-2">

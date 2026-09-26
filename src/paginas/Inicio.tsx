@@ -5,12 +5,8 @@ import { Etiqueta, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
 import { IconoReloj, IconoUbicacion, IconoFlecha, IconoWhatsApp, IconoCalendario } from '../componentes/iconos'
 import { dinero, duracion, descripcionServicio } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
+import { useHorarioPublico } from '../lib/useHorarioPublico'
 
-const PASOS = [
-  { titulo: 'Elige tu servicio', texto: 'Y los extras que quieras añadir.' },
-  { titulo: 'Escoge día y turno', texto: 'Turnos a las 9:00 AM y 1:00 PM.' },
-  { titulo: 'Confirma y avisa', texto: 'Tu cita queda guardada al instante.' },
-]
 
 export default function Inicio() {
   const qNegocio = useQuery({ queryKey:['negocio'], queryFn: obtenerNegocio })
@@ -18,6 +14,14 @@ export default function Inicio() {
   const n = qNegocio.data
   const BASE = import.meta.env.BASE_URL
   const cerrado = n && !n.is_accepting_bookings
+  const horario = useHorarioPublico()
+  const mayus = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+
+  const PASOS = [
+    { titulo: 'Elige tu servicio', texto: 'Y los extras que quieras añadir.' },
+    { titulo: 'Escoge día y turno', texto: horario.turnos ? `Turnos a las ${horario.turnos}.` : 'Elige el turno que prefieras.' },
+    { titulo: 'Confirma y avisa', texto: 'Tu cita queda guardada al instante.' },
+  ]
 
   return (
     <div className="pb-28">
@@ -71,8 +75,8 @@ export default function Inicio() {
           <div className="bg-white rounded-lg border border-rosa-100/80 p-3.5 flex items-start gap-2.5">
             <IconoReloj tam={20} className="text-rosa-600 shrink-0 mt-0.5" />
             <div className="text-[13px] leading-snug">
-              <div className="font-semibold">Lunes a sábado</div>
-              <div className="text-tinta-tenue">9:00 AM y 1:00 PM</div>
+              <div className="font-semibold">{horario.dias ? mayus(horario.dias) : 'Horario'}</div>
+              <div className="text-tinta-tenue">{horario.turnos || 'Con cita previa'}</div>
             </div>
           </div>
           <div className="bg-white rounded-lg border border-rosa-100/80 p-3.5 flex items-start gap-2.5">

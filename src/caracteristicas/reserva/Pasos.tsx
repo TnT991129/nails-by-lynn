@@ -6,6 +6,7 @@ import { dinero, duracion, fechaLarga, hora, franja, fechaISO, cuentaAtras, desc
 import { validarNombre, validarTelefono, validarEmail } from './validacion'
 import { EnlacePoliticas } from '../../componentes/Politicas'
 import type { Datos } from './useReserva'
+import { useHorarioPublico } from '../../lib/useHorarioPublico'
 
 const NOMBRES_PASOS = ['Servicio','Extras','Fecha','Hora','Datos','Listo']
 
@@ -147,6 +148,7 @@ export function PasoFecha({
   fecha: string | null; setFecha: (f: string) => void
   diasLaborables?: number[]; diasCerrados?: { desde: string; hasta: string }[]; maxDias?: number
 }) {
+  const horario = useHorarioPublico()
   // "Hoy" según La Habana, no según la hora del móvil
   const hoyISO = fechaISO(new Date())
   const [y0, m0, d0] = hoyISO.split('-').map(Number)
@@ -176,7 +178,7 @@ export function PasoFecha({
 
   return (
     <div className="space-y-5 animate-entrada">
-      <Titulo titulo="¿Qué día te viene bien?" texto="Trabajo de lunes a sábado." />
+      <Titulo titulo="¿Qué día te viene bien?" texto={horario.dias ? `Trabajo de ${horario.dias}.` : undefined} />
 
       <Tarjeta className="p-4">
         <div className="flex items-center justify-between mb-3">
@@ -239,6 +241,7 @@ export function PasoHora({
   siNoHay?: ReactNode   // lo que se ofrece cuando el día está lleno (lista de espera)
 }) {
   const [tick, setTick] = useState(0)
+  const horario = useHorarioPublico()
   useEffect(() => {
     if (!expiraEn) return
     const id = setInterval(() => setTick(t => t + 1), 1000)
@@ -264,7 +267,9 @@ export function PasoHora({
 
   if (horas.length === 0) {
     return <Vacio titulo="No hay turnos libres ese día"
-                  texto="Cada día tengo 2 turnos: 9:00 AM y 1:00 PM. Prueba con otra fecha cercana.">
+                  texto={horario.turnos
+                    ? `Cada día tengo ${horario.cantidad} ${horario.cantidad === 1 ? 'turno' : 'turnos'}: ${horario.turnos}. Prueba con otra fecha cercana.`
+                    : 'Prueba con otra fecha cercana.'}>
       {siNoHay}
     </Vacio>
   }

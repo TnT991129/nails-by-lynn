@@ -76,3 +76,30 @@ export function cuentaAtras(hasta: string): string {
   const s = Math.max(0, Math.floor((new Date(hasta).getTime() - Date.now()) / 1000))
   return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`
 }
+
+/** "13:00" → "1:00 PM" */
+export function horaDeTurno(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number)
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
+}
+
+/** ["10:00","13:00"] → "10:00 AM y 1:00 PM" */
+export function textoTurnos(turnos: string[]): string {
+  const t = turnos.map(horaDeTurno)
+  return t.length <= 1 ? (t[0] ?? '') : `${t.slice(0, -1).join(', ')} y ${t[t.length - 1]}`
+}
+
+const NOMBRE_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+
+/** [1,2,3,4,5,6] → "lunes a sábado"; días sueltos → "lunes, miércoles y viernes" */
+export function textoDias(dias: number[]): string {
+  const orden = [...new Set(dias)].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))   // lunes primero
+  if (orden.length === 0) return ''
+  if (orden.length === 7) return 'todos los días'
+  const pos = orden.map(d => (d + 6) % 7)
+  const seguidos = pos.every((p, i) => i === 0 || p === pos[i - 1] + 1)
+  if (seguidos && orden.length >= 3) return `${NOMBRE_DIA[orden[0]]} a ${NOMBRE_DIA[orden[orden.length - 1]]}`
+  const n = orden.map(d => NOMBRE_DIA[d])
+  return n.length === 1 ? n[0] : `${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}`
+}

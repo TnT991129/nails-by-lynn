@@ -42,6 +42,14 @@ export async function obtenerDiasCerrados(): Promise<{ desde: string; hasta: str
   return filas.map(f => ({ desde: f.date_from, hasta: f.date_to }))
 }
 
+/** Horas de los turnos fijos ("10:00", "13:00"). Vacío si aún no se aplicó el SQL o no hay turnos. */
+export async function obtenerTurnos(): Promise<string[]> {
+  try {
+    const r = await rpc<{ turnos: string[] } | null>('obtener_turnos', { p_business_id: NEGOCIO_ID })
+    return r?.turnos ?? []
+  } catch { return [] }
+}
+
 export function obtenerPoliticas(): Promise<Politicas> {
   return rpc<Politicas>('obtener_politicas', { p_business_id: NEGOCIO_ID })
 }
