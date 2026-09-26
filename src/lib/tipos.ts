@@ -58,6 +58,9 @@ export type CitaDetalle = {
   saldo: number
   nota: string | null
   reprogramaciones: number
+  descuento_porcentaje?: number
+  descuento_monto?: number
+  cambio_mes_disponible?: boolean
   // Opcionales: llegan desde que se aplicó supabase/reprogramar_clienta.sql
   margen_minutos?: number
   max_reprogramaciones?: number

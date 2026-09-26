@@ -274,12 +274,14 @@ export function PasoDatos({
 }
 
 export function PasoResumen({
-  servicios, addons, inicio, duracionMin, total, acepta, setAcepta,
+  servicios, addons, inicio, duracionMin, total, acepta, setAcepta, descuento = null,
 }: {
   servicios: Servicio[]; addons: Addon[]; inicio: string
   duracionMin: number; total: number
   acepta: boolean; setAcepta: (v: boolean) => void
+  descuento?: number | null   // % que Lynn le dejó para esta cita
 }) {
+  const rebaja = descuento ? Math.round(total * descuento) / 100 : 0
   return (
     <div className="space-y-5 animate-entrada">
       <Titulo titulo="Revisa tu cita" texto="Si todo está bien, confírmala abajo." />
@@ -305,9 +307,14 @@ export function PasoResumen({
               <span>{Number(a.extra_price) > 0 ? dinero(Number(a.extra_price)) : '—'}</span>
             </div>
           ))}
+          {rebaja > 0 && (
+            <div className="flex justify-between text-[15px] text-estado-exito font-medium">
+              <span>🎁 Tu descuento ({descuento}%)</span><span>−{dinero(rebaja)}</span>
+            </div>
+          )}
           <div className="border-t border-dashed border-rosa-200 !mt-4 pt-4 flex justify-between items-baseline">
             <span className="text-[14px] text-tinta-tenue">Total</span>
-            <span className="font-display text-[26px] text-rosa-700">{dinero(total)}</span>
+            <span className="font-display text-[26px] text-rosa-700">{dinero(total - rebaja)}</span>
           </div>
         </div>
       </Tarjeta>

@@ -7,6 +7,7 @@ import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, dinero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
+import DescuentoClienta from './DescuentoClienta'
 
 export default function FichaClienta() {
   const { id = '' } = useParams()
@@ -128,6 +129,8 @@ export default function FichaClienta() {
           <div className="text-[14px] text-tinta-suave">{proxima.servicios}</div>
         </Tarjeta>
       )}
+
+      <DescuentoClienta clienta={c} />
 
       <Tarjeta className="space-y-2">
         <label className="block text-[14px] text-tinta-tenue">Sobre esta clienta</label>

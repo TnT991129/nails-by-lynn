@@ -50,6 +50,14 @@ export async function obtenerTurnos(): Promise<string[]> {
   } catch { return [] }
 }
 
+/** % de descuento que Lynn le dejó a ese teléfono para su próxima cita (null si no tiene) */
+export async function descuentoPendiente(telefono: string): Promise<number | null> {
+  try {
+    const r = await rpc<number | null>('descuento_pendiente', { p_business_id: NEGOCIO_ID, p_telefono: telefono })
+    return r ? Number(r) : null
+  } catch { return null }
+}
+
 export function obtenerPoliticas(): Promise<Politicas> {
   return rpc<Politicas>('obtener_politicas', { p_business_id: NEGOCIO_ID })
 }

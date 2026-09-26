@@ -143,3 +143,16 @@ export function mensajeListaEspera(nombre: string, fecha: string): string {
 Si todavía lo quieres, resérvalo aquí antes de que lo tome otra persona:
 ${urlPublica()}reservar`)
 }
+
+// Mensaje para avisar a la clienta de su descuento en la próxima cita
+export function mensajeDescuento(nombre: string, porcentaje: number, nota: string | null): string {
+  return (
+`Hola ${primeroNombre(nombre)} 💖
+
+¡Tengo una sorpresa para ti! En tu próxima cita tendrás un ${porcentaje}% de descuento${nota ? ` (${nota})` : ''} 🎁
+
+Se aplica solo al reservar con este número de teléfono. Reserva aquí cuando quieras:
+${urlPublica()}reservar
+
+¡Te espero!`)
+}

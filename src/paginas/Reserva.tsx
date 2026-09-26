@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { obtenerServicios, obtenerAddons, obtenerDisponibilidad, obtenerDiasLaborables, obtenerDiasCerrados } from '../lib/api'
+import { obtenerServicios, obtenerAddons, obtenerDisponibilidad, obtenerDiasLaborables, obtenerDiasCerrados, descuentoPendiente } from '../lib/api'
 import ListaEspera from '../caracteristicas/reserva/ListaEspera'
 import { useReserva } from '../caracteristicas/reserva/useReserva'
 import { Progreso, PasoServicio, PasoExtras, PasoFecha, PasoHora, PasoDatos, PasoResumen }
@@ -34,6 +34,16 @@ export default function Reserva() {
       if (s) r.alternarServicio(s.id)
     }
   }, [params, qServicios.data])
+
+  // ¿Lynn le dejó un descuento a este teléfono? Se muestra en el resumen; el servidor lo aplica al confirmar
+  const qDescuento = useQuery({
+    queryKey: ['descuento', r.datos.telefono],
+    queryFn: () => descuentoPendiente(r.datos.telefono),
+    enabled: r.paso === 6 && !validarTelefono(r.datos.telefono),
+  })
+  const precioMostrado = qDescuento.data && r.paso === 6
+    ? r.precioTotal - Math.round(r.precioTotal * qDescuento.data) / 100
+    : r.precioTotal
 
   const qHoras = useQuery({
     queryKey: ['disponibilidad', r.fecha, r.duracionTotal, r.bufferTotal],
@@ -122,7 +132,7 @@ export default function Reserva() {
           <PasoResumen servicios={r.serviciosElegidos}
             addons={r.addonsAplicables.filter(a => r.addonsElegidos.includes(a.id))}
             inicio={r.inicio} duracionMin={r.duracionTotal} total={r.precioTotal}
-            acepta={r.aceptaPoliticas} setAcepta={r.setAceptaPoliticas} />
+            acepta={r.aceptaPoliticas} setAcepta={r.setAceptaPoliticas} descuento={qDescuento.data} />
         )}
       </main>
 
@@ -134,7 +144,7 @@ export default function Reserva() {
               {r.serviciosElegidos.map(s => s.name).join(' + ')} · {duracion(r.duracionTotal)}
             </p>
             {r.precioTotal > 0 && (
-              <span className="font-display text-[18px] text-rosa-700 shrink-0">{dinero(r.precioTotal)}</span>
+              <span className="font-display text-[18px] text-rosa-700 shrink-0">{dinero(precioMostrado)}</span>
             )}
           </div>
         )}

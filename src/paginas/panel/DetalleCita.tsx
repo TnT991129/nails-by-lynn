@@ -100,6 +100,12 @@ export default function DetalleCita() {
         </div>
         <hr className="border-rosa-100" />
         <div className="space-y-1 text-[14px]">
+          {Number(c.discount_amount ?? 0) > 0 && (
+            <div className="flex justify-between text-estado-exito">
+              <span>Descuento ({Number(c.discount_percent)}%)</span>
+              <span>−{dinero(Number(c.discount_amount), c.currency)}</span>
+            </div>
+          )}
           <div className="flex justify-between"><span>Total</span><span>{dinero(Number(c.total_amount), c.currency)}</span></div>
           {Number(c.deposit_amount) > 0 && <>
             <div className="flex justify-between"><span>Anticipo</span><span>{dinero(Number(c.deposit_amount), c.currency)}</span></div>

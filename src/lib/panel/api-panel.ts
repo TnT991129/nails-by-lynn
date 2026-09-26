@@ -9,6 +9,7 @@ export type CitaAgenda = {
   client_note: string | null; internal_note: string | null
   cliente_nombre: string; cliente_telefono: string; client_id: string
   servicios: string | null
+  discount_percent?: number; discount_amount?: number   // desde supabase/turnos_descuentos_cambios.sql
 }
 
 export type Cliente = {
@@ -833,4 +834,17 @@ export async function contadoresClientas(): Promise<Record<string, ContadoresCli
     c.reagendadas += f.reschedule_count ?? 0
   }
   return r
+}
+
+// ================== DESCUENTO PARA LA PRÓXIMA CITA ==================
+export function aplicarDescuento(id: string, porcentaje: number, nota: string | null) {
+  return ejecutar(sb.from('clients').update({
+    next_discount_percent: porcentaje, next_discount_note: nota, next_discount_at: new Date().toISOString(),
+  }).eq('id', id).select('id').single())
+}
+
+export function quitarDescuento(id: string) {
+  return ejecutar(sb.from('clients').update({
+    next_discount_percent: null, next_discount_note: null, next_discount_at: null,
+  }).eq('id', id).select('id').single())
 }

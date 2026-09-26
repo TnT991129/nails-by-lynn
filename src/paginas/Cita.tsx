@@ -151,6 +151,17 @@ export default function Cita() {
                 <span>{s.nombre}</span><span className="font-medium">{dinero(Number(s.precio), c.moneda)}</span>
               </div>
             ))}
+            {Number(c.descuento_monto ?? 0) > 0 && (
+              <>
+                <div className="flex justify-between text-[15px] text-estado-exito font-medium">
+                  <span>🎁 Descuento ({Number(c.descuento_porcentaje)}%)</span>
+                  <span>−{dinero(Number(c.descuento_monto), c.moneda)}</span>
+                </div>
+                <div className="flex justify-between text-[15px] font-semibold pt-1">
+                  <span>Total</span><span>{dinero(Number(c.total), c.moneda)}</span>
+                </div>
+              </>
+            )}
           </div>
           {Number(c.anticipo) > 0 && (
             <>
