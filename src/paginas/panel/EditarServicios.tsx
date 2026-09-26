@@ -41,6 +41,7 @@ function ListaServicios() {
   const q = useQuery({ queryKey: ['servicios-panel'], queryFn: listarServiciosPanel })
   const [editando, setEditando] = useState<string | null>(null)
   const [creando, setCreando] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
 
   if (q.isLoading) return <div className="space-y-2">
     {Array.from({length:3}).map((_,i) => <Esqueleto key={i} className="h-24" />)}
@@ -51,22 +52,35 @@ function ListaServicios() {
     <div className="space-y-2">
       {creando ? (
         <FormularioNuevoServicio
-          onCerrar={() => { setCreando(false); qc.invalidateQueries({ queryKey:['servicios-panel'] }) }} />
+          onCerrar={nuevoId => {
+            setCreando(false)
+            qc.invalidateQueries({ queryKey:['servicios-panel'] })
+            // Se abre en edición para poder añadirle la foto en el momento
+            if (nuevoId) { setEditando(nuevoId); setAviso('Servicio creado. Añádele una foto si quieres.') }
+          }} />
       ) : (
-        <Boton ancho onClick={() => setCreando(true)}>+ Nuevo servicio</Boton>
+        <Boton ancho onClick={() => { setCreando(true); setAviso(null) }}>+ Nuevo servicio</Boton>
+      )}
+
+      {aviso && (
+        <div className="rounded-lg border border-estado-exito/30 bg-[#E6F4EF] text-estado-exito text-[14px] px-4 py-3 flex justify-between gap-2">
+          <span>{aviso}</span>
+          <button onClick={() => setAviso(null)} aria-label="Cerrar aviso" className="shrink-0">✕</button>
+        </div>
       )}
 
       {q.data?.map(s => (
         <ItemServicio key={s.id} servicio={s}
           editando={editando === s.id}
-          onEditar={() => setEditando(s.id)}
-          onCerrar={() => { setEditando(null); qc.invalidateQueries({ queryKey:['servicios-panel'] }) }} />
+          onEditar={() => { setEditando(s.id); setAviso(null) }}
+          onAviso={setAviso}
+          onCerrar={() => { setEditando(null); qc.invalidateQueries({ queryKey:['servicios-panel'] }); qc.invalidateQueries({ queryKey:['servicios'] }) }} />
       ))}
     </div>
   )
 }
 
-function FormularioNuevoServicio({ onCerrar }: { onCerrar: () => void }) {
+function FormularioNuevoServicio({ onCerrar }: { onCerrar: (nuevoId?: string) => void }) {
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [precio, setPrecio] = useState('')
@@ -83,13 +97,13 @@ function FormularioNuevoServicio({ onCerrar }: { onCerrar: () => void }) {
       if (isNaN(p) || p < 0) throw new Error('Precio inválido')
       if (isNaN(d) || d < 15) throw new Error('Duración mínima 15 minutos')
       if (isNaN(b) || b < 0) throw new Error('Buffer inválido')
-      await crearServicio({
+      const creado = await crearServicio({
         name: nombre.trim(),
         description: descripcion.trim() || null,
         short_description: descripcion.trim() || null,
         price: p, duration_minutes: d, buffer_after_minutes: b,
-      })
-      onCerrar()
+      }) as { id?: string } | null
+      onCerrar(creado?.id)
     } catch (e) { setError(mensajeDeError(e)) }
     finally { setGuardando(false) }
   }
@@ -110,16 +124,16 @@ function FormularioNuevoServicio({ onCerrar }: { onCerrar: () => void }) {
       </div>
       {error && <Aviso>{error}</Aviso>}
       <div className="flex gap-2">
-        <Boton variante="secundario" onClick={onCerrar} className="flex-1">Cancelar</Boton>
+        <Boton variante="secundario" onClick={() => onCerrar()} className="flex-1">Cancelar</Boton>
         <Boton onClick={guardar} cargando={guardando} className="flex-1">Crear</Boton>
       </div>
     </Tarjeta>
   )
 }
 
-function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
+function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso }: {
   servicio: ServicioEdit; editando: boolean;
-  onEditar: () => void; onCerrar: () => void;
+  onEditar: () => void; onCerrar: () => void; onAviso: (t: string) => void;
 }) {
   const [nombre, setNombre] = useState(servicio.name)
   // La web muestra short_description; si estaba vacía o de relleno, se aprovecha lo escrito en description
@@ -154,14 +168,25 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
   }
 
   async function borrar() {
-    const msg = `¿Eliminar "${servicio.name}"?\n\nSi tiene citas asociadas, en su lugar quedará desactivado para preservar el historial.`
+    const msg = `¿Eliminar "${servicio.name}"?\n\nSi tiene citas en el historial, en su lugar se desactivará (las clientas dejan de verlo y el historial se conserva).`
     if (!confirm(msg)) return
     setEliminando(true); setError(null)
     try {
-      await eliminarServicio(servicio.id)
+      const r = await eliminarServicio(servicio.id) as { deleted?: boolean }
+      onAviso(r?.deleted
+        ? `«${servicio.name}» eliminado.`
+        : `«${servicio.name}» tiene citas en el historial: quedó desactivado y las clientas ya no lo ven.`)
       onCerrar()
     } catch (e) { setError(mensajeDeError(e)) }
     finally { setEliminando(false) }
+  }
+
+  async function reactivar() {
+    try {
+      await actualizarServicio(servicio.id, { is_active: true })
+      onAviso(`«${servicio.name}» vuelve a estar visible para las clientas.`)
+      onCerrar()
+    } catch (e) { setError(mensajeDeError(e)) }
   }
 
   if (!editando) return (
@@ -179,7 +204,7 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
         <div className="flex items-center gap-2">
           <span className="text-[16px] font-medium truncate">{servicio.name}</span>
           {!servicio.is_active && (
-            <span className="text-[11px] px-2 py-0.5 bg-tinta-tenue/20 rounded">Inactivo</span>
+            <span className="text-[11px] px-2 py-0.5 bg-tinta-tenue/15 text-tinta-suave rounded-full">Oculto</span>
           )}
         </div>
         <div className="text-[14px] text-tinta-tenue">
@@ -191,7 +216,12 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
           </div>
         )}
       </div>
-      <Boton variante="secundario" onClick={onEditar}>Editar</Boton>
+      <div className="flex flex-col gap-1.5 shrink-0">
+        <Boton variante="secundario" onClick={onEditar} className="!min-h-[40px] !px-4 !text-[14px]">Editar</Boton>
+        {!servicio.is_active && (
+          <button onClick={reactivar} className="text-[13px] text-rosa-800 font-semibold min-h-[32px]">Reactivar</button>
+        )}
+      </div>
     </Tarjeta>
   )
 
@@ -220,10 +250,7 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar }: {
         <Boton variante="secundario" onClick={onCerrar} className="flex-1">Cancelar</Boton>
         <Boton onClick={guardar} cargando={guardando} className="flex-1">Guardar</Boton>
       </div>
-      <button onClick={borrar} disabled={eliminando}
-        className="w-full text-[13px] text-estado-error min-h-[36px] disabled:opacity-50">
-        {eliminando ? 'Eliminando…' : '🗑 Eliminar servicio'}
-      </button>
+      <Boton variante="peligro" ancho onClick={borrar} cargando={eliminando}>Eliminar servicio</Boton>
     </Tarjeta>
   )
 }
@@ -340,7 +367,7 @@ function FormularioNuevoComplemento({ onCerrar }: { onCerrar: () => void }) {
       </div>
       {error && <Aviso>{error}</Aviso>}
       <div className="flex gap-2">
-        <Boton variante="secundario" onClick={onCerrar} className="flex-1">Cancelar</Boton>
+        <Boton variante="secundario" onClick={() => onCerrar()} className="flex-1">Cancelar</Boton>
         <Boton onClick={guardar} cargando={guardando} className="flex-1">Crear</Boton>
       </div>
     </Tarjeta>
@@ -374,11 +401,12 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
   }
 
   async function borrar() {
-    const msg = `¿Eliminar "${complemento.name}"?\n\nSi tiene citas asociadas, en su lugar quedará desactivado para preservar el historial.`
+    const msg = `¿Eliminar "${complemento.name}"?\n\nSi se usó en alguna cita, en su lugar se desactivará (las clientas dejan de verlo y el historial se conserva).`
     if (!confirm(msg)) return
     setEliminando(true); setError(null)
     try {
-      await eliminarComplemento(complemento.id)
+      const r = await eliminarComplemento(complemento.id) as { deleted?: boolean }
+      if (!r?.deleted) alert(`«${complemento.name}» se usó en citas anteriores: quedó desactivado y las clientas ya no lo ven.`)
       onCerrar()
     } catch (e) { setError(mensajeDeError(e)) }
     finally { setEliminando(false) }
@@ -390,7 +418,7 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
         <div className="flex items-center gap-2">
           <span className="text-[16px] font-medium truncate">{complemento.name}</span>
           {!complemento.is_active && (
-            <span className="text-[11px] px-2 py-0.5 bg-tinta-tenue/20 rounded">Inactivo</span>
+            <span className="text-[11px] px-2 py-0.5 bg-tinta-tenue/15 text-tinta-suave rounded-full">Oculto</span>
           )}
         </div>
         <div className="text-[14px] text-tinta-tenue">
@@ -418,10 +446,7 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
         <Boton variante="secundario" onClick={onCerrar} className="flex-1">Cancelar</Boton>
         <Boton onClick={guardar} cargando={guardando} className="flex-1">Guardar</Boton>
       </div>
-      <button onClick={borrar} disabled={eliminando}
-        className="w-full text-[13px] text-estado-error min-h-[36px] disabled:opacity-50">
-        {eliminando ? 'Eliminando…' : '🗑 Eliminar complemento'}
-      </button>
+      <Boton variante="peligro" ancho onClick={borrar} cargando={eliminando}>Eliminar complemento</Boton>
     </Tarjeta>
   )
 }
