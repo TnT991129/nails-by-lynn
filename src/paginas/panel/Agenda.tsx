@@ -71,7 +71,7 @@ export default function Agenda() {
       <div className="flex items-center justify-between">
         <button onClick={() => mover(-1)}
           className="min-h-[44px] px-4 text-tinta-suave">←</button>
-        <span className="text-[16px] capitalize">{titulo}</span>
+        <span className="text-[16px] first-letter:uppercase">{titulo}</span>
         <button onClick={() => mover(1)}
           className="min-h-[44px] px-4 text-tinta-suave">→</button>
       </div>
@@ -116,7 +116,7 @@ export default function Agenda() {
         <div className="space-y-4">
           {Object.entries(porDia).sort(([a],[b]) => a.localeCompare(b)).map(([fecha, citas]) => (
             <section key={fecha}>
-              <h3 className="text-[14px] font-medium capitalize mb-2">
+              <h3 className="text-[14px] font-medium first-letter:uppercase mb-2">
                 {fechaLarga(new Date(fecha).toISOString())}
               </h3>
               <div className="space-y-2">

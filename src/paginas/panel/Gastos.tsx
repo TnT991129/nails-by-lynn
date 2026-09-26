@@ -140,7 +140,7 @@ export default function Gastos() {
           return (
             <section key={mesClave}>
               <div className="flex justify-between items-baseline mb-2">
-                <h3 className="text-[14px] font-medium capitalize">{nombreMes}</h3>
+                <h3 className="text-[14px] font-medium first-letter:uppercase">{nombreMes}</h3>
                 <span className="text-[14px] font-display">{total.toLocaleString('es-CU')} CUP</span>
               </div>
               <div className="space-y-2">
@@ -152,7 +152,7 @@ export default function Gastos() {
                         <div className="text-[14px] font-medium truncate">
                           {g.description || etiquetaCat(g.category)}
                         </div>
-                        <div className="text-[12px] text-tinta-tenue capitalize">
+                        <div className="text-[12px] text-tinta-tenue first-letter:uppercase">
                           {fechaLarga(new Date(g.date + 'T12:00:00').toISOString())}
                         </div>
                       </div>

@@ -357,7 +357,7 @@ export function PasoResumen({
             <IconoCalendario tam={22} />
           </span>
           <div>
-            <div className="text-[18px] font-semibold capitalize">{fechaLarga(inicio)}</div>
+            <div className="text-[18px] font-semibold first-letter:uppercase">{fechaLarga(inicio)}</div>
             <div className="text-[14px] text-white/85">{hora(inicio)} · {duracion(duracionMin)}</div>
           </div>
         </div>

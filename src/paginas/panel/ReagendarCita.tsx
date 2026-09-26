@@ -66,7 +66,7 @@ export default function ReagendarCita({ cita, tokenAcceso, onCerrar }: {
     return (
       <Tarjeta className="space-y-3">
         <div className="text-[16px] font-medium">
-          ✅ Cita movida al <span className="capitalize">{fechaLarga(movidaA)}</span>, {hora(movidaA)}
+          ✅ Cita movida al {fechaLarga(movidaA)}, {hora(movidaA)}
         </div>
         {tokenAcceso && <Boton ancho onClick={avisar}>Avisar a {nombre} por WhatsApp</Boton>}
         <Boton variante="secundario" ancho onClick={onCerrar}>Listo</Boton>

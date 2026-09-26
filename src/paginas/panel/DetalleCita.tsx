@@ -83,7 +83,7 @@ export default function DetalleCita() {
           <Pildora estado={c.status} />
         </div>
         <div>
-          <div className="text-[19px] font-semibold capitalize">{fechaLarga(c.starts_at)}</div>
+          <div className="text-[19px] font-semibold first-letter:uppercase">{fechaLarga(c.starts_at)}</div>
           <div className="text-[16px]">{hora(c.starts_at)} – {hora(c.ends_at)}</div>
           <div className="text-[14px] text-tinta-tenue">{duracion(c.total_duration_minutes)}</div>
         </div>

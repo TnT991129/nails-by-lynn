@@ -110,7 +110,7 @@ export default function FichaClienta() {
       {proxima && (
         <Tarjeta className="bg-rosa-50 border border-rosa-200">
           <div className="text-[12px] tracking-wider uppercase text-tinta-tenue">Próxima cita</div>
-          <div className="text-[16px] mt-1 capitalize">
+          <div className="text-[16px] mt-1 first-letter:uppercase">
             {fechaLarga(proxima.starts_at)} · <span className="normal-case">{hora(proxima.starts_at)}</span>
           </div>
           <div className="text-[14px] text-tinta-suave">{proxima.servicios}</div>
@@ -137,7 +137,7 @@ export default function FichaClienta() {
             <Link key={x.id} to={`/panel/cita/${x.id}`} className="block">
               <Tarjeta className="flex items-center justify-between gap-2">
                 <div>
-                  <div className="text-[14px] capitalize">
+                  <div className="text-[14px] first-letter:uppercase">
                     {fechaLarga(x.starts_at)} · <span className="normal-case">{hora(x.starts_at)}</span>
                   </div>
                   <div className="text-[12px] text-tinta-tenue truncate">{x.servicios}</div>

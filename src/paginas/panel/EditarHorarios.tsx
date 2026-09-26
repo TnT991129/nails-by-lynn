@@ -244,7 +244,7 @@ function Bloqueos() {
         {q.data?.map(b => (
           <Tarjeta key={b.id} className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-medium capitalize">
+              <div className="text-[14px] font-medium first-letter:uppercase">
                 {fechaLarga(b.starts_at)}
               </div>
               <div className="text-[13px] text-tinta-tenue">

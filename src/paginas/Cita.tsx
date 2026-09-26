@@ -3,7 +3,7 @@ import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerCita, cancelarCita } from '../lib/api'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
-import { IconoCheck, IconoUbicacion, IconoWhatsApp, IconoReloj } from '../componentes/iconos'
+import { IconoCheck, IconoUbicacion, IconoWhatsApp, IconoReloj, IconoCalendario } from '../componentes/iconos'
 import { fechaLarga, hora, duracion, dinero } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
 import { olvidarToken, citaAvisada, marcarAvisada } from '../lib/almacenamiento'
@@ -135,7 +135,7 @@ export default function Cita() {
             <Pildora estado={c.estado} />
           </div>
           <div className="px-5 pb-5">
-            <div className="text-[22px] font-semibold capitalize leading-tight">{fechaLarga(c.inicio)}</div>
+            <div className="text-[22px] font-semibold first-letter:uppercase leading-tight">{fechaLarga(c.inicio)}</div>
             <div className="flex items-center gap-1.5 text-[15px] text-tinta-suave mt-1.5">
               <IconoReloj tam={16} /> {hora(c.inicio)} – {hora(c.fin)} · {duracion(c.duracion_minutos)}
             </div>
@@ -173,20 +173,21 @@ export default function Cita() {
 
         {activa && !confirmando && !reprogramando && (
           <div className="space-y-3">
-            {puedeCambiar && (
-              <Boton ancho onClick={() => { setReprogramando(true); setError(null) }}>
-                Cambiar fecha u hora
-              </Boton>
-            )}
-            {c.negocio.whatsapp && (
-              <a href={`https://wa.me/53${c.negocio.whatsapp}`} target="_blank" rel="noreferrer"
-                 className={estiloBoton('secundario', true)}>
-                <IconoWhatsApp tam={19} /> Contactar
-              </a>
-            )}
-            <Boton ancho variante="peligro" onClick={() => setConfirmando(true)}>
-              Cancelar cita
-            </Boton>
+            {/* Acciones principales, lado a lado; cancelar queda como enlace discreto */}
+            <div className={`grid gap-2.5 ${puedeCambiar && c.negocio.whatsapp ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {puedeCambiar && (
+                <Boton variante="secundario" onClick={() => { setReprogramando(true); setError(null) }}
+                       className="!px-3 !text-[15px]">
+                  <IconoCalendario tam={18} /> Cambiar fecha
+                </Boton>
+              )}
+              {c.negocio.whatsapp && (
+                <a href={`https://wa.me/53${c.negocio.whatsapp}`} target="_blank" rel="noreferrer"
+                   className={`${estiloBoton('secundario')} !px-3 !text-[15px]`}>
+                  <IconoWhatsApp tam={18} /> Escribir a Lynn
+                </a>
+              )}
+            </div>
             {reglasCambio && !puedeCambiar && (
               <p className="text-[13px] text-tinta-tenue text-center">
                 {!quedanCambios
@@ -195,16 +196,21 @@ export default function Cita() {
                 {' '}Si necesitas moverla, escríbeme por WhatsApp.
               </p>
             )}
-            <p className="text-[13px] text-tinta-tenue text-center">
-              Consulta las <EnlacePoliticas texto="políticas de cancelación y cambios" />.
-            </p>
+            <div className="flex items-center justify-center gap-1 text-[13px] text-tinta-tenue pt-1">
+              <button onClick={() => setConfirmando(true)}
+                      className="min-h-[44px] px-2 text-estado-error underline underline-offset-2">
+                Cancelar cita
+              </button>
+              <span aria-hidden>·</span>
+              <EnlacePoliticas texto="Políticas" className="min-h-[44px] px-2 !font-normal !text-tinta-tenue" />
+            </div>
           </div>
         )}
 
         {confirmando && (
           <Tarjeta className="space-y-4 border border-rosa-200">
             <h2 className="text-[19px] font-semibold">¿Cancelar tu cita?</h2>
-            <p className="text-[14px] text-tinta-suave capitalize">
+            <p className="text-[14px] text-tinta-suave first-letter:uppercase">
               {c.servicios?.map(s => s.nombre).join(' + ')}<br />
               <span className="normal-case">{fechaLarga(c.inicio)}, {hora(c.inicio)}</span>
             </p>

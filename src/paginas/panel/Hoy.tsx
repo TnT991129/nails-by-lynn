@@ -31,7 +31,7 @@ export default function Hoy() {
   return (
     <div className="p-5 space-y-5">
       <div>
-        <p className="text-[14px] text-tinta-tenue capitalize">{fechaLarga(new Date().toISOString())}</p>
+        <p className="text-[14px] text-tinta-tenue first-letter:uppercase">{fechaLarga(new Date().toISOString())}</p>
         <h1 className="font-display text-[30px] mt-1">Hoy</h1>
       </div>
 

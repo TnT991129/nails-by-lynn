@@ -64,7 +64,7 @@ export default function ListaEspera() {
         return (
           <section key={dia} className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-[17px] font-semibold capitalize">{fechaLarga(`${dia}T16:00:00Z`)}</h2>
+              <h2 className="text-[17px] font-semibold first-letter:uppercase">{fechaLarga(`${dia}T16:00:00Z`)}</h2>
               {turnos.length > 0 ? (
                 <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-[#E6F4EF] text-estado-exito">
                   Libre: {turnos.map(hora).join(' y ')}
