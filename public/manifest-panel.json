@@ -1,0 +1,25 @@
+{
+  "id": "./panel",
+  "name": "Nails by Lynn · Panel",
+  "short_name": "Panel Lynn",
+  "description": "Agenda, clientas y citas de Nails by Lynn",
+  "start_url": "./panel",
+  "scope": "./panel",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF7F8",
+  "theme_color": "#2B1721",
+  "icons": [
+    {
+      "src": "icono-panel-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icono-panel-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

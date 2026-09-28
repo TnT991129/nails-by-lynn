@@ -33,6 +33,7 @@ function Cargando() {
 }
 import './index.css'
 import { codigoDeError } from './lib/errores'
+import { escucharInstalacion } from './lib/panel/instalar'
 
 // Service worker: carga instantánea en visitas repetidas y funcionamiento sin conexión.
 // Solo en producción, para no interferir con el servidor de desarrollo.
@@ -48,6 +49,9 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     }
   })
 }
+
+// Aviso de "instalar app" (el panel lo usa para su botón)
+escucharInstalacion()
 
 // Vite avisa cuando no puede cargar un trozo de la app (típico tras publicar una versión nueva)
 window.addEventListener('vite:preloadError', e => {
