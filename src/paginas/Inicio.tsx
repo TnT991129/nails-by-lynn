@@ -101,6 +101,11 @@ export default function Inicio() {
           {qServicios.isLoading && Array.from({length:3}).map((_,i) =>
             <Esqueleto key={i} className="h-24" />)}
           {qServicios.isError && <Aviso>{mensajeDeError(qServicios.error)}</Aviso>}
+          {qServicios.data && qServicios.data.length === 0 && (
+            <p className="text-[14px] text-tinta-tenue bg-white rounded-lg border border-rosa-100 p-4">
+              Estoy actualizando mis servicios. Escríbeme por WhatsApp para reservar.
+            </p>
+          )}
           {qServicios.data?.map(s => (
             <Link key={s.id} to={`/reservar?servicio=${s.slug}`}
               className="group block bg-white rounded-xl border border-rosa-100/80 shadow-suave p-4

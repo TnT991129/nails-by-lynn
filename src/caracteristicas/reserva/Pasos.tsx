@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import type { Servicio, Addon } from '../../lib/tipos'
 import { Tarjeta, Campo, Esqueleto, Aviso, Vacio } from '../../componentes/ui'
 import { IconoCheck, IconoReloj, IconoSol, IconoTarde, IconoCalendario } from '../../componentes/iconos'
@@ -58,6 +59,16 @@ export function PasoServicio({
 }: {
   servicios: Servicio[]; seleccionados: string[]; alternar: (id: string) => void
 }) {
+  // Sin servicios activos (Lynn los ocultó o borró): explicarlo en vez de dejar la pantalla vacía
+  if (servicios.length === 0) {
+    return (
+      <Vacio titulo="Ahora mismo no hay servicios para reservar"
+             texto="Escríbeme por WhatsApp y te busco un hueco.">
+        <Link to="/" className="text-rosa-800 font-medium underline">Volver al inicio</Link>
+      </Vacio>
+    )
+  }
+
   return (
     <div className="space-y-5 animate-entrada">
       <Titulo titulo="¿Qué te vas a hacer?" texto="Puedes elegir más de un servicio." />
