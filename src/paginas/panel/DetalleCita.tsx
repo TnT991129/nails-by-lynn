@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { citasEnRango, cambiarEstadoCita, actualizarNotaInterna } from '../../lib/panel/api-panel'
+import { obtenerCitaPanel, cambiarEstadoCita, actualizarNotaInterna } from '../../lib/panel/api-panel'
 import { sb } from '../../lib/panel/supabase-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, duracion, dinero } from '../../lib/formato'
@@ -24,17 +24,9 @@ export default function DetalleCita() {
   const [cancelando, setCancelando] = useState(false)
   const [motivo, setMotivo] = useState('')
 
-  // Cargamos todas las citas de un rango amplio y filtramos, para reutilizar cache
   const q = useQuery({
     queryKey: ['cita-panel', id],
-    queryFn: async () => {
-      const d = new Date(); d.setMonth(d.getMonth() - 6)
-      const f = new Date(); f.setMonth(f.getMonth() + 6)
-      const filas = await citasEnRango(d.toISOString(), f.toISOString())
-      const c = filas.find(x => x.id === id)
-      if (!c) throw new Error('CITA_NO_ENCONTRADA')
-      return c
-    },
+    queryFn: () => obtenerCitaPanel(id),
   })
 
   // Debe ir antes de cualquier return: los hooks siempre en el mismo orden

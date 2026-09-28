@@ -15,7 +15,7 @@ const MAX_IMAGENES = 80
 const MAX_ARCHIVOS_APP = 60   // cada versión publicada deja JS/CSS nuevos; los viejos se descartan
 
 const BASE = new URL(self.registration.scope).pathname   // "/nails-by-lynn/"
-const TABLAS_PUBLICAS = ['businesses', 'services', 'service_addons', 'schedule_rules', 'gallery_photos']
+const TABLAS_PUBLICAS = ['businesses', 'services', 'service_addons', 'schedule_rules', 'schedule_exceptions', 'gallery_photos']
 
 self.addEventListener('install', evento => {
   evento.waitUntil(caches.open(CACHE_APP).then(c => c.add(BASE)).then(() => self.skipWaiting()))

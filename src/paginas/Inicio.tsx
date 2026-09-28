@@ -42,7 +42,7 @@ export default function Inicio() {
             <source srcSet={`${BASE}hero-lynn-movil.webp`} type="image/webp" />
             <img src={`${BASE}hero-lynn.jpg`} alt="Lynn en su estudio de uñas"
                  className="absolute inset-0 w-full h-full object-cover object-[60%_center]"
-                 fetchPriority="high" />
+                 {...{ fetchpriority: 'high' }} />{/* React 18 solo pasa el atributo en minúsculas */}
           </picture>
           <div className="absolute inset-0"
                style={{ background:'linear-gradient(to bottom, rgba(43,23,33,0) 35%, rgba(43,23,33,.85) 100%)' }} />

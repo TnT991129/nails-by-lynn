@@ -32,6 +32,7 @@ function Cargando() {
   )
 }
 import './index.css'
+import { codigoDeError } from './lib/errores'
 
 // Service worker: carga instantánea en visitas repetidas y funcionamiento sin conexión.
 // Solo en producción, para no interferir con el servidor de desarrollo.
@@ -77,7 +78,8 @@ function Rutas() {
 const qc = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
+      // Solo se reintentan fallos de red; un error de negocio (CITA_NO_ENCONTRADA…) no cambia al repetir
+      retry: (intentos, error) => intentos < 2 && !codigoDeError(error),
       retryDelay: a => Math.min(1000 * 2 ** a, 8000),
       staleTime: 60_000,
       refetchOnWindowFocus: false,
@@ -88,7 +90,8 @@ const qc = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={qc}>
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <BrowserRouter basename={import.meta.env.BASE_URL}
+                     future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Rutas />
         <Navegacion />
       </BrowserRouter>

@@ -48,6 +48,12 @@ export function dinero(monto: number, moneda = 'CUP'): string {
   return moneda === 'USD' ? `$${n}` : `${n} CUP`
 }
 
+/** Importe siempre con cifra (0 CUP, no "Por definir"): para totales, estadísticas y gastos */
+export function importe(monto: number, moneda = 'CUP'): string {
+  const n = new Intl.NumberFormat('es-CU', { maximumFractionDigits: 2 }).format(monto || 0)
+  return moneda === 'USD' ? `$${n}` : `${n} CUP`
+}
+
 export function fechaISO(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA }).format(d)
 }

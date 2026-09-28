@@ -297,7 +297,7 @@ function Bloqueos() {
           <label className="block">
             <span className="block text-[14px] text-tinta-suave mb-1.5">Fecha</span>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              min={new Date().toISOString().slice(0,10)}
+              min={fechaISO(new Date())}
               className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
           </label>
           <label className="flex items-center gap-2 min-h-[44px]">

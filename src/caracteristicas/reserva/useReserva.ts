@@ -12,10 +12,13 @@ export type Datos = {
 const DATOS_VACIOS: Datos = { nombre:'', telefono:'', email:'', instagram:'', nota:'' }
 
 export function useReserva(servicios: Servicio[], addons: Addon[]) {
+  // Una sesión por reserva: así cada turno retenido sustituye al anterior en el servidor
+  // (crear_hold borra las retenciones de la misma sesión) en vez de acumularse.
+  useState(() => nuevoTokenSesion())
   const [paso, setPaso] = useState<Paso>(1)
   const [seleccionados, setSeleccionados] = useState<string[]>([])
   const [addonsElegidos, setAddonsElegidos] = useState<string[]>([])
-  const [fecha, setFecha] = useState<string | null>(null)
+  const [fecha, setFechaElegida] = useState<string | null>(null)
   const [inicio, setInicio] = useState<string | null>(null)
   const [expiraEn, setExpiraEn] = useState<string | null>(null)
   const [datos, setDatos] = useState<Datos>(DATOS_VACIOS)
@@ -65,6 +68,12 @@ export function useReserva(servicios: Servicio[], addons: Addon[]) {
     [serviciosElegidos, addonsActivos],
   )
 
+  // Otro día = la hora elegida (y su retención) ya no vale
+  const setFecha = useCallback((f: string) => {
+    if (f !== fecha) { setInicio(null); setExpiraEn(null) }
+    setFechaElegida(f)
+  }, [fecha])
+
   const alternarServicio = useCallback((id: string) => {
     setSeleccionados(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
     setInicio(null); setExpiraEn(null)
@@ -76,8 +85,7 @@ export function useReserva(servicios: Servicio[], addons: Addon[]) {
   }, [])
 
   const retener = useCallback(async (horaISO: string) => {
-    const sesion = nuevoTokenSesion()
-    const r = await crearHold(horaISO, duracionTotal, sesion, bufferTotal || undefined)
+    const r = await crearHold(horaISO, duracionTotal, tokenSesion(), bufferTotal || undefined)
     setInicio(horaISO)
     setExpiraEn(r.expira_en)
     return r

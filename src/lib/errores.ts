@@ -32,9 +32,10 @@ const MENSAJES: Record<string, string> = {
 
 export function mensajeDeError(e: unknown): string {
   const raw = (e as { message?: string })?.message ?? ''
-  for (const clave of Object.keys(MENSAJES)) {
-    if (raw.includes(clave)) return MENSAJES[clave]
-  }
+  const clave = Object.keys(MENSAJES)
+    .filter(k => raw.includes(k))
+    .sort((a, b) => b.length - a.length)[0]   // la más específica
+  if (clave) return MENSAJES[clave]
   if (raw.toLowerCase().includes('fetch') || raw.toLowerCase().includes('network')) {
     return 'Parece que no hay conexión. Revisa tus datos o el wifi.'
   }

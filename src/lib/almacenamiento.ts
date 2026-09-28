@@ -45,14 +45,19 @@ function aleatorio(): string {
   return Array.from(b, x => x.toString(16).padStart(2, '0')).join('')
 }
 
+// También en memoria: si el navegador no deja guardar, la retención y la cita usan la misma sesión
+let sesionEnMemoria: string | null = null
+
 export function tokenSesion(): string {
-  let t = leer<string | null>(CLAVE_SESION, null)
+  let t = sesionEnMemoria ?? leer<string | null>(CLAVE_SESION, null)
   if (!t) { t = aleatorio(); escribir(CLAVE_SESION, t) }
+  sesionEnMemoria = t
   return t
 }
 
 export function nuevoTokenSesion(): string {
   const t = aleatorio()
+  sesionEnMemoria = t
   escribir(CLAVE_SESION, t)
   return t
 }

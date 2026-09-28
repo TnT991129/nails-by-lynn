@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { resumenMes, topServiciosMes, topClientasMes } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
-import { dinero } from '../../lib/formato'
+import { importe, fechaISO } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
 
@@ -10,9 +10,10 @@ const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
 export default function Estadisticas() {
-  const hoy = new Date()
-  const [año, setAño] = useState(hoy.getFullYear())
-  const [mes, setMes] = useState(hoy.getMonth())
+  // Mes actual según La Habana
+  const [añoHoy, mesHoy] = fechaISO(new Date()).split('-').map(Number)
+  const [año, setAño] = useState(añoHoy)
+  const [mes, setMes] = useState(mesHoy - 1)
 
   function mover(dir: -1 | 1) {
     let m = mes + dir; let a = año
@@ -21,7 +22,7 @@ export default function Estadisticas() {
     setMes(m); setAño(a)
   }
 
-  const esMesActual = año === hoy.getFullYear() && mes === hoy.getMonth()
+  const esMesActual = año === añoHoy && mes === mesHoy - 1
 
   const qResumen = useQuery({
     queryKey: ['resumen', año, mes],
@@ -56,11 +57,11 @@ export default function Estadisticas() {
           <div className="grid grid-cols-2 gap-3">
             <Tarjeta className="text-center py-4">
               <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Ingresos</div>
-              <div className="font-display text-[24px] mt-1">{dinero(qResumen.data.ingresos)}</div>
+              <div className="font-display text-[24px] mt-1">{importe(qResumen.data.ingresos)}</div>
             </Tarjeta>
             <Tarjeta className="text-center py-4">
               <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Gastos</div>
-              <div className="font-display text-[24px] mt-1">{dinero(qResumen.data.gastos)}</div>
+              <div className="font-display text-[24px] mt-1">{importe(qResumen.data.gastos)}</div>
             </Tarjeta>
           </div>
 
@@ -70,7 +71,7 @@ export default function Estadisticas() {
             <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Ingreso neto</div>
             <div className={`font-display text-[30px] mt-1 ${
               qResumen.data.neto >= 0 ? 'text-rosa-900' : 'text-red-700'
-            }`}>{dinero(qResumen.data.neto)}</div>
+            }`}>{importe(qResumen.data.neto)}</div>
           </Tarjeta>
 
           <div className="grid grid-cols-3 gap-2 text-center">
@@ -91,7 +92,7 @@ export default function Estadisticas() {
           <div className="grid grid-cols-2 gap-3">
             <Tarjeta className="py-3">
               <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Ticket promedio</div>
-              <div className="font-display text-[19px] mt-1">{dinero(qResumen.data.ticket_promedio)}</div>
+              <div className="font-display text-[19px] mt-1">{importe(qResumen.data.ticket_promedio)}</div>
             </Tarjeta>
             <Tarjeta className="py-3">
               <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Clientas</div>
@@ -114,7 +115,7 @@ export default function Estadisticas() {
                 <div className="text-[14px] font-medium truncate">{s.nombre}</div>
                 <div className="text-[12px] text-tinta-tenue">{s.cantidad} {s.cantidad === 1 ? 'cita' : 'citas'}</div>
               </div>
-              <div className="text-[14px] font-display shrink-0">{dinero(s.ingresos)}</div>
+              <div className="text-[14px] font-display shrink-0">{importe(s.ingresos)}</div>
             </Tarjeta>
           ))}
         </div>
@@ -133,7 +134,7 @@ export default function Estadisticas() {
                 <div className="text-[14px] font-medium truncate">{c.nombre}</div>
                 <div className="text-[12px] text-tinta-tenue">{c.visitas} {c.visitas === 1 ? 'visita' : 'visitas'}</div>
               </div>
-              <div className="text-[14px] font-display shrink-0">{dinero(c.gastado)}</div>
+              <div className="text-[14px] font-display shrink-0">{importe(c.gastado)}</div>
             </Tarjeta>
           ))}
         </div>

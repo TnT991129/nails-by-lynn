@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listarGastos, crearGasto, eliminarGasto, type CategoriaGasto } from '../../lib/panel/api-panel'
 import { Boton, Campo, Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
-import { fechaLarga } from '../../lib/formato'
+import { fechaLarga, fechaISO } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
 
@@ -25,7 +25,7 @@ function etiquetaCat(c: string) {
 export default function Gastos() {
   const qc = useQueryClient()
   const [nuevo, setNuevo] = useState(false)
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
+  const [fecha, setFecha] = useState(fechaISO(new Date()))   // hoy en La Habana
   const [categoria, setCategoria] = useState<CategoriaGasto>('MATERIAL')
   const [descripcion, setDescripcion] = useState('')
   const [monto, setMonto] = useState('')

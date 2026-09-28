@@ -1,8 +1,9 @@
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { notifsDeCita, registrarEnvio, type CitaAgenda } from '../../lib/panel/api-panel'
+import { notifsDeCita, registrarEnvio, listarListaEspera, type CitaAgenda } from '../../lib/panel/api-panel'
 import { armarMensaje, enlaceWhatsApp } from '../../lib/panel/whatsapp'
 import { IconoWhatsApp, IconoCheck } from '../../componentes/iconos'
-import { fechaLarga, hora } from '../../lib/formato'
+import { fechaLarga, hora, fechaISO } from '../../lib/formato'
 
 // Tras cancelar Lynn una cita: avisar a la clienta por WhatsApp con el mensaje ya escrito
 export default function AvisoCancelacion({ cita, tokenAcceso, motivo }: {
@@ -11,6 +12,10 @@ export default function AvisoCancelacion({ cita, tokenAcceso, motivo }: {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['notifs', cita.id], queryFn: () => notifsDeCita(cita.id) })
   const avisada = q.data?.some(n => n.template_key === 'cancelacion' && n.status === 'ENVIADA') ?? false
+  // Si la cita era futura, el turno quedó libre: ¿hay clientas esperando ese día?
+  const futura = new Date(cita.starts_at).getTime() > Date.now()
+  const qEspera = useQuery({ queryKey: ['lista-espera'], queryFn: listarListaEspera, enabled: futura })
+  const enEspera = (qEspera.data ?? []).filter(e => e.preferred_date_from === fechaISO(new Date(cita.starts_at))).length
   const nombre = cita.cliente_nombre.trim().split(/\s+/)[0]
 
   const mensaje = armarMensaje('cancelacion', {
@@ -57,6 +62,12 @@ export default function AvisoCancelacion({ cita, tokenAcceso, motivo }: {
         <IconoWhatsApp tam={20} />
         {avisada ? 'Enviar otra vez' : `Avisar a ${nombre} por WhatsApp`}
       </a>
+      {futura && enEspera > 0 && (
+        <Link to="/panel/espera"
+          className="block rounded-lg bg-white border border-rosa-200 px-4 py-3 text-[14px] text-rosa-800 font-medium">
+          ⏳ {enEspera === 1 ? 'Hay 1 clienta' : `Hay ${enEspera} clientas`} en lista de espera para ese día. Avisarlas →
+        </Link>
+      )}
     </div>
   )
 }

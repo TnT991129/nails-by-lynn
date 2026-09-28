@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerClienta, citasDeClienta, actualizarNotasInternas, bloquearClienta, contadoresClientas,
   resumenHistorialClienta, eliminarClientaConHistorial } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
-import { fechaLarga, hora, dinero } from '../../lib/formato'
+import { fechaLarga, hora, dinero, importe } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
 import DescuentoClienta from './DescuentoClienta'
@@ -102,7 +102,7 @@ export default function FichaClienta() {
         </Tarjeta>
         <Tarjeta className="py-3">
           <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Gasto</div>
-          <div className="font-display text-[20px]">{dinero(Number(c.total_spent_cup))}</div>
+          <div className="font-display text-[20px]">{importe(Number(c.total_spent_cup))}</div>
         </Tarjeta>
         <Tarjeta className="py-3">
           <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">No vino</div>

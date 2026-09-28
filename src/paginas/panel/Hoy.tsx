@@ -4,13 +4,14 @@ import { useQuery } from '@tanstack/react-query'
 import { citasEnRango } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
 import { IconoFlecha } from '../../componentes/iconos'
-import { hora, duracion, fechaLarga } from '../../lib/formato'
+import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana } from '../../lib/formato'
+import { sumarDias } from '../../componentes/CalendarioMes'
 import { mensajeDeError } from '../../lib/errores'
 
+// Hoy de 00:00 a 24:00 en hora de La Habana, aunque el móvil esté en otra zona
 function iniFin(fecha: Date) {
-  const ini = new Date(fecha); ini.setHours(0,0,0,0)
-  const fin = new Date(ini); fin.setDate(fin.getDate() + 1)
-  return { desde: ini.toISOString(), hasta: fin.toISOString() }
+  const hoy = fechaISO(fecha)
+  return { desde: instanteEnHabana(hoy, '00:00'), hasta: instanteEnHabana(sumarDias(hoy, 1), '00:00') }
 }
 
 export default function Hoy() {

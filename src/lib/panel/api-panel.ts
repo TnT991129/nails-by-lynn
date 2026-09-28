@@ -38,6 +38,13 @@ export function citasEnRango(desde: string, hasta: string) {
   )
 }
 
+export async function obtenerCitaPanel(id: string): Promise<CitaAgenda> {
+  const { data, error } = await sb.from('v_agenda').select('*').eq('id', id).maybeSingle()
+  if (error) throw error
+  if (!data) throw new Error('CITA_NO_ENCONTRADA')
+  return data as CitaAgenda
+}
+
 export function cambiarEstadoCita(id: string, nuevoEstado:
   'CONFIRMADA'|'EN_CURSO'|'COMPLETADA'|'NO_SHOW'|'CANCELADA_NEGOCIO', motivo?: string) {
   const parche: Record<string, unknown> = { status: nuevoEstado, updated_at: new Date().toISOString() }
@@ -392,13 +399,15 @@ export type FilaClienta = { id: string; nombre: string; visitas: number; gastado
 
 // Devuelve un rango [ini, fin) que cubre un mes en hora local Havana
 function rangoMes(año: number, mesCero: number) {
-  const ini = new Date(Date.UTC(año, mesCero, 1, 4, 0, 0))  // Havana ~ UTC-4/-5
-  const fin = new Date(Date.UTC(año, mesCero + 1, 1, 4, 0, 0))
-  return { ini: ini.toISOString(), fin: fin.toISOString() }
+  const p = (n: number) => String(n).padStart(2, '0')
+  const sig = new Date(Date.UTC(año, mesCero + 1, 1))
+  const diaIni = `${año}-${p(mesCero + 1)}-01`
+  const diaFin = `${sig.getUTCFullYear()}-${p(sig.getUTCMonth() + 1)}-01`
+  return { ini: instanteEnHabana(diaIni, '00:00'), fin: instanteEnHabana(diaFin, '00:00'), diaIni, diaFin }
 }
 
 export async function resumenMes(año: number, mesCero: number): Promise<ResumenMes> {
-  const { ini, fin } = rangoMes(año, mesCero)
+  const { ini, fin, diaIni, diaFin } = rangoMes(año, mesCero)
 
   // Traer todas las citas del mes (para contar completadas, no-shows, canceladas)
   const { data: citas, error: eCit } = await sb.from('appointments')
@@ -408,11 +417,10 @@ export async function resumenMes(año: number, mesCero: number): Promise<Resumen
   if (eCit) throw eCit
 
   // Traer gastos del mes
-  const iniFecha = ini.slice(0, 10), finFecha = fin.slice(0, 10)
   const { data: gastos, error: eG } = await sb.from('expenses')
     .select('amount, currency')
     .eq('business_id', NEGOCIO_ID)
-    .gte('date', iniFecha).lt('date', finFecha)
+    .gte('date', diaIni).lt('date', diaFin)
   if (eG) throw eG
 
   const completadas = (citas ?? []).filter(c => c.status === 'COMPLETADA')
