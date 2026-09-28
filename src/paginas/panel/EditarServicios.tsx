@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   listarServiciosPanel, actualizarServicio, crearServicio, eliminarServicio, cambiarFotoServicio,
-  listarComplementos, actualizarComplemento, crearComplemento, eliminarComplemento,
+  listarComplementos, actualizarComplemento, crearComplemento, eliminarComplemento, guardarOrden,
   type ServicioEdit, type ComplementoEdit,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
+import ListaOrdenable from './ListaOrdenable'
 
 export default function EditarServicios() {
   const [pestaña, setPestaña] = useState<'servicios' | 'complementos'>('servicios')
@@ -43,6 +44,18 @@ function ListaServicios() {
   const [creando, setCreando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
 
+  // Nuevo orden: se ve al momento y se guarda por detrás; la web lo muestra igual
+  async function reordenar(nuevos: ServicioEdit[]) {
+    qc.setQueryData(['servicios-panel'], nuevos.map((s, i) => ({ ...s, sort_order: (i + 1) * 10 })))
+    try {
+      await guardarOrden('services', nuevos)
+      qc.invalidateQueries({ queryKey: ['servicios'] })
+    } catch (e) {
+      setAviso(`No se pudo guardar el orden: ${mensajeDeError(e)}`)
+      qc.invalidateQueries({ queryKey: ['servicios-panel'] })
+    }
+  }
+
   if (q.isLoading) return <div className="space-y-2">
     {Array.from({length:3}).map((_,i) => <Esqueleto key={i} className="h-24" />)}
   </div>
@@ -69,13 +82,21 @@ function ListaServicios() {
         </div>
       )}
 
-      {q.data?.map(s => (
-        <ItemServicio key={s.id} servicio={s}
-          editando={editando === s.id}
-          onEditar={() => { setEditando(s.id); setAviso(null) }}
-          onAviso={setAviso}
-          onCerrar={() => { setEditando(null); qc.invalidateQueries({ queryKey:['servicios-panel'] }); qc.invalidateQueries({ queryKey:['servicios'] }) }} />
-      ))}
+      {(q.data?.length ?? 0) > 1 && (
+        <p className="text-[13px] text-tinta-tenue px-1">
+          Arrastra desde ⋮⋮ (o usa ▲ ▼) para cambiar el orden en que las clientas ven los servicios.
+        </p>
+      )}
+
+      <ListaOrdenable items={q.data ?? []} onCambio={reordenar} deshabilitado={!!editando || creando}>
+        {(s, asa) => (
+          <ItemServicio servicio={s} asa={asa}
+            editando={editando === s.id}
+            onEditar={() => { setEditando(s.id); setAviso(null) }}
+            onAviso={setAviso}
+            onCerrar={() => { setEditando(null); qc.invalidateQueries({ queryKey:['servicios-panel'] }); qc.invalidateQueries({ queryKey:['servicios'] }) }} />
+        )}
+      </ListaOrdenable>
     </div>
   )
 }
@@ -131,9 +152,9 @@ function FormularioNuevoServicio({ onCerrar }: { onCerrar: (nuevoId?: string) =>
   )
 }
 
-function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso }: {
+function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso, asa }: {
   servicio: ServicioEdit; editando: boolean;
-  onEditar: () => void; onCerrar: () => void; onAviso: (t: string) => void;
+  onEditar: () => void; onCerrar: () => void; onAviso: (t: string) => void; asa?: ReactNode;
 }) {
   const [nombre, setNombre] = useState(servicio.name)
   // La web muestra short_description; si estaba vacía o de relleno, se aprovecha lo escrito en description
@@ -190,7 +211,8 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso }: {
   }
 
   if (!editando) return (
-    <Tarjeta className="flex items-start justify-between gap-3">
+    <Tarjeta className="flex items-center justify-between gap-3 !pl-3">
+      {asa}
       {servicio.cover_image_url ? (
         <img src={servicio.cover_image_url} alt="" loading="lazy" crossOrigin="anonymous"
              className="w-14 h-14 rounded-lg object-cover shrink-0 bg-rosa-50" />
@@ -310,6 +332,19 @@ function ListaComplementos() {
   const q = useQuery({ queryKey: ['complementos-panel'], queryFn: listarComplementos })
   const [editando, setEditando] = useState<string | null>(null)
   const [creando, setCreando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function reordenar(nuevos: ComplementoEdit[]) {
+    qc.setQueryData(['complementos-panel'], nuevos.map((c, i) => ({ ...c, sort_order: (i + 1) * 10 })))
+    try {
+      setError(null)
+      await guardarOrden('service_addons', nuevos)
+      qc.invalidateQueries({ queryKey: ['addons'] })
+    } catch (e) {
+      setError(`No se pudo guardar el orden: ${mensajeDeError(e)}`)
+      qc.invalidateQueries({ queryKey: ['complementos-panel'] })
+    }
+  }
 
   if (q.isLoading) return <div className="space-y-2">
     {Array.from({length:2}).map((_,i) => <Esqueleto key={i} className="h-20" />)}
@@ -325,12 +360,21 @@ function ListaComplementos() {
         <Boton ancho onClick={() => setCreando(true)}>+ Nuevo complemento</Boton>
       )}
 
-      {q.data?.map(c => (
-        <ItemComplemento key={c.id} complemento={c}
-          editando={editando === c.id}
-          onEditar={() => setEditando(c.id)}
-          onCerrar={() => { setEditando(null); qc.invalidateQueries({ queryKey:['complementos-panel'] }) }} />
-      ))}
+      {error && <Aviso>{error}</Aviso>}
+      {(q.data?.length ?? 0) > 1 && (
+        <p className="text-[13px] text-tinta-tenue px-1">
+          Arrastra desde ⋮⋮ (o usa ▲ ▼) para cambiar el orden en el paso «¿Necesitas algo más?».
+        </p>
+      )}
+
+      <ListaOrdenable items={q.data ?? []} onCambio={reordenar} deshabilitado={!!editando || creando}>
+        {(c, asa) => (
+          <ItemComplemento complemento={c} asa={asa}
+            editando={editando === c.id}
+            onEditar={() => setEditando(c.id)}
+            onCerrar={() => { setEditando(null); qc.invalidateQueries({ queryKey:['complementos-panel'] }); qc.invalidateQueries({ queryKey:['addons'] }) }} />
+        )}
+      </ListaOrdenable>
     </div>
   )
 }
@@ -374,9 +418,9 @@ function FormularioNuevoComplemento({ onCerrar }: { onCerrar: () => void }) {
   )
 }
 
-function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
+function ItemComplemento({ complemento, editando, onEditar, onCerrar, asa }: {
   complemento: ComplementoEdit; editando: boolean;
-  onEditar: () => void; onCerrar: () => void;
+  onEditar: () => void; onCerrar: () => void; asa?: ReactNode;
 }) {
   const [nombre, setNombre] = useState(complemento.name)
   const [precio, setPrecio] = useState(String(complemento.extra_price))
@@ -413,7 +457,8 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar }: {
   }
 
   if (!editando) return (
-    <Tarjeta className="flex items-start justify-between gap-3">
+    <Tarjeta className="flex items-center justify-between gap-3 !pl-3">
+      {asa}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-[16px] font-medium truncate">{complemento.name}</span>

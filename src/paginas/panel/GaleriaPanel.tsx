@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   listarFotosPanel, subirImagen, crearFoto, actualizarFoto, eliminarFoto,
-  catalogoServicios, type FotoPanel,
+  catalogoServicios, guardarOrden, type FotoPanel,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
+import ListaOrdenable from './ListaOrdenable'
 
 type Servicio = { id: string; name: string }
 
@@ -22,6 +23,21 @@ export default function GaleriaPanel() {
   const [tieneConsentimiento, setTieneConsentimiento] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [ordenando, setOrdenando] = useState(false)
+  const [errorOrden, setErrorOrden] = useState<string | null>(null)
+
+  // Nuevo orden de las fotos: se ve al momento y la galería pública lo usa
+  async function reordenar(nuevas: FotoPanel[]) {
+    qc.setQueryData(['fotos-panel'], nuevas.map((f, i) => ({ ...f, sort_order: (i + 1) * 10 })))
+    try {
+      setErrorOrden(null)
+      await guardarOrden('gallery_photos', nuevas)
+      qc.invalidateQueries({ queryKey: ['fotos'] })
+    } catch (e) {
+      setErrorOrden(`No se pudo guardar el orden: ${mensajeDeError(e)}`)
+      qc.invalidateQueries({ queryKey: ['fotos-panel'] })
+    }
+  }
 
   function elegirArchivo(f: File | null) {
     setArchivo(f)
@@ -128,7 +144,21 @@ export default function GaleriaPanel() {
 
       {/* Galería actual */}
       <section>
-        <Etiqueta>Fotos ({qFotos.data?.length ?? 0})</Etiqueta>
+        <div className="flex items-center justify-between gap-2">
+          <Etiqueta>Fotos ({qFotos.data?.length ?? 0})</Etiqueta>
+          {(qFotos.data?.length ?? 0) > 1 && (
+            <button onClick={() => setOrdenando(!ordenando)}
+              className="min-h-[40px] px-4 rounded-full border border-rosa-200 bg-papel text-[14px] font-medium text-rosa-800">
+              {ordenando ? 'Listo' : 'Ordenar'}
+            </button>
+          )}
+        </div>
+        {ordenando && (
+          <p className="text-[13px] text-tinta-tenue mt-2">
+            Arrastra desde ⋮⋮ (o usa ▲ ▼). Las primeras son las que las clientas ven primero; las ⭐ salen en «Favoritas».
+          </p>
+        )}
+        {errorOrden && <div className="mt-2"><Aviso>{errorOrden}</Aviso></div>}
 
         {qFotos.isLoading && (
           <div className="grid grid-cols-3 gap-2 mt-3">
@@ -142,11 +172,31 @@ export default function GaleriaPanel() {
           </p>
         )}
 
-        <div className="grid grid-cols-3 gap-2 mt-3">
-          {qFotos.data?.map(f => (
-            <ThumbFoto key={f.id} foto={f} />
-          ))}
-        </div>
+        {ordenando ? (
+          <div className="mt-3">
+            <ListaOrdenable items={qFotos.data ?? []} onCambio={reordenar}>
+              {(f, asa) => (
+                <Tarjeta className="flex items-center gap-3 !p-2 !pl-2">
+                  {asa}
+                  <img src={f.thumbnail_url ?? f.image_url} alt="" loading="lazy"
+                       className="w-14 h-14 rounded-lg object-cover bg-rosa-100 shrink-0" />
+                  <div className="flex-1 min-w-0 text-[13px]">
+                    <div className="truncate">{f.caption || 'Sin título'}</div>
+                    <div className="text-tinta-tenue">
+                      {f.is_featured && '⭐ Favorita · '}{f.is_published ? 'Publicada' : 'Privada'}
+                    </div>
+                  </div>
+                </Tarjeta>
+              )}
+            </ListaOrdenable>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            {qFotos.data?.map(f => (
+              <ThumbFoto key={f.id} foto={f} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )

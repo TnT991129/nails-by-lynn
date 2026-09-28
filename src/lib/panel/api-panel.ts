@@ -616,6 +616,8 @@ export function listarFotosPanel() {
     sb.from('gallery_photos').select(
       'id, image_url, thumbnail_url, alt_text, caption, service_id, has_consent, is_featured, is_published, sort_order, created_at'
     ).eq('business_id', NEGOCIO_ID)
+     // Mismo orden que ve la clienta en la galería pública
+     .order('sort_order', { ascending: true })
      .order('created_at', { ascending: false })
      .limit(300)
   )
@@ -855,4 +857,20 @@ export function quitarDescuento(id: string) {
   return ejecutar(sb.from('clients').update({
     next_discount_percent: null, next_discount_note: null, next_discount_at: null,
   }).eq('id', id).select('id').single())
+}
+
+// ================== ORDEN (arrastrar y soltar) ==================
+// sort_order = 10, 20, 30… según la posición; solo se actualizan las filas que cambian.
+// La web muestra servicios, complementos y fotos ordenados por sort_order.
+export async function guardarOrden(
+  tabla: 'services' | 'service_addons' | 'gallery_photos',
+  filas: { id: string; sort_order: number }[],
+) {
+  const cambios = filas
+    .map((f, i) => ({ id: f.id, antes: f.sort_order, ahora: (i + 1) * 10 }))
+    .filter(c => c.antes !== c.ahora)
+  const respuestas = await Promise.all(
+    cambios.map(c => sb.from(tabla).update({ sort_order: c.ahora }).eq('id', c.id)))
+  const fallo = respuestas.find(r => r.error)?.error
+  if (fallo) throw fallo
 }
