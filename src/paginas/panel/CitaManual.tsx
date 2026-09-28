@@ -99,7 +99,7 @@ export default function CitaManual() {
               setServicioId(s.id); setHoraSel(''); setAddonsSel([])
             }}
               className={`w-full text-left px-4 py-3 rounded border
-                ${servicioId === s.id ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
+                ${servicioId === s.id ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-papel'}`}>
               <div className="flex justify-between">
                 <span>{s.name}</span>
                 <span className="text-[14px] text-tinta-tenue">
@@ -120,7 +120,7 @@ export default function CitaManual() {
               return (
                 <button key={a.id} onClick={() => toggleAddon(a.id)}
                   className={`w-full text-left px-4 py-3 rounded border
-                    ${activo ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
+                    ${activo ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-papel'}`}>
                   <div className="flex justify-between items-center">
                     <div>
                       <div className="text-[14px]">{a.name}</div>
@@ -176,7 +176,7 @@ export default function CitaManual() {
                   {grupo.map(h => (
                     <button key={h} onClick={() => { setHoraSel(h); setOtraHora('') }}
                       className={`min-h-[44px] rounded border text-[14px]
-                        ${horaSel === h && !otraHora ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
+                        ${horaSel === h && !otraHora ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-papel'}`}>
                       {hora(h)}
                     </button>
                   ))}
@@ -194,7 +194,7 @@ export default function CitaManual() {
           </label>
           <input id="otra-hora-manual" type="time" value={otraHora}
             onChange={e => { setOtraHora(e.target.value); setHoraSel('') }}
-            className="w-full min-h-[48px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-white
+            className="w-full min-h-[48px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel
                        focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
           {inicioElegido && (
             <p className="text-[14px] text-rosa-800 mt-2">

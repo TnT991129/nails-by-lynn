@@ -95,7 +95,7 @@ export default function Reserva() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-superficie-base">
-      <header className="bg-white/90 backdrop-blur-md border-b border-rosa-100 pt-3 sticky top-0 z-10">
+      <header className="bg-papel/90 backdrop-blur-md border-b border-rosa-100 pt-3 sticky top-0 z-10">
         <div className="flex items-center justify-between px-3 pb-2">
           <button onClick={() => r.paso === 1 ? navegar('/') : r.setPaso((r.paso - 1) as 1)}
                   className="w-11 h-11 rounded-full flex items-center justify-center text-tinta-suave hover:bg-rosa-50"
@@ -136,7 +136,7 @@ export default function Reserva() {
         )}
       </main>
 
-      <footer className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-rosa-100 shadow-flota
+      <footer className="sticky bottom-0 bg-papel/95 backdrop-blur-md border-t border-rosa-100 shadow-flota
                          px-5 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         {r.duracionTotal > 0 && (
           <div className="flex items-baseline justify-between gap-3 mb-2.5">

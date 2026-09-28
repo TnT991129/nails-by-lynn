@@ -171,7 +171,7 @@ export default function DetalleCita() {
                 </span>
                 <textarea value={motivo} onChange={e => setMotivo(e.target.value)} rows={2}
                   placeholder="Ej: me surgió un imprevisto de salud"
-                  className="w-full px-3 py-2 rounded-lg border border-rosa-200 text-[16px] bg-white
+                  className="w-full px-3 py-2 rounded-lg border border-rosa-200 text-[16px] bg-papel
                              focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
               </label>
               <div className="flex gap-2">

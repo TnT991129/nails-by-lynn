@@ -54,7 +54,7 @@ export default function ListaEspera({ fecha, servicioId, nombreInicial = '', tel
   }
 
   return (
-    <div className="text-left bg-white border border-rosa-100 rounded-xl p-4 space-y-3 animate-entrada">
+    <div className="text-left bg-papel border border-rosa-100 rounded-xl p-4 space-y-3 animate-entrada">
       <p className="text-[14px] text-tinta-suave">
         Te apuntamos para el <b>{dia}</b>. Si alguien cancela, Lynn te avisa por WhatsApp.
       </p>

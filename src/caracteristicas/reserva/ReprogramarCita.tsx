@@ -73,7 +73,7 @@ export default function ReprogramarCita({ token, cita, onCerrar }: {
         </div>
         {enlace && (
           <a href={enlace} target="_blank" rel="noreferrer"
-             className="w-full min-h-[56px] bg-[#25D366] text-white font-semibold text-[17px] rounded-full px-4
+             className="w-full min-h-[56px] bg-whatsapp text-white font-semibold text-[17px] rounded-full px-4
                         flex items-center justify-center gap-2 shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)]
                         active:scale-[0.98] transition">
             <IconoWhatsApp tam={22} /> Avisar a Lynn del cambio

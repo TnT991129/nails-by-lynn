@@ -10,7 +10,7 @@ export default function Politicas() {
         <h1 className="text-[34px] leading-tight mt-1">Políticas del estudio</h1>
       </section>
       <div className="px-4">
-        <div className="bg-white rounded-xl border border-rosa-100/80 shadow-suave p-5">
+        <div className="bg-papel rounded-xl border border-rosa-100/80 shadow-suave p-5">
           <ContenidoPoliticas />
         </div>
       </div>

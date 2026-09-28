@@ -53,7 +53,7 @@ export default function DescuentoClienta({ clienta }: { clienta: Cliente }) {
           </div>
           <a href={enlaceWhatsApp(clienta.phone, mensajeDescuento(clienta.full_name, activo, clienta.next_discount_note ?? null))}
              target="_blank" rel="noreferrer"
-             className="w-full min-h-[52px] rounded-full bg-[#25D366] text-white font-semibold text-[15px]
+             className="w-full min-h-[52px] rounded-full bg-whatsapp text-white font-semibold text-[15px]
                         flex items-center justify-center gap-2 active:scale-[0.98] transition
                         shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)]">
             <IconoWhatsApp tam={20} /> Avisar a {nombre} por WhatsApp
@@ -69,7 +69,7 @@ export default function DescuentoClienta({ clienta }: { clienta: Cliente }) {
             {RAPIDOS.map(n => (
               <button key={n} onClick={() => setPct(String(n))}
                 className={`flex-1 min-h-[44px] rounded-full border text-[14px] font-semibold transition
-                  ${pct === String(n) ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200 bg-white text-tinta-suave'}`}>
+                  ${pct === String(n) ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200 bg-papel text-tinta-suave'}`}>
                 {n}%
               </button>
             ))}
@@ -78,13 +78,13 @@ export default function DescuentoClienta({ clienta }: { clienta: Cliente }) {
             <label className="block">
               <span className="block text-[13px] text-tinta-suave mb-1">Otro %</span>
               <input value={pct} onChange={e => setPct(e.target.value)} inputMode="decimal"
-                className="w-full min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-white
+                className="w-full min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel
                            focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
             </label>
             <label className="block">
               <span className="block text-[13px] text-tinta-suave mb-1">Motivo (opcional)</span>
               <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Ej: por tu cumpleaños"
-                className="w-full min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-white
+                className="w-full min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel
                            focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
             </label>
           </div>

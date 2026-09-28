@@ -99,7 +99,7 @@ export default function Agenda() {
         {VISTAS.map(({ v, texto }) => (
           <button key={v} onClick={() => setVista(v)}
             className={`flex-1 px-3 py-2 rounded-full text-[14px] font-medium min-h-[40px] transition
-              ${vista === v ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
+              ${vista === v ? 'bg-papel text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
             {texto}
           </button>
         ))}
@@ -107,7 +107,7 @@ export default function Agenda() {
 
       <div className="flex items-center justify-between">
         <button onClick={() => mover(-1)} aria-label="Anterior"
-          className="w-11 h-11 rounded-full border border-rosa-100 bg-white flex items-center justify-center text-tinta-suave">
+          className="w-11 h-11 rounded-full border border-rosa-100 bg-papel flex items-center justify-center text-tinta-suave">
           <IconoAtras tam={20} />
         </button>
         <div className="text-center">
@@ -117,7 +117,7 @@ export default function Agenda() {
           )}
         </div>
         <button onClick={() => mover(1)} aria-label="Siguiente"
-          className="w-11 h-11 rounded-full border border-rosa-100 bg-white flex items-center justify-center text-tinta-suave">
+          className="w-11 h-11 rounded-full border border-rosa-100 bg-papel flex items-center justify-center text-tinta-suave">
           <IconoAtras tam={20} className="rotate-180" />
         </button>
       </div>
@@ -152,7 +152,7 @@ function VistaDia({ j, compacta = false }: { j: Jornada; compacta?: boolean }) {
       {j.turnos.map(tu => tu.cita
         ? <FilaCita key={tu.t} c={tu.cita} />
         : (
-          <div key={tu.t} className="flex items-center gap-3 rounded-lg border border-dashed border-rosa-200 bg-white/60 px-4 py-3">
+          <div key={tu.t} className="flex items-center gap-3 rounded-lg border border-dashed border-rosa-200 bg-papel/60 px-4 py-3">
             <div className="min-w-[64px] font-display text-[17px] text-tinta-suave">{horaDeTurno(tu.t)}</div>
             <div className="flex-1 text-[14px] text-estado-exito font-medium">Libre</div>
             {!pasado && (

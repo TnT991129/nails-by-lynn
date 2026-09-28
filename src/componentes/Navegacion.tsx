@@ -25,7 +25,7 @@ export default function Navegacion() {
   if (pathname.startsWith('/reservar') || pathname.startsWith('/panel')) return null
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-20 bg-white/90 backdrop-blur-md border-t border-rosa-100
+    <nav className="fixed bottom-0 inset-x-0 z-20 bg-papel/90 backdrop-blur-md border-t border-rosa-100
                     shadow-flota pb-[env(safe-area-inset-bottom)]">
       <ul className="flex items-center max-w-lg mx-auto px-2">
         <Item a="/" etiqueta="Inicio" icono={<IconoInicio />} />

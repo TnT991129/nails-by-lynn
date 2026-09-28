@@ -44,14 +44,14 @@ function Titulo({ titulo, texto }: { titulo: string; texto?: string }) {
 function Marca({ activo }: { activo: boolean }) {
   return (
     <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition
-                      ${activo ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
+                      ${activo ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200 bg-papel'}`}>
       {activo && <IconoCheck tam={14} strokeWidth={3} />}
     </span>
   )
 }
 
 const opcion = (activo: boolean) =>
-  `w-full text-left p-4 rounded-xl border bg-white transition duration-150 active:scale-[0.99]
+  `w-full text-left p-4 rounded-xl border bg-papel transition duration-150 active:scale-[0.99]
    ${activo ? 'border-rosa-600 ring-4 ring-rosa-100' : 'border-rosa-100 shadow-suave'}`
 
 export function PasoServicio({
@@ -217,7 +217,7 @@ export function PasoHora({
       <Titulo titulo="Elige tu turno" />
       {restante && (
         <p className={`inline-flex items-center gap-2 text-[13px] font-medium px-3 py-1.5 rounded-full
-                       ${urgente ? 'bg-[#FDF3E3] text-estado-aviso' : 'bg-rosa-50 text-rosa-800'}`}
+                       ${urgente ? 'bg-estado-aviso-fondo text-estado-aviso' : 'bg-rosa-50 text-rosa-800'}`}
            aria-live="polite">
           <IconoReloj tam={15} /> Te guardamos este turno · {restante}
         </p>
@@ -229,7 +229,7 @@ export function PasoHora({
           return (
             <button key={h} onClick={() => onElegir(h)} aria-pressed={activo}
               className={`rounded-xl border p-4 text-left flex flex-col gap-3 min-h-[128px] transition active:scale-[0.98]
-                ${activo ? 'border-rosa-600 bg-rosa-600 text-white shadow-boton' : 'border-rosa-100 bg-white shadow-suave'}`}>
+                ${activo ? 'border-rosa-600 bg-rosa-600 text-white shadow-boton' : 'border-rosa-100 bg-papel shadow-suave'}`}>
               <span className={`w-10 h-10 rounded-full flex items-center justify-center
                                 ${activo ? 'bg-white/20' : 'bg-rosa-50 text-rosa-600'}`}>
                 {manana ? <IconoSol tam={21} /> : <IconoTarde tam={21} />}
@@ -276,7 +276,7 @@ export function PasoDatos({
         <textarea value={datos.nota} rows={3}
           onChange={e => setDatos({ ...datos, nota: e.target.value })}
           placeholder="Prefiero tonos nude, tengo una uña partida…"
-          className="w-full px-4 py-3 rounded-lg border border-rosa-200 text-[16px] bg-white transition
+          className="w-full px-4 py-3 rounded-lg border border-rosa-200 text-[16px] bg-papel transition
                      focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500
                      placeholder:text-tinta-tenue/60" />
       </label>
@@ -330,7 +330,7 @@ export function PasoResumen({
         </div>
       </Tarjeta>
 
-      <label className="flex items-start gap-3 cursor-pointer bg-white rounded-lg border border-rosa-100 p-4">
+      <label className="flex items-start gap-3 cursor-pointer bg-papel rounded-lg border border-rosa-100 p-4">
         <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)}
                className="mt-0.5 w-5 h-5 accent-rosa-600 shrink-0" />
         <span className="text-[14px] text-tinta-suave">
@@ -338,8 +338,8 @@ export function PasoResumen({
         </span>
       </label>
 
-      <div className="flex gap-3 items-start bg-[#E9FBF0] border border-[#25D366]/30 rounded-lg p-4">
-        <span className="w-7 h-7 rounded-full bg-[#25D366] text-white text-[14px] font-bold
+      <div className="flex gap-3 items-start bg-whatsapp-fondo border border-whatsapp/30 rounded-lg p-4">
+        <span className="w-7 h-7 rounded-full bg-whatsapp text-white text-[14px] font-bold
                          flex items-center justify-center shrink-0" aria-hidden>!</span>
         <p className="text-[14px] text-tinta-suave">
           <b className="text-tinta">Importante:</b> al confirmar, toca el botón verde

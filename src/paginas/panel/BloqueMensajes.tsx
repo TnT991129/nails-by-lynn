@@ -88,7 +88,7 @@ export default function BloqueMensajes({ cita, tokenAcceso }: {
             <button key={k} onClick={() => abrir(k)}
               disabled={enviando !== null}
               className={`p-3 rounded border text-left min-h-[64px] disabled:opacity-60
-                ${enviado ? 'border-rosa-200 bg-rosa-50/50' : 'border-rosa-200 bg-white'}`}>
+                ${enviado ? 'border-rosa-200 bg-rosa-50/50' : 'border-rosa-200 bg-papel'}`}>
               <div className="flex items-center justify-between">
                 <span className="text-[13px] font-medium">{ETIQUETAS[k].icono} {ETIQUETAS[k].titulo}</span>
                 {enviado && <span className="text-[11px] text-rosa-700">✓</span>}

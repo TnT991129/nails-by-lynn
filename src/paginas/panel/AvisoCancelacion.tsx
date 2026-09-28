@@ -38,13 +38,13 @@ export default function AvisoCancelacion({ cita, tokenAcceso, motivo }: {
 
   return (
     <div className={`rounded-xl border-2 p-4 space-y-3
-                     ${avisada ? 'border-rosa-100 bg-white' : 'border-[#25D366] bg-[#E9FBF0]'}`}>
+                     ${avisada ? 'border-rosa-100 bg-papel' : 'border-whatsapp bg-whatsapp-fondo'}`}>
       {avisada ? (
         <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-estado-exito">
           <IconoCheck tam={16} strokeWidth={2.6} /> Clienta avisada de la cancelación
         </span>
       ) : (
-        <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#25D366] text-white text-[11px] font-bold uppercase tracking-wider">
+        <span className="inline-block px-2.5 py-0.5 rounded-full bg-whatsapp text-white text-[11px] font-bold uppercase tracking-wider">
           Falta avisar a la clienta
         </span>
       )}
@@ -57,14 +57,14 @@ export default function AvisoCancelacion({ cita, tokenAcceso, motivo }: {
       <a href={enlaceWhatsApp(cita.cliente_telefono, mensaje)} target="_blank" rel="noreferrer" onClick={registrar}
          className={`w-full min-h-[52px] rounded-full px-4 flex items-center justify-center gap-2 font-semibold
                      active:scale-[0.98] transition
-                     ${avisada ? 'border border-[#25D366] text-[#128C4A] bg-white text-[15px]'
-                               : 'bg-[#25D366] text-white text-[16px] shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)]'}`}>
+                     ${avisada ? 'border border-whatsapp text-whatsapp-texto bg-papel text-[15px]'
+                               : 'bg-whatsapp text-white text-[16px] shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)]'}`}>
         <IconoWhatsApp tam={20} />
         {avisada ? 'Enviar otra vez' : `Avisar a ${nombre} por WhatsApp`}
       </a>
       {futura && enEspera > 0 && (
         <Link to="/panel/espera"
-          className="block rounded-lg bg-white border border-rosa-200 px-4 py-3 text-[14px] text-rosa-800 font-medium">
+          className="block rounded-lg bg-papel border border-rosa-200 px-4 py-3 text-[14px] text-rosa-800 font-medium">
           ⏳ {enEspera === 1 ? 'Hay 1 clienta' : `Hay ${enEspera} clientas`} en lista de espera para ese día. Avisarlas →
         </Link>
       )}

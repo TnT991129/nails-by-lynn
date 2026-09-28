@@ -54,7 +54,7 @@ export default function Hoy() {
 
       {proxima && (
         <Link to={`/panel/cita/${proxima.id}`}
-          className="block rounded-xl bg-gradient-to-br from-rosa-600 to-rosa-800 text-white p-5 shadow-boton
+          className="block rounded-xl bg-gradient-to-br from-rosa-600 to-[#8f0d47] text-white p-5 shadow-boton
                      active:scale-[0.99] transition">
           <div className="text-[11px] font-semibold tracking-[0.2em] uppercase text-white/75">Próxima cita</div>
           <div className="font-display text-[36px] leading-none mt-2">{hora(proxima.starts_at)}</div>

@@ -20,7 +20,7 @@ export default function Mas() {
     <div className="p-5 space-y-3">
       <h1 className="text-[30px] leading-tight mb-1">Más</h1>
       <InstalarPanel />
-      <div className="bg-white rounded-xl border border-rosa-100/80 shadow-suave divide-y divide-rosa-100 overflow-hidden">
+      <div className="bg-papel rounded-xl border border-rosa-100/80 shadow-suave divide-y divide-rosa-100 overflow-hidden">
         {ITEMS.map(i => (
           <Link key={i.a} to={i.a} className="flex items-center gap-3 px-4 py-3.5 min-h-[64px] active:bg-rosa-50 transition-colors">
             <span className="w-10 h-10 rounded-full bg-rosa-50 text-rosa-600 flex items-center justify-center shrink-0">

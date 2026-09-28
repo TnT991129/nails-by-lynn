@@ -64,7 +64,7 @@ export default function MisCitas() {
     const semana = new Intl.DateTimeFormat('es', { timeZone: ZONA, weekday: 'long' }).format(d)
     return (
       <Link to={`/cita/${c.token}`}
-        className={`block bg-white rounded-xl border border-rosa-100/80 shadow-suave p-3.5
+        className={`block bg-papel rounded-xl border border-rosa-100/80 shadow-suave p-3.5
                     active:scale-[0.99] transition ${pasada ? 'opacity-75' : ''}`}>
         <div className="flex items-center gap-4">
           <div className={`w-16 h-16 rounded-lg flex flex-col items-center justify-center shrink-0
@@ -83,7 +83,7 @@ export default function MisCitas() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Pildora estado={c.estado} />
               {!pasada && ['PENDIENTE', 'CONFIRMADA'].includes(c.estado) && !citaAvisada(c.code) && (
-                <span className="text-[12px] font-semibold text-[#128C4A]">● Falta avisar a Lynn</span>
+                <span className="text-[12px] font-semibold text-whatsapp-texto">● Falta avisar a Lynn</span>
               )}
             </div>
           </div>

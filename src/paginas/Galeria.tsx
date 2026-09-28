@@ -72,13 +72,13 @@ export default function Galeria() {
               <div className="px-4 flex gap-2 pb-1">
                 <button onClick={() => setFiltro(null)}
                   className={`min-h-[40px] px-4 rounded-full text-[13px] font-medium whitespace-nowrap transition
-                    ${!filtro ? 'bg-tinta text-white' : 'bg-white border border-rosa-200 text-tinta-suave'}`}>
+                    ${!filtro ? 'bg-noche text-white' : 'bg-papel border border-rosa-200 text-tinta-suave'}`}>
                   Todas
                 </button>
                 {qServ.data.map(s => (
                   <button key={s.id} onClick={() => setFiltro(s.id)}
                     className={`min-h-[40px] px-4 rounded-full text-[13px] font-medium whitespace-nowrap transition
-                      ${filtro === s.id ? 'bg-tinta text-white' : 'bg-white border border-rosa-200 text-tinta-suave'}`}>
+                      ${filtro === s.id ? 'bg-noche text-white' : 'bg-papel border border-rosa-200 text-tinta-suave'}`}>
                     {s.name}
                   </button>
                 ))}
@@ -110,7 +110,7 @@ export default function Galeria() {
       {/* Visor de foto ampliada */}
       {ampliada && (
         <div onClick={() => setAmpliada(null)}
-             className="fixed inset-0 bg-tinta/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-entrada">
+             className="fixed inset-0 bg-noche/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-entrada">
           <img src={ampliada} alt="" crossOrigin="anonymous"
                className="max-w-full max-h-full object-contain rounded-lg" />
           <button onClick={() => setAmpliada(null)} aria-label="Cerrar"

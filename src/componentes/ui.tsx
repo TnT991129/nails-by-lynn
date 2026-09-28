@@ -4,10 +4,10 @@ import { IconoDestellos } from './iconos'
 type Variante = 'primario' | 'secundario' | 'fantasma' | 'peligro'
 
 const ESTILOS: Record<Variante, string> = {
-  primario:   'bg-rosa-600 text-white hover:bg-rosa-700 active:bg-rosa-800 shadow-boton',
-  secundario: 'bg-white text-rosa-800 border border-rosa-200 hover:bg-rosa-50',
+  primario:   'bg-rosa-600 text-white hover:brightness-110 active:brightness-95 shadow-boton',
+  secundario: 'bg-papel text-rosa-800 border border-rosa-200 hover:bg-rosa-50',
   fantasma:   'bg-transparent text-tinta-suave hover:bg-rosa-50',
-  peligro:    'bg-white text-estado-error border border-estado-error/60 hover:bg-red-50',
+  peligro:    'bg-papel text-estado-error border border-estado-error/60 hover:bg-estado-error-fondo',
 }
 
 /** Clases de botón, para usarlas también en <Link> y <a> sin anidar un <button> dentro */
@@ -42,7 +42,7 @@ export function Boton({
 
 export function Tarjeta({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`bg-white rounded-xl border border-rosa-100/80 shadow-suave p-5 ${className}`}>
+    <div className={`bg-papel rounded-xl border border-rosa-100/80 shadow-suave p-5 ${className}`}>
       {children}
     </div>
   )
@@ -57,13 +57,13 @@ export function Etiqueta({ children }: { children: ReactNode }) {
 }
 
 const PILDORAS: Record<string, string> = {
-  CONFIRMADA:        'bg-[#E6F4EF] text-estado-exito',
-  PENDIENTE:         'bg-[#FDF3E3] text-estado-aviso',
+  CONFIRMADA:        'bg-estado-exito-fondo text-estado-exito',
+  PENDIENTE:         'bg-estado-aviso-fondo text-estado-aviso',
   COMPLETADA:        'bg-rosa-50 text-rosa-800',
   EN_CURSO:          'bg-rosa-100 text-rosa-800',
   CANCELADA_CLIENTA: 'bg-superficie-base text-tinta-tenue',
   CANCELADA_NEGOCIO: 'bg-superficie-base text-tinta-tenue',
-  NO_SHOW:           'bg-[#FBEAEA] text-estado-error',
+  NO_SHOW:           'bg-estado-error-fondo text-estado-error',
 }
 
 const NOMBRES: Record<string, string> = {
@@ -91,7 +91,7 @@ export function Campo({
       <input
         {...props}
         aria-invalid={!!error}
-        className={`w-full min-h-[52px] px-4 rounded-lg border text-[16px] bg-white transition
+        className={`w-full min-h-[52px] px-4 rounded-lg border text-[16px] bg-papel transition
           focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500
           ${error ? 'border-estado-error' : 'border-rosa-200'}
           placeholder:text-tinta-tenue/60`}
@@ -125,7 +125,7 @@ export function Vacio({
 
 export function Aviso({ tipo = 'error', children }: { tipo?: 'error' | 'aviso'; children: ReactNode }) {
   const c = tipo === 'error'
-    ? 'bg-[#FBEAEA] text-estado-error border-estado-error/20'
-    : 'bg-[#FDF3E3] text-estado-aviso border-estado-aviso/20'
+    ? 'bg-estado-error-fondo text-estado-error border-estado-error/20'
+    : 'bg-estado-aviso-fondo text-estado-aviso border-estado-aviso/20'
   return <div role="alert" className={`rounded-lg border p-4 text-[14px] animate-entrada ${c}`}>{children}</div>
 }

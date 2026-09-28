@@ -1,17 +1,27 @@
 import type { Config } from 'tailwindcss'
 
+// Color desde variable CSS con canales RGB, para que funcionen opacidades como bg-rosa-600/40
+const v = (nombre: string) => `rgb(var(--${nombre}) / <alpha-value>)`
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Colores como variables CSS (src/index.css): claro por defecto, oscuro con html.oscuro
       colors: {
         rosa: {
-          50:'#FEF2F8',100:'#FEE6F2',200:'#FDCDE6',300:'#FBA2D0',400:'#F66CB2',
-          500:'#EE4397',600:'#D6156F',700:'#C4105F',800:'#A80E52',900:'#7C0A3C',
+          50:v('rosa-50'),100:v('rosa-100'),200:v('rosa-200'),300:v('rosa-300'),400:v('rosa-400'),
+          500:v('rosa-500'),600:v('rosa-600'),700:v('rosa-700'),800:v('rosa-800'),900:v('rosa-900'),
         },
-        tinta: { DEFAULT:'#2B1721', suave:'#4A2A38', tenue:'#7A6470' },
-        superficie: { blanco:'#FFFFFF', base:'#FBF7F8', rosa:'#FEF2F8' },
-        estado: { exito:'#0F7A5A', aviso:'#B87514', error:'#C4342F' },
+        tinta: { DEFAULT:v('tinta'), suave:v('tinta-suave'), tenue:v('tinta-tenue') },
+        superficie: { blanco:v('papel'), base:v('fondo'), rosa:v('rosa-50') },
+        papel: v('papel'),        // tarjetas y barras (blanco en claro)
+        noche: v('noche'),        // bloques oscuros destacados (contacto, avisos)
+        estado: {
+          exito:v('exito'), aviso:v('aviso'), error:v('error'),
+          'exito-fondo':v('exito-fondo'), 'aviso-fondo':v('aviso-fondo'), 'error-fondo':v('error-fondo'),
+        },
+        whatsapp: { DEFAULT:'#25D366', oscuro:'#20BA5A', fondo:v('wa-fondo'), texto:v('wa-texto') },
       },
       fontFamily: {
         // Sin fuentes descargadas: se usan las del propio móvil para no gastar datos

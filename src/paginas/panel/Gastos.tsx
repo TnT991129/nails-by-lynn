@@ -80,7 +80,7 @@ export default function Gastos() {
               {CATEGORIAS.map(c => (
                 <button key={c.key} onClick={() => setCategoria(c.key)}
                   className={`p-3 rounded border min-h-[64px] text-center
-                    ${categoria === c.key ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-white'}`}>
+                    ${categoria === c.key ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-papel'}`}>
                   <div className="text-[20px]">{c.icono}</div>
                   <div className="text-[11px] mt-1">{c.etiqueta}</div>
                 </button>
@@ -107,7 +107,7 @@ export default function Gastos() {
             <label className="block">
               <span className="block text-[14px] text-tinta-suave mb-1.5">Moneda</span>
               <select value={moneda} onChange={e => setMoneda(e.target.value as 'CUP' | 'USD')}
-                className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-white">
+                className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-papel">
                 <option value="CUP">CUP</option>
                 <option value="USD">USD</option>
               </select>

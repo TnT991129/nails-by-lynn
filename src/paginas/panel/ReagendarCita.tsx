@@ -93,7 +93,7 @@ export default function ReagendarCita({ cita, tokenAcceso, onCerrar }: {
                 <button key={h} aria-pressed={horaSel === h}
                   onClick={() => { setHoraSel(h); setOtraHora('') }}
                   className={`min-h-[48px] rounded border text-[16px] font-medium
-                    ${horaSel === h ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-white'}`}>
+                    ${horaSel === h ? 'border-rosa-600 bg-rosa-600 text-white' : 'border-rosa-200 bg-papel'}`}>
                   {hora(h)}
                 </button>
               ))}
@@ -107,7 +107,7 @@ export default function ReagendarCita({ cita, tokenAcceso, onCerrar }: {
         </label>
         <input id="otra-hora" type="time" value={otraHora}
           onChange={e => { setOtraHora(e.target.value); setHoraSel('') }}
-          className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-white" />
+          className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-papel" />
       </div>
 
       {error && <Aviso>{error}</Aviso>}

@@ -25,7 +25,7 @@ export default function Clientas() {
       </div>
       <input value={busq} onChange={e => setBusq(e.target.value)}
         placeholder="Buscar por nombre, teléfono o @instagram"
-        className="w-full min-h-[48px] px-4 rounded-full border border-rosa-200 text-[16px] bg-white
+        className="w-full min-h-[48px] px-4 rounded-full border border-rosa-200 text-[16px] bg-papel
                    focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
 
       {q.isLoading && <div className="space-y-2">

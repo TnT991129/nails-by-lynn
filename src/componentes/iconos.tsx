@@ -74,3 +74,6 @@ export const IconoDescarga = (p: Props) => (
 export const IconoSalir = (p: Props) => (
   <Base {...p}><path d="M14 4.5h3.5A1.5 1.5 0 0 1 19 6v12a1.5 1.5 0 0 1-1.5 1.5H14" /><path d="M10 16.5 5.5 12 10 7.5M5.5 12H15" /></Base>
 )
+export const IconoLuna = (p: Props) => (
+  <Base {...p}><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z" /></Base>
+)

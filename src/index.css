@@ -7,11 +7,40 @@
 @font-face { font-family:'Playfair Display'; font-style:normal; font-weight:400 500;
   font-display:swap; src:local('Playfair Display'); }
 
+/* Paletas: valores RGB sin comas. html.oscuro se pone desde index.html (sin parpadeo) y el botón de tema */
+:root {
+  color-scheme: light;
+  --rosa-50: 254 242 248;  --rosa-100: 254 230 242; --rosa-200: 253 205 230; --rosa-300: 251 162 208;
+  --rosa-400: 246 108 178; --rosa-500: 238 67 151;  --rosa-600: 214 21 111;  --rosa-700: 196 16 95;
+  --rosa-800: 168 14 82;   --rosa-900: 124 10 60;
+  --tinta: 43 23 33; --tinta-suave: 74 42 56; --tinta-tenue: 122 100 112;
+  --fondo: 251 247 248; --papel: 255 255 255; --noche: 43 23 33;
+  --exito: 15 122 90;  --aviso: 184 117 20;  --error: 196 52 47;
+  --exito-fondo: 230 244 239; --aviso-fondo: 253 243 227; --error-fondo: 251 234 234;
+  --wa-fondo: 233 251 240; --wa-texto: 18 140 74;
+}
+html.oscuro {
+  color-scheme: dark;
+  /* Los rosas claros pasan a ser fondos oscuros; los rosas fuertes, textos claros legibles */
+  --rosa-50: 45 22 34;     --rosa-100: 61 28 45;    --rosa-200: 90 40 66;    --rosa-300: 122 51 88;
+  --rosa-400: 246 108 178; --rosa-500: 238 67 151;  --rosa-600: 214 21 111;  --rosa-700: 249 168 212;
+  --rosa-800: 251 182 219; --rosa-900: 252 205 230;
+  --tinta: 247 236 242; --tinta-suave: 222 204 214; --tinta-tenue: 170 148 160;
+  --fondo: 20 11 16; --papel: 34 20 27; --noche: 58 33 47;
+  --exito: 74 222 158; --aviso: 251 191 36; --error: 248 113 113;
+  --exito-fondo: 16 48 38; --aviso-fondo: 58 42 12; --error-fondo: 64 22 22;
+  --wa-fondo: 14 46 28; --wa-texto: 74 222 128;
+}
+
 @layer base {
   html { -webkit-text-size-adjust:100%; }
   body { @apply bg-superficie-base text-tinta font-sans antialiased; }
   h1,h2 { @apply font-display tracking-[-0.01em]; }
-  :focus-visible { @apply outline-none ring-2 ring-rosa-600 ring-offset-2 rounded-sm; }
+  /* Campos sin fondo propio: el del tema (en oscuro el navegador los pintaría de gris) */
+  textarea, select, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]) {
+    background-color: rgb(var(--papel)); color: inherit;
+  }
+  :focus-visible { @apply outline-none ring-2 ring-rosa-600 ring-offset-2 ring-offset-papel rounded-sm; }
 }
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }

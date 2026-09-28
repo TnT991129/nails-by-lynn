@@ -95,7 +95,7 @@ export default function GaleriaPanel() {
             <label className="block">
               <span className="block text-[14px] text-tinta-suave mb-1.5">Servicio (opcional)</span>
               <select value={servicioId} onChange={e => setServicioId(e.target.value)}
-                className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-white">
+                className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px] bg-papel">
                 <option value="">— Sin categoría —</option>
                 {qServ.data?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -199,7 +199,7 @@ function ThumbFoto({ foto }: { foto: FotoPanel }) {
         <div onClick={() => setAbierto(false)}
              className="fixed inset-0 bg-black/85 z-50 flex items-end sm:items-center justify-center animate-entrada">
           <div onClick={e => e.stopPropagation()}
-               className="bg-white w-full max-w-md rounded-t-lg sm:rounded-lg p-4 space-y-3">
+               className="bg-papel w-full max-w-md rounded-t-lg sm:rounded-lg p-4 space-y-3">
             <img src={foto.image_url} alt=""
                  className="w-full aspect-square object-cover rounded" />
             {foto.caption && <p className="text-[14px] text-tinta-suave">{foto.caption}</p>}

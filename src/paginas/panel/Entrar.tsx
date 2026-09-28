@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { sb } from '../../lib/panel/supabase-panel'
 import { Boton, Campo, Aviso } from '../../componentes/ui'
+import BotonTema from '../../componentes/BotonTema'
 
 export default function Entrar() {
   const [correo, setCorreo] = useState('')
@@ -21,7 +22,8 @@ export default function Entrar() {
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center px-5 bg-superficie-base">
+    <div className="relative min-h-dvh flex items-center justify-center px-5 bg-superficie-base">
+      <BotonTema className="absolute right-4 top-4" />
       <form onSubmit={entrar} className="w-full max-w-sm space-y-4 animate-entrada">
         <div className="text-center mb-8">
           <picture>

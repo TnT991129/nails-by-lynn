@@ -6,6 +6,7 @@ import { IconoReloj, IconoUbicacion, IconoFlecha, IconoWhatsApp, IconoCalendario
 import { dinero, duracion, descripcionServicio } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
 import { useHorarioPublico } from '../lib/useHorarioPublico'
+import BotonTema from '../componentes/BotonTema'
 
 
 export default function Inicio() {
@@ -25,7 +26,8 @@ export default function Inicio() {
 
   return (
     <div className="pb-28">
-      <header className="flex justify-center pt-5 pb-4">
+      <header className="relative flex justify-center pt-5 pb-4">
+        <BotonTema className="absolute right-4 top-4" />
         <picture>
           <source srcSet={`${BASE}logo-horizontal-rosa.webp`} type="image/webp" />
           <img src={`${BASE}logo-horizontal-rosa.png`} alt="Nails by Lynn"
@@ -72,14 +74,14 @@ export default function Inicio() {
 
         {/* Datos rápidos */}
         <div className="grid grid-cols-2 gap-3 mt-4">
-          <div className="bg-white rounded-lg border border-rosa-100/80 p-3.5 flex items-start gap-2.5">
+          <div className="bg-papel rounded-lg border border-rosa-100/80 p-3.5 flex items-start gap-2.5">
             <IconoReloj tam={20} className="text-rosa-600 shrink-0 mt-0.5" />
             <div className="text-[13px] leading-snug">
               <div className="font-semibold">{horario.dias ? mayus(horario.dias) : 'Horario'}</div>
               <div className="text-tinta-tenue">{horario.turnos || 'Con cita previa'}</div>
             </div>
           </div>
-          <div className="bg-white rounded-lg border border-rosa-100/80 p-3.5 flex items-start gap-2.5">
+          <div className="bg-papel rounded-lg border border-rosa-100/80 p-3.5 flex items-start gap-2.5">
             <IconoUbicacion tam={20} className="text-rosa-600 shrink-0 mt-0.5" />
             <div className="text-[13px] leading-snug">
               <div className="font-semibold">{n?.location_label ?? 'Peñas Altas'}</div>
@@ -102,13 +104,13 @@ export default function Inicio() {
             <Esqueleto key={i} className="h-24" />)}
           {qServicios.isError && <Aviso>{mensajeDeError(qServicios.error)}</Aviso>}
           {qServicios.data && qServicios.data.length === 0 && (
-            <p className="text-[14px] text-tinta-tenue bg-white rounded-lg border border-rosa-100 p-4">
+            <p className="text-[14px] text-tinta-tenue bg-papel rounded-lg border border-rosa-100 p-4">
               Estoy actualizando mis servicios. Escríbeme por WhatsApp para reservar.
             </p>
           )}
           {qServicios.data?.map(s => (
             <Link key={s.id} to={`/reservar?servicio=${s.slug}`}
-              className="group block bg-white rounded-xl border border-rosa-100/80 shadow-suave p-4
+              className="group block bg-papel rounded-xl border border-rosa-100/80 shadow-suave p-4
                          active:scale-[0.99] transition">
               <div className="flex items-center gap-4">
                 {s.cover_image_url && (
@@ -145,7 +147,7 @@ export default function Inicio() {
         <h2 className="text-[28px] leading-tight mt-2 mb-5">Reserva en un minuto</h2>
         <ol className="space-y-3">
           {PASOS.map((p, i) => (
-            <li key={p.titulo} className="flex items-center gap-4 bg-white rounded-lg border border-rosa-100/80 p-4">
+            <li key={p.titulo} className="flex items-center gap-4 bg-papel rounded-lg border border-rosa-100/80 p-4">
               <span className="w-10 h-10 rounded-full bg-rosa-600 text-white font-display text-[18px]
                                flex items-center justify-center shrink-0">{i + 1}</span>
               <div>
@@ -160,9 +162,9 @@ export default function Inicio() {
       {/* CONTACTO */}
       {n && (
         <section className="px-4 mt-12">
-          <div className="rounded-xl bg-tinta text-white p-6 relative overflow-hidden">
+          <div className="rounded-xl bg-noche text-white p-6 relative overflow-hidden">
             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-rosa-600/40 blur-2xl" aria-hidden />
-            <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-rosa-300">Contacto</span>
+            <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#FBA2D0]">Contacto</span>
             <h2 className="text-[26px] leading-tight mt-2">¿Tienes alguna duda?</h2>
             <p className="text-white/70 text-[14px] mt-2">
               Escríbeme y te respondo en cuanto pueda. Estoy en {n.location_label}.
@@ -170,7 +172,7 @@ export default function Inicio() {
             <div className="mt-5 space-y-2.5 relative">
               {n.phone_whatsapp && (
                 <a href={`https://wa.me/53${n.phone_whatsapp}`} target="_blank" rel="noreferrer"
-                   className="min-h-[52px] w-full rounded-full bg-[#25D366] text-white font-semibold
+                   className="min-h-[52px] w-full rounded-full bg-whatsapp text-white font-semibold
                               inline-flex items-center justify-center gap-2 active:scale-[0.98] transition">
                   <IconoWhatsApp tam={20} /> Escribir por WhatsApp
                 </a>

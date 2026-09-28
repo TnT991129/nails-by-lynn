@@ -11,7 +11,7 @@ export default function InstalarPanel() {
 
   const iphone = esIPhone()
   return (
-    <div className="rounded-xl bg-tinta text-white p-4 flex gap-3 items-start">
+    <div className="rounded-xl bg-noche text-white p-4 flex gap-3 items-start">
       <img src={`${import.meta.env.BASE_URL}icono-panel-192.png`} alt="" width={48} height={48}
            className="w-12 h-12 rounded-lg shrink-0" />
       <div className="flex-1 min-w-0 space-y-2">

@@ -66,11 +66,11 @@ export default function Estadisticas() {
           </div>
 
           <Tarjeta className={`text-center py-4 ${
-            qResumen.data.neto >= 0 ? 'bg-rosa-50 border border-rosa-200' : 'bg-red-50 border border-red-200'
+            qResumen.data.neto >= 0 ? 'bg-rosa-50 border border-rosa-200' : 'bg-estado-error-fondo border border-estado-error/30'
           }`}>
             <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Ingreso neto</div>
             <div className={`font-display text-[30px] mt-1 ${
-              qResumen.data.neto >= 0 ? 'text-rosa-900' : 'text-red-700'
+              qResumen.data.neto >= 0 ? 'text-rosa-900' : 'text-estado-error'
             }`}>{importe(qResumen.data.neto)}</div>
           </Tarjeta>
 

@@ -49,7 +49,7 @@ export default function CalendarioMes({
   const nombreMes = mayuscula(new Intl.DateTimeFormat('es', { timeZone: 'UTC', month: 'long', year: 'numeric' })
     .format(new Date(Date.UTC(anio, mes - 1, 1))))
 
-  const flecha = 'w-11 h-11 rounded-full flex items-center justify-center text-tinta-suave border border-rosa-100 bg-white disabled:opacity-30'
+  const flecha = 'w-11 h-11 rounded-full flex items-center justify-center text-tinta-suave border border-rosa-100 bg-papel disabled:opacity-30'
 
   return (
     <Tarjeta className="p-4">

@@ -25,17 +25,17 @@ export default function EditarHorarios() {
       <div className="flex gap-1 bg-rosa-50 rounded-full border border-rosa-100 p-1 w-full">
         <button onClick={() => setPestaña('horario')}
           className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
-            ${pestaña === 'horario' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
+            ${pestaña === 'horario' ? 'bg-papel text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Semanal
         </button>
         <button onClick={() => setPestaña('cerrados')}
           className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
-            ${pestaña === 'cerrados' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
+            ${pestaña === 'cerrados' ? 'bg-papel text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Días cerrados
         </button>
         <button onClick={() => setPestaña('bloqueos')}
           className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
-            ${pestaña === 'bloqueos' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
+            ${pestaña === 'bloqueos' ? 'bg-papel text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Horas
         </button>
       </div>
@@ -121,7 +121,7 @@ function EditorTurnos({ turnos, porDia }: { turnos: string[]; porDia: Record<num
             <div key={i} className="flex gap-2 items-center">
               <input type="time" value={t} step={900}
                 onChange={e => setLista(lista.map((x, j) => j === i ? e.target.value : x))}
-                className="flex-1 min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-white focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
+                className="flex-1 min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
               <button onClick={() => setLista(lista.filter((_, j) => j !== i))} aria-label="Quitar turno"
                 className="min-w-[44px] min-h-[44px] text-estado-error">✕</button>
             </div>

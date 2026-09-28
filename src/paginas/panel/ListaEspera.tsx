@@ -65,7 +65,7 @@ export default function ListaEspera() {
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-[17px] font-semibold first-letter:uppercase">{fechaLarga(`${dia}T16:00:00Z`)}</h2>
               {turnos.length > 0 ? (
-                <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-[#E6F4EF] text-estado-exito">
+                <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-estado-exito-fondo text-estado-exito">
                   Libre: {turnos.map(hora).join(' y ')}
                 </span>
               ) : libres[i]?.isSuccess && (
@@ -89,7 +89,7 @@ export default function ListaEspera() {
                   <div className="text-[12px] text-estado-exito">✓ Avisada el {fechaLarga(e.notified_at)}, {hora(e.notified_at)}</div>
                 )}
                 <button onClick={() => avisar(e)} disabled={!e.clients}
-                  className="w-full min-h-[44px] rounded-full bg-[#25D366] text-white font-semibold text-[14px]
+                  className="w-full min-h-[44px] rounded-full bg-whatsapp text-white font-semibold text-[14px]
                              disabled:opacity-50 active:scale-[0.98] transition">
                   {e.notified_at ? 'Avisar otra vez por WhatsApp' : 'Avisar por WhatsApp'}
                 </button>

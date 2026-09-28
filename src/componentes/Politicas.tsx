@@ -71,10 +71,10 @@ export function EnlacePoliticas({ texto = 'políticas del estudio', className = 
         {texto}
       </button>
       {abierta && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-tinta/50 animate-entrada"
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-noche/50 animate-entrada"
              onClick={() => setAbierta(false)} role="dialog" aria-modal="true" aria-label="Políticas del estudio">
           <div onClick={e => e.stopPropagation()}
-               className="bg-white w-full sm:max-w-lg rounded-t-xl sm:rounded-xl max-h-[85dvh] flex flex-col shadow-lg">
+               className="bg-papel w-full sm:max-w-lg rounded-t-xl sm:rounded-xl max-h-[85dvh] flex flex-col shadow-lg">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-rosa-100">
               <h2 className="text-[22px]">Políticas del estudio</h2>
               <button onClick={() => setAbierta(false)} aria-label="Cerrar"

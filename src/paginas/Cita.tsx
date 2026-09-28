@@ -86,8 +86,8 @@ export default function Cita() {
   const enlaceAviso = c.negocio.whatsapp ? enlaceAvisoLynn(c.negocio.whatsapp, mensajeAvisoLynn(c)) : null
   const alAvisar = () => { marcarAvisada(c.code); setAvisadaAhora(true) }
   const bloqueAviso = activa && enlaceAviso && (!avisada ? (
-    <div className="rounded-xl border-2 border-[#25D366] bg-[#E9FBF0] p-4 space-y-3 animate-entrada">
-      <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#25D366] text-white text-[11px] font-bold uppercase tracking-wider">
+    <div className="rounded-xl border-2 border-whatsapp bg-whatsapp-fondo p-4 space-y-3 animate-entrada">
+      <span className="inline-block px-2.5 py-0.5 rounded-full bg-whatsapp text-white text-[11px] font-bold uppercase tracking-wider">
         {esNueva ? 'Último paso' : '¿Ya avisaste a Lynn?'}
       </span>
       <p className="text-[15px] text-tinta leading-snug">
@@ -95,7 +95,7 @@ export default function Cita() {
         El mensaje ya va escrito: solo tienes que tocar <b>Enviar</b>.
       </p>
       <a href={enlaceAviso} target="_blank" rel="noreferrer" onClick={alAvisar}
-         className="w-full min-h-[56px] bg-[#25D366] hover:bg-[#20BA5A] text-white font-semibold text-[17px]
+         className="w-full min-h-[56px] bg-whatsapp hover:bg-whatsapp-oscuro text-white font-semibold text-[17px]
                     rounded-full px-4 flex items-center justify-center gap-2 animate-latido
                     shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)] active:scale-[0.98] transition">
         <IconoWhatsApp tam={22} />

@@ -20,12 +20,12 @@ export default function EditarServicios() {
       <div className="flex gap-1 bg-rosa-50 rounded-full border border-rosa-100 p-1 w-full">
         <button onClick={() => setPestaña('servicios')}
           className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
-            ${pestaña === 'servicios' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
+            ${pestaña === 'servicios' ? 'bg-papel text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Servicios
         </button>
         <button onClick={() => setPestaña('complementos')}
           className={`flex-1 px-3 py-2 rounded-full text-[14px] min-h-[40px] font-medium transition
-            ${pestaña === 'complementos' ? 'bg-white text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
+            ${pestaña === 'complementos' ? 'bg-papel text-rosa-700 shadow-sm' : 'text-tinta-suave'}`}>
           Complementos
         </button>
       </div>
@@ -63,7 +63,7 @@ function ListaServicios() {
       )}
 
       {aviso && (
-        <div className="rounded-lg border border-estado-exito/30 bg-[#E6F4EF] text-estado-exito text-[14px] px-4 py-3 flex justify-between gap-2">
+        <div className="rounded-lg border border-estado-exito/30 bg-estado-exito-fondo text-estado-exito text-[14px] px-4 py-3 flex justify-between gap-2">
           <span>{aviso}</span>
           <button onClick={() => setAviso(null)} aria-label="Cerrar aviso" className="shrink-0">✕</button>
         </div>

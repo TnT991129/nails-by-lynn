@@ -30,7 +30,7 @@ export default function AvisoInstalar() {
   return (
     <div role="dialog" aria-label="Instalar el panel"
          className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+80px)] z-30 max-w-md mx-auto
-                    rounded-xl bg-tinta text-white shadow-lg p-4 animate-entrada">
+                    rounded-xl bg-noche text-white shadow-lg p-4 animate-entrada">
       <button onClick={ahoraNo} aria-label="Cerrar"
               className="absolute top-1.5 right-1.5 w-10 h-10 rounded-full flex items-center justify-center text-white/70">
         <IconoCerrar tam={18} />
