@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSesion } from '../../lib/panel/useSesion'
 import { usarIdentidadPanel } from '../../lib/panel/instalar'
+import AvisoInstalar from './AvisoInstalar'
 import { Esqueleto } from '../../componentes/ui'
 
 const Entrar = lazy(() => import('./Entrar'))
@@ -34,6 +35,8 @@ export default function Panel() {
 
   return (
     <Suspense fallback={<Cargando />}>
+      {/* Al abrir el panel en el móvil: invitar a instalarlo como app */}
+      <AvisoInstalar />
       <Routes>
         <Route path="entrar" element={
           estado === 'con-sesion' ? <Navigate to="/panel" replace /> : <Entrar />
