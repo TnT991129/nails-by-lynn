@@ -8,9 +8,10 @@ type Props<T extends { id: string }> = {
   onCambio: (ordenados: T[]) => void
   children: (item: T, asa: ReactNode) => ReactNode
   deshabilitado?: boolean
+  flechas?: boolean   // ▲ ▼ para mover de uno en uno (se pueden ocultar)
 }
 
-export default function ListaOrdenable<T extends { id: string }>({ items, onCambio, children, deshabilitado }: Props<T>) {
+export default function ListaOrdenable<T extends { id: string }>({ items, onCambio, children, deshabilitado, flechas = true }: Props<T>) {
   const [orden, setOrden] = useState(items)
   const [arrastrado, setArrastrado] = useState<string | null>(null)
   const [desplazamiento, setDesplazamiento] = useState(0)
@@ -122,12 +123,12 @@ export default function ListaOrdenable<T extends { id: string }>({ items, onCamb
                 <circle cx="5" cy="16" r="1.7" /><circle cx="11" cy="16" r="1.7" />
               </svg>
             </button>
-            <div className="flex flex-col">
+            {flechas && <div className="flex flex-col">
               <button type="button" onClick={() => flecha(item.id, -1)} disabled={deshabilitado || i === 0}
                 aria-label="Subir" className="w-7 h-6 text-[12px] text-tinta-tenue disabled:opacity-25">▲</button>
               <button type="button" onClick={() => flecha(item.id, 1)} disabled={deshabilitado || i === orden.length - 1}
                 aria-label="Bajar" className="w-7 h-6 text-[12px] text-tinta-tenue disabled:opacity-25">▼</button>
-            </div>
+            </div>}
           </div>
         )
         return (

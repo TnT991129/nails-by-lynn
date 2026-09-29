@@ -1,7 +1,7 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  listarServiciosPanel, actualizarServicio, crearServicio, eliminarServicio, cambiarFotoServicio,
+  listarServiciosPanel, actualizarServicio, crearServicio, eliminarServicio,
   listarComplementos, actualizarComplemento, crearComplemento, eliminarComplemento, guardarOrden,
   type ServicioEdit, type ComplementoEdit,
 } from '../../lib/panel/api-panel'
@@ -87,11 +87,11 @@ function ListaServicios() {
 
       {(q.data?.length ?? 0) > 1 && (
         <p className="text-[13px] text-tinta-tenue px-1">
-          Arrastra desde ⋮⋮ (o usa ▲ ▼) para cambiar el orden en que las clientas ven los servicios.
+          Arrastra desde ⋮⋮ para cambiar el orden en que las clientas ven los servicios.
         </p>
       )}
 
-      <ListaOrdenable items={q.data ?? []} onCambio={reordenar} deshabilitado={!!editando || creando}>
+      <ListaOrdenable items={q.data ?? []} onCambio={reordenar} deshabilitado={!!editando || creando} flechas={false}>
         {(s, asa) => (
           <ItemServicio servicio={s} asa={asa}
             editando={editando === s.id}
@@ -216,15 +216,6 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso, asa }: 
   if (!editando) return (
     <Tarjeta className="flex items-center justify-between gap-3 !pl-3">
       {asa}
-      {servicio.cover_image_url ? (
-        <img src={servicio.cover_image_url} alt="" loading="lazy" crossOrigin="anonymous"
-             className="w-14 h-14 rounded-lg object-cover shrink-0 bg-rosa-50" />
-      ) : (
-        <span className="w-14 h-14 rounded-lg bg-rosa-50 border border-dashed border-rosa-200 shrink-0
-                         flex items-center justify-center text-[11px] text-tinta-tenue text-center leading-tight">
-          Sin foto
-        </span>
-      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-[16px] font-medium truncate">{servicio.name}</span>
@@ -252,7 +243,6 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso, asa }: 
 
   return (
     <Tarjeta className="space-y-3">
-      <FotoServicio servicio={servicio} />
       <Campo label="Nombre" value={nombre} onChange={setNombre} />
       <label className="block">
         <span className="block text-[14px] text-tinta-suave mb-1.5">Descripción (la ven las clientas)</span>
@@ -277,55 +267,6 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso, asa }: 
       </div>
       <Boton variante="peligro" ancho onClick={borrar} cargando={eliminando}>Eliminar servicio</Boton>
     </Tarjeta>
-  )
-}
-
-// Foto de portada del servicio: se guarda al momento, sin esperar a «Guardar»
-function FotoServicio({ servicio }: { servicio: ServicioEdit }) {
-  const qc = useQueryClient()
-  const entrada = useRef<HTMLInputElement>(null)
-  const [url, setUrl] = useState(servicio.cover_image_url)
-  const [trabajando, setTrabajando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function cambiar(archivo: File | null) {
-    setTrabajando(true); setError(null)
-    try {
-      setUrl(await cambiarFotoServicio({ ...servicio, cover_image_url: url }, archivo))
-      qc.invalidateQueries({ queryKey: ['servicios-panel'] })
-      qc.invalidateQueries({ queryKey: ['servicios'] })
-    } catch (e) { setError(mensajeDeError(e)) }
-    finally { setTrabajando(false); if (entrada.current) entrada.current.value = '' }
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-3">
-        {url ? (
-          <img src={url} alt="" crossOrigin="anonymous" className="w-20 h-20 rounded-lg object-cover bg-rosa-50" />
-        ) : (
-          <span className="w-20 h-20 rounded-lg bg-rosa-50 border border-dashed border-rosa-200
-                           flex items-center justify-center text-[12px] text-tinta-tenue">Sin foto</span>
-        )}
-        <div className="flex-1 space-y-1">
-          <input ref={entrada} type="file" accept="image/*" className="hidden"
-                 onChange={e => e.target.files?.[0] && cambiar(e.target.files[0])} />
-          <Boton variante="secundario" cargando={trabajando} onClick={() => entrada.current?.click()}
-                 className="w-full !min-h-[44px] !text-[14px]">
-            {url ? 'Cambiar foto' : 'Subir foto'}
-          </Boton>
-          {url && !trabajando && (
-            <button onClick={() => cambiar(null)} className="w-full text-[13px] text-estado-error min-h-[32px]">
-              Quitar foto
-            </button>
-          )}
-        </div>
-      </div>
-      <p className="text-[12px] text-tinta-tenue">
-        Se muestra en la web al elegir el servicio. Usa una foto de un trabajo tuyo, bien iluminada.
-      </p>
-      {error && <Aviso>{error}</Aviso>}
-    </div>
   )
 }
 
@@ -366,11 +307,11 @@ function ListaComplementos() {
       {error && <Aviso>{error}</Aviso>}
       {(q.data?.length ?? 0) > 1 && (
         <p className="text-[13px] text-tinta-tenue px-1">
-          Arrastra desde ⋮⋮ (o usa ▲ ▼) para cambiar el orden en el paso «¿Necesitas algo más?».
+          Arrastra desde ⋮⋮ para cambiar el orden en el paso «¿Necesitas algo más?».
         </p>
       )}
 
-      <ListaOrdenable items={q.data ?? []} onCambio={reordenar} deshabilitado={!!editando || creando}>
+      <ListaOrdenable items={q.data ?? []} onCambio={reordenar} deshabilitado={!!editando || creando} flechas={false}>
         {(c, asa) => (
           <ItemComplemento complemento={c} asa={asa}
             editando={editando === c.id}
