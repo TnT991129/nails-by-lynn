@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import type { Servicio, Addon } from '../../lib/tipos'
 import { Tarjeta, Campo, Esqueleto, Aviso, Vacio } from '../../componentes/ui'
 import { IconoCheck, IconoReloj, IconoSol, IconoTarde, IconoCalendario } from '../../componentes/iconos'
-import { dinero, duracion, fechaLarga, hora, franja, cuentaAtras, descripcionServicio } from '../../lib/formato'
+import { dinero, duracion, fechaLarga, hora, franja, cuentaAtras, descripcionServicio, precioRango } from '../../lib/formato'
 import { validarNombre, validarTelefono, validarEmail } from './validacion'
 import { EnlacePoliticas } from '../../componentes/Politicas'
 import type { Datos } from './useReserva'
@@ -131,7 +131,7 @@ export function PasoExtras({
                   </div>
                   {Number(a.extra_price) > 0 && (
                     <span className="text-[14px] font-semibold text-rosa-700 shrink-0">
-                      +{dinero(Number(a.extra_price))}
+                      +{precioRango(Number(a.extra_price), a.extra_price_max)}
                     </span>
                   )}
                 </div>
@@ -285,10 +285,10 @@ export function PasoDatos({
 }
 
 export function PasoResumen({
-  servicios, addons, inicio, duracionMin, total, acepta, setAcepta, descuento = null,
+  servicios, addons, inicio, duracionMin, total, totalMaximo = 0, acepta, setAcepta, descuento = null,
 }: {
   servicios: Servicio[]; addons: Addon[]; inicio: string
-  duracionMin: number; total: number
+  duracionMin: number; total: number; totalMaximo?: number
   acepta: boolean; setAcepta: (v: boolean) => void
   descuento?: number | null   // % que Lynn le dejó para esta cita
 }) {
@@ -315,7 +315,7 @@ export function PasoResumen({
           {addons.map(a => (
             <div key={a.id} className="flex justify-between text-[14px] text-tinta-tenue">
               <span>+ {a.name}</span>
-              <span>{Number(a.extra_price) > 0 ? dinero(Number(a.extra_price)) : '—'}</span>
+              <span>{Number(a.extra_price) > 0 || a.extra_price_max ? precioRango(Number(a.extra_price), a.extra_price_max) : '—'}</span>
             </div>
           ))}
           {rebaja > 0 && (
@@ -325,8 +325,13 @@ export function PasoResumen({
           )}
           <div className="border-t border-dashed border-rosa-200 !mt-4 pt-4 flex justify-between items-baseline">
             <span className="text-[14px] text-tinta-tenue">Total</span>
-            <span className="font-display text-[26px] text-rosa-700">{dinero(total - rebaja)}</span>
+            <span className="font-display text-[26px] text-rosa-700">
+              {precioRango(total - rebaja, totalMaximo > total ? totalMaximo - rebaja : null)}
+            </span>
           </div>
+          {totalMaximo > total && (
+            <p className="text-[12px] text-tinta-tenue text-right -mt-1">El precio final depende del trabajo.</p>
+          )}
         </div>
       </Tarjeta>
 

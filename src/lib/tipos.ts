@@ -18,6 +18,7 @@ export type Addon = {
   name: string
   extra_minutes: number
   extra_price: number
+  extra_price_max?: number | null   // rango de precio (supabase/rango_complementos.sql)
 }
 
 export type Negocio = {

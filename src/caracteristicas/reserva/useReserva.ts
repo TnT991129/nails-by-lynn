@@ -53,6 +53,13 @@ export function useReserva(servicios: Servicio[], addons: Addon[]) {
     [serviciosElegidos, addonsActivos],
   )
 
+  // Con complementos de precio en rango (p. ej. 2–4), el total también es un rango
+  const precioMaximo = useMemo(
+    () => serviciosElegidos.reduce((t, s) => t + Number(s.price), 0)
+        + addonsActivos.reduce((t, a) => t + Number(a.extra_price_max ?? a.extra_price), 0),
+    [serviciosElegidos, addonsActivos],
+  )
+
   const bufferTotal = useMemo(
     () => serviciosElegidos.reduce((m, s) => Math.max(m, s.buffer_after_minutes), 0),
     [serviciosElegidos],
@@ -116,7 +123,7 @@ export function useReserva(servicios: Servicio[], addons: Addon[]) {
     addonsAplicables, addonsElegidos, alternarAddon,
     fecha, setFecha, inicio, setInicio, expiraEn, setExpiraEn,
     datos, setDatos, aceptaPoliticas, setAceptaPoliticas,
-    duracionTotal, precioTotal, bufferTotal, items,
+    duracionTotal, precioTotal, precioMaximo, bufferTotal, items,
     retener, confirmar, volverAHora,
   }
 }

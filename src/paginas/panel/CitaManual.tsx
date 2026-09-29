@@ -5,7 +5,7 @@ import { catalogoServicios, disponibilidad, crearCitaManual } from '../../lib/pa
 import { obtenerAddons, obtenerDiasLaborables, obtenerDiasCerrados } from '../../lib/api'
 import CalendarioMes, { diaSemana } from '../../componentes/CalendarioMes'
 import { Boton, Campo, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
-import { fechaISO, hora, franja, duracion, dinero, instanteEnHabana } from '../../lib/formato'
+import { fechaISO, hora, franja, duracion, dinero, instanteEnHabana, precioRango } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
 
@@ -16,7 +16,7 @@ type Servicio = {
 
 export default function CitaManual() {
   const navegar = useNavigate()
-  const [servicioId, setServicioId] = useState<string>('')
+  const [serviciosSel, setServiciosSel] = useState<string[]>([])   // se pueden elegir varios
   const [addonsSel, setAddonsSel] = useState<string[]>([])
   const [params] = useSearchParams()
   // Desde la Agenda se puede llegar con el día ya elegido (?fecha=YYYY-MM-DD)
@@ -40,20 +40,32 @@ export default function CitaManual() {
   const qDias = useQuery({ queryKey: ['dias-laborables'], queryFn: obtenerDiasLaborables })
   const qCerrados = useQuery({ queryKey: ['dias-cerrados'], queryFn: obtenerDiasCerrados })
 
-  const servicio = qServ.data?.find(s => s.id === servicioId)
+  // Servicios elegidos, en el orden del catálogo
+  const servicios = useMemo(() => (qServ.data ?? []).filter(s => serviciosSel.includes(s.id)), [qServ.data, serviciosSel])
+  const hayServicios = servicios.length > 0
   const addonsElegidos = qAddons.data?.filter(a => addonsSel.includes(a.id)) ?? []
 
-  // Duración = servicio + suma de complementos elegidos
+  // Duración = suma de servicios + complementos; margen = el mayor de los servicios
   const duracionTotal = useMemo(() => {
-    if (!servicio) return 0
+    if (!hayServicios) return 0
     const extra = addonsElegidos.reduce((t, a) => t + Number(a.extra_minutes ?? 0), 0)
-    return servicio.duration_minutes + extra
-  }, [servicio, addonsElegidos])
+    return servicios.reduce((t, s) => t + s.duration_minutes, 0) + extra
+  }, [servicios, hayServicios, addonsElegidos])
+  const margen = servicios.reduce((m, s) => Math.max(m, s.buffer_after_minutes), 0)
+  const precioTotal = servicios.reduce((t, s) => t + Number(s.price), 0)
+    + addonsElegidos.reduce((t, a) => t + Number(a.extra_price), 0)
+  const precioMaximo = servicios.reduce((t, s) => t + Number(s.price), 0)
+    + addonsElegidos.reduce((t, a) => t + Number(a.extra_price_max ?? a.extra_price), 0)
+
+  function alternarServicio(id: string) {
+    setServiciosSel(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id])
+    setHoraSel(''); setOtraHora('')   // cambia la duración → recalcular turnos
+  }
 
   const qHoras = useQuery({
-    queryKey: ['disp-manual', fecha, servicioId, addonsSel.join('-')],
-    queryFn: () => disponibilidad(fecha, duracionTotal, servicio!.buffer_after_minutes),
-    enabled: !!servicio && !!fecha && duracionTotal > 0,
+    queryKey: ['disp-manual', fecha, serviciosSel.join('-'), addonsSel.join('-')],
+    queryFn: () => disponibilidad(fecha, duracionTotal, margen),
+    enabled: hayServicios && !!fecha && duracionTotal > 0,
   })
 
   const inicioElegido = otraHora ? instanteEnHabana(fecha, otraHora) : horaSel
@@ -67,14 +79,20 @@ export default function CitaManual() {
   }
 
   async function guardar() {
-    if (!servicio || !inicioElegido || !nombre.trim() || !telefono.trim()) {
+    if (!hayServicios || !inicioElegido || !nombre.trim() || !telefono.trim()) {
       setError('Completa servicio, fecha, hora, nombre y teléfono.'); return
     }
     setGuardando(true); setError(null)
     try {
       const r = await crearCitaManual({
         inicio: inicioElegido,
-        items: [{ service_id: servicio.id, addons: addonsSel }],
+        // Cada complemento va con su servicio; los generales, con el primero
+        items: servicios.map((s, i) => ({
+          service_id: s.id,
+          addons: addonsElegidos
+            .filter(a => a.service_id === s.id || (i === 0 && !serviciosSel.includes(a.service_id ?? '')))
+            .map(a => a.id),
+        })),
         nombre: nombre.trim(), telefono: telefono.trim(),
         nota: nota.trim() || undefined,
       })
@@ -91,27 +109,34 @@ export default function CitaManual() {
       {error && <Aviso>{error}</Aviso>}
 
       <section>
-        <Etiqueta>Servicio</Etiqueta>
+        <Etiqueta>Servicios</Etiqueta>
+        <p className="text-[13px] text-tinta-tenue mt-1">Puedes elegir varios.</p>
         {qServ.isLoading && <Esqueleto className="h-20 mt-3" />}
         <div className="space-y-2 mt-3">
-          {qServ.data?.map(s => (
-            <button key={s.id} onClick={() => {
-              setServicioId(s.id); setHoraSel(''); setAddonsSel([])
-            }}
-              className={`w-full text-left px-4 py-3 rounded border
-                ${servicioId === s.id ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-papel'}`}>
-              <div className="flex justify-between">
-                <span>{s.name}</span>
+          {qServ.data?.map(s => {
+            const activo = serviciosSel.includes(s.id)
+            return (
+              <button key={s.id} onClick={() => alternarServicio(s.id)} aria-pressed={activo}
+                className={`w-full text-left px-4 py-3 rounded border flex items-center gap-3
+                  ${activo ? 'border-rosa-600 bg-rosa-50' : 'border-rosa-200 bg-papel'}`}>
+                <span className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center text-[11px] font-bold
+                  ${activo ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200'}`}>{activo ? '✓' : ''}</span>
+                <span className="flex-1">{s.name}</span>
                 <span className="text-[14px] text-tinta-tenue">
                   {duracion(s.duration_minutes)} · {dinero(Number(s.price), s.currency)}
                 </span>
-              </div>
-            </button>
-          ))}
+              </button>
+            )
+          })}
         </div>
+        {servicios.length > 1 && (
+          <p className="text-[13px] text-rosa-800 mt-2">
+            {servicios.map(s => s.name).join(' + ')} · {duracion(duracionTotal)}{precioTotal > 0 && ` · ${precioRango(precioTotal, precioMaximo > precioTotal ? precioMaximo : null)}`}
+          </p>
+        )}
       </section>
 
-      {servicio && qAddons.data && qAddons.data.length > 0 && (
+      {hayServicios && qAddons.data && qAddons.data.length > 0 && (
         <section>
           <Etiqueta>Complementos (opcional)</Etiqueta>
           <div className="space-y-2 mt-3">
@@ -125,7 +150,7 @@ export default function CitaManual() {
                     <div>
                       <div className="text-[14px]">{a.name}</div>
                       <div className="text-[12px] text-tinta-tenue">
-                        +{a.extra_minutes} min · +{Number(a.extra_price).toLocaleString('es-CU')} CUP
+                        +{a.extra_minutes} min · +{precioRango(Number(a.extra_price), a.extra_price_max)}
                       </div>
                     </div>
                     <span className={`text-[18px] ${activo ? 'text-rosa-600' : 'text-tinta-tenue'}`}>
@@ -144,7 +169,7 @@ export default function CitaManual() {
         </section>
       )}
 
-      {servicio && (
+      {hayServicios && (
         <section>
           <Etiqueta>Fecha</Etiqueta>
           <div className="mt-3">
@@ -154,7 +179,7 @@ export default function CitaManual() {
         </section>
       )}
 
-      {servicio && (
+      {hayServicios && (
         <section>
           <Etiqueta>Hora</Etiqueta>
           {qHoras.isLoading && <Esqueleto className="h-16 mt-3" />}
@@ -187,7 +212,7 @@ export default function CitaManual() {
         </section>
       )}
 
-      {servicio && (
+      {hayServicios && (
         <section>
           <label htmlFor="otra-hora-manual" className="block text-[14px] text-tinta-suave mb-1.5">
             Otra hora (excepción)

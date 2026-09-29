@@ -21,6 +21,8 @@ const MENSAJES: Record<string, string> = {
   LIMITE_LISTA_ESPERA:   'Ya estás en espera para 3 días. Espera a que te avisemos de alguno.',
   FECHA_NO_VALIDA:       'Esa fecha no está disponible.',
   NOMBRE_INVALIDO:       'Escribe tu nombre.',
+  extra_price_max:       'Falta ejecutar en Supabase el SQL de rangos de precio (rango_complementos.sql).',
+  addons_rango_valido:   'El precio «hasta» no puede ser menor que el precio «desde».',
   next_discount:         'Falta ejecutar en Supabase el SQL de descuentos (turnos_descuentos_cambios.sql).',
   LIMITE_REPROGRAMACIONES_MES:'Ya cambiaste una cita este mes. Si necesitas moverla, escríbeme por WhatsApp.',
   HORARIO_OCUPADO:       'Ese horario choca con otra cita. Elige otro.',

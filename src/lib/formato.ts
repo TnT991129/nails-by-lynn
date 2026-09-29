@@ -109,3 +109,10 @@ export function textoDias(dias: number[]): string {
   const n = orden.map(d => NOMBRE_DIA[d])
   return n.length === 1 ? n[0] : `${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}`
 }
+
+/** Precio o rango: (2, 4) → "2–4 CUP" / "$2–4"; sin máximo (o igual) → precio normal */
+export function precioRango(min: number, max: number | null | undefined, moneda = 'CUP'): string {
+  if (max === null || max === undefined || Number(max) <= Number(min)) return dinero(Number(min), moneda)
+  const f = (n: number) => new Intl.NumberFormat('es-CU', { maximumFractionDigits: 2 }).format(n)
+  return moneda === 'USD' ? `$${f(Number(min))}–${f(Number(max))}` : `${f(Number(min))}–${f(Number(max))} CUP`
+}

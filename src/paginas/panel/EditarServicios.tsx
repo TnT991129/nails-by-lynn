@@ -7,6 +7,7 @@ import {
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
+import { precioRango } from '../../lib/formato'
 import { Volver } from './comunes'
 import ListaOrdenable from './ListaOrdenable'
 
@@ -382,6 +383,7 @@ function ListaComplementos() {
 function FormularioNuevoComplemento({ onCerrar }: { onCerrar: () => void }) {
   const [nombre, setNombre] = useState('')
   const [precio, setPrecio] = useState('')
+  const [precioMax, setPrecioMax] = useState('')
   const [duracion, setDuracion] = useState('0')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -391,10 +393,10 @@ function FormularioNuevoComplemento({ onCerrar }: { onCerrar: () => void }) {
     try {
       if (!nombre.trim()) throw new Error('Escribe el nombre')
       const p = Number(precio); const d = Number(duracion)
-      if (isNaN(p) || p < 0) throw new Error('Precio inválido')
+      const max = leerMaximo(precioMax, p)
       if (isNaN(d) || d < 0) throw new Error('Duración inválida')
       await crearComplemento({
-        name: nombre.trim(), extra_price: p, extra_minutes: d,
+        name: nombre.trim(), extra_price: p, extra_price_max: max, extra_minutes: d,
       })
       onCerrar()
     } catch (e) { setError(mensajeDeError(e)) }
@@ -405,10 +407,8 @@ function FormularioNuevoComplemento({ onCerrar }: { onCerrar: () => void }) {
     <Tarjeta className="space-y-3 border-2 border-rosa-300">
       <div className="text-[14px] font-medium text-rosa-800">Nuevo complemento</div>
       <Campo label="Nombre" value={nombre} onChange={setNombre} />
-      <div className="grid grid-cols-2 gap-2">
-        <Campo label="Precio extra" value={precio} onChange={setPrecio} inputMode="decimal" />
-        <Campo label="Minutos extra" value={duracion} onChange={setDuracion} inputMode="numeric" />
-      </div>
+      <CamposPrecio desde={precio} hasta={precioMax} setDesde={setPrecio} setHasta={setPrecioMax}
+                    minutos={duracion} setMinutos={setDuracion} />
       {error && <Aviso>{error}</Aviso>}
       <div className="flex gap-2">
         <Boton variante="secundario" onClick={() => onCerrar()} className="flex-1">Cancelar</Boton>
@@ -424,6 +424,7 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar, asa }: {
 }) {
   const [nombre, setNombre] = useState(complemento.name)
   const [precio, setPrecio] = useState(String(complemento.extra_price))
+  const [precioMax, setPrecioMax] = useState(complemento.extra_price_max != null ? String(complemento.extra_price_max) : '')
   const [duracion, setDuracion] = useState(String(complemento.extra_minutes))
   const [activo, setActivo] = useState(complemento.is_active)
   const [guardando, setGuardando] = useState(false)
@@ -434,10 +435,12 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar, asa }: {
     setGuardando(true); setError(null)
     try {
       const p = Number(precio); const d = Number(duracion)
-      if (isNaN(p) || p < 0) throw new Error('Precio inválido')
+      const max = leerMaximo(precioMax, p)
       if (isNaN(d) || d < 0) throw new Error('Duración inválida')
       await actualizarComplemento(complemento.id, {
         name: nombre.trim(), extra_price: p, extra_minutes: d, is_active: activo,
+        // Solo se envía si hay rango o si antes lo tenía (para poder quitarlo)
+        ...(max !== null || complemento.extra_price_max != null ? { extra_price_max: max } : {}),
       })
       onCerrar()
     } catch (e) { setError(mensajeDeError(e)) }
@@ -467,7 +470,7 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar, asa }: {
           )}
         </div>
         <div className="text-[14px] text-tinta-tenue">
-          +{complemento.extra_minutes} min · +{Number(complemento.extra_price).toLocaleString('es-CU')} CUP
+          +{complemento.extra_minutes} min · +{precioRango(Number(complemento.extra_price), complemento.extra_price_max)}
         </div>
       </div>
       <Boton variante="secundario" onClick={onEditar}>Editar</Boton>
@@ -477,10 +480,8 @@ function ItemComplemento({ complemento, editando, onEditar, onCerrar, asa }: {
   return (
     <Tarjeta className="space-y-3">
       <Campo label="Nombre" value={nombre} onChange={setNombre} />
-      <div className="grid grid-cols-2 gap-2">
-        <Campo label="Precio extra" value={precio} onChange={setPrecio} inputMode="decimal" />
-        <Campo label="Minutos extra" value={duracion} onChange={setDuracion} inputMode="numeric" />
-      </div>
+      <CamposPrecio desde={precio} hasta={precioMax} setDesde={setPrecio} setHasta={setPrecioMax}
+                    minutos={duracion} setMinutos={setDuracion} />
       <label className="flex items-center gap-2 min-h-[44px]">
         <input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)}
           className="w-5 h-5 accent-rosa-600" />
@@ -508,4 +509,32 @@ function Campo({ label, value, onChange, inputMode }: {
         className="w-full min-h-[44px] px-3 rounded border border-rosa-200 text-[16px]" />
     </label>
   )
+}
+
+// Precio del complemento: fijo, o rango "desde – hasta" (p. ej. 2 – 4)
+function CamposPrecio({ desde, hasta, setDesde, setHasta, minutos, setMinutos }: {
+  desde: string; hasta: string; setDesde: (v: string) => void; setHasta: (v: string) => void
+  minutos: string; setMinutos: (v: string) => void
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="grid grid-cols-3 gap-2">
+        <Campo label="Precio desde" value={desde} onChange={setDesde} inputMode="decimal" />
+        <Campo label="Hasta (opcional)" value={hasta} onChange={setHasta} inputMode="decimal" />
+        <Campo label="Minutos extra" value={minutos} onChange={setMinutos} inputMode="numeric" />
+      </div>
+      <p className="text-[12px] text-tinta-tenue">
+        Deja «Hasta» vacío si el precio es fijo. Con rango, la clienta verá por ejemplo «+2–4» y al reservar se suma el precio «desde».
+      </p>
+    </div>
+  )
+}
+
+// "Hasta" vacío = sin rango; si se escribe, tiene que ser mayor o igual que "desde"
+function leerMaximo(texto: string, desde: number): number | null {
+  if (isNaN(desde) || desde < 0) throw new Error('Precio inválido')
+  if (!texto.trim()) return null
+  const max = Number(texto.replace(',', '.'))
+  if (isNaN(max) || max < desde) throw new Error('El precio «hasta» tiene que ser mayor o igual que «desde».')
+  return max === desde ? null : max
 }

@@ -254,7 +254,7 @@ export function actualizarServicio(id: string, cambios: Partial<ServicioEdit>) {
 // ================== EDITAR COMPLEMENTOS ==================
 export type ComplementoEdit = {
   id: string; name: string;
-  extra_price: number; extra_minutes: number;
+  extra_price: number; extra_price_max?: number | null; extra_minutes: number;
   is_active: boolean; sort_order: number;
 }
 
@@ -715,7 +715,7 @@ export async function eliminarServicio(id: string) {
 
 // ================== CREAR / ELIMINAR COMPLEMENTOS ==================
 export async function crearComplemento(args: {
-  name: string; extra_price: number; extra_minutes: number;
+  name: string; extra_price: number; extra_price_max: number | null; extra_minutes: number;
 }) {
   const { data: max } = await sb.from('service_addons').select('sort_order')
     .eq('business_id', NEGOCIO_ID).order('sort_order', { ascending: false }).limit(1)
@@ -725,6 +725,8 @@ export async function crearComplemento(args: {
     sb.from('service_addons').insert({
       business_id: NEGOCIO_ID, name: args.name,
       extra_price: args.extra_price, extra_minutes: args.extra_minutes,
+      // Solo se envía si hay rango: así funciona aunque aún no se haya ejecutado el SQL
+      ...(args.extra_price_max !== null ? { extra_price_max: args.extra_price_max } : {}),
       is_active: true, sort_order: nextOrder,
     }).select().single()
   )

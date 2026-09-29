@@ -9,7 +9,7 @@ import { Progreso, PasoServicio, PasoExtras, PasoFecha, PasoHora, PasoDatos, Pas
 import { validarNombre, validarTelefono, validarEmail } from '../caracteristicas/reserva/validacion'
 import { Boton, Esqueleto, Aviso } from '../componentes/ui'
 import { IconoAtras, IconoCerrar } from '../componentes/iconos'
-import { duracion, dinero } from '../lib/formato'
+import { duracion, precioRango } from '../lib/formato'
 import { mensajeDeError, codigoDeError } from '../lib/errores'
 
 export default function Reserva() {
@@ -131,7 +131,7 @@ export default function Reserva() {
         {r.paso === 6 && r.inicio && (
           <PasoResumen servicios={r.serviciosElegidos}
             addons={r.addonsAplicables.filter(a => r.addonsElegidos.includes(a.id))}
-            inicio={r.inicio} duracionMin={r.duracionTotal} total={r.precioTotal}
+            inicio={r.inicio} duracionMin={r.duracionTotal} total={r.precioTotal} totalMaximo={r.precioMaximo}
             acepta={r.aceptaPoliticas} setAcepta={r.setAceptaPoliticas} descuento={qDescuento.data} />
         )}
       </main>
@@ -144,7 +144,9 @@ export default function Reserva() {
               {r.serviciosElegidos.map(s => s.name).join(' + ')} · {duracion(r.duracionTotal)}
             </p>
             {r.precioTotal > 0 && (
-              <span className="font-display text-[18px] text-rosa-700 shrink-0">{dinero(precioMostrado)}</span>
+              <span className="font-display text-[18px] text-rosa-700 shrink-0">
+                {precioRango(precioMostrado, r.precioMaximo > r.precioTotal ? precioMostrado + (r.precioMaximo - r.precioTotal) : null)}
+              </span>
             )}
           </div>
         )}
