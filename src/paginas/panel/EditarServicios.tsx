@@ -10,6 +10,7 @@ import { mensajeDeError } from '../../lib/errores'
 import { precioRango, dinero } from '../../lib/formato'
 import { Volver } from './comunes'
 import ListaOrdenable from './ListaOrdenable'
+import TasaDolar from './TasaDolar'
 
 export default function EditarServicios() {
   const [pestaña, setPestaña] = useState<'servicios' | 'complementos'>('servicios')
@@ -18,6 +19,7 @@ export default function EditarServicios() {
     <div className="p-5 space-y-4">
       <Volver />
       <h1 className="text-[30px] leading-tight">Servicios</h1>
+      <TasaDolar />
 
       <div className="flex gap-1 bg-rosa-50 rounded-full border border-rosa-100 p-1 w-full">
         <button onClick={() => setPestaña('servicios')}
