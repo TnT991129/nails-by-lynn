@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { citasEnRango } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
 import { IconoFlecha } from '../../componentes/iconos'
-import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana } from '../../lib/formato'
+import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, importe } from '../../lib/formato'
+import TasaDolar from './TasaDolar'
+import EnCup from '../../componentes/EnCup'
 import { sumarDias } from '../../componentes/CalendarioMes'
 import { mensajeDeError } from '../../lib/errores'
 
@@ -38,6 +40,8 @@ export default function Hoy() {
         <p className="text-[14px] text-tinta-tenue first-letter:uppercase">{fechaLarga(new Date().toISOString())}</p>
         <h1 className="text-[30px] leading-tight mt-1">Hoy</h1>
       </div>
+
+      <TasaDolar />
 
       <div className="grid grid-cols-2 gap-3">
         <Tarjeta className="text-center py-4">
@@ -101,7 +105,8 @@ export default function Hoy() {
       {ingresoDia > 0 && (
         <Tarjeta className="text-center py-3">
           <div className="text-[12px] tracking-wider uppercase text-tinta-tenue">Ingreso del día</div>
-          <div className="font-display text-[24px] mt-1">{ingresoDia.toLocaleString('es-CU')} CUP</div>
+          <div className="font-display text-[24px] mt-1">{importe(ingresoDia)}</div>
+          <EnCup min={ingresoDia} className="!text-[13px]" />
         </Tarjeta>
       )}
     </div>

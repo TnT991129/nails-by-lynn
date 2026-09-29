@@ -27,7 +27,6 @@ export default function FichaClienta() {
   const qHist = useQuery({
     queryKey: ['cli-historial', id],
     queryFn: () => resumenHistorialClienta(id),
-    enabled: confirmarBorrado,
   })
 
   if (qCli.data && !cargada) {
@@ -102,7 +101,7 @@ export default function FichaClienta() {
         </Tarjeta>
         <Tarjeta className="py-3">
           <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Gasto</div>
-          <div className="font-display text-[20px]">{importe(Number(c.total_spent_cup))}</div>
+          <div className="font-display text-[20px]">{h ? importe(h.ingresos) : '…'}</div>
         </Tarjeta>
         <Tarjeta className="py-3">
           <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">No vino</div>

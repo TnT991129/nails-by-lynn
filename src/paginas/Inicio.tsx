@@ -7,6 +7,7 @@ import { dinero, duracion, descripcionServicio } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
 import { useHorarioPublico } from '../lib/useHorarioPublico'
 import BotonTema from '../componentes/BotonTema'
+import EnCup from '../componentes/EnCup'
 
 
 export default function Inicio() {
@@ -127,8 +128,9 @@ export default function Inicio() {
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                  <span className="font-display text-[21px] text-rosa-700">
-                    {dinero(Number(s.price), s.currency)}
+                  <span className="font-display text-[21px] text-rosa-700 text-right">
+                    {dinero(Number(s.price))}
+                    <EnCup min={Number(s.price)} />
                   </span>
                   <span className="w-9 h-9 rounded-full bg-rosa-50 text-rosa-600 flex items-center justify-center
                                    group-hover:bg-rosa-600 group-hover:text-white transition-colors">

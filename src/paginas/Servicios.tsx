@@ -4,6 +4,7 @@ import { obtenerServicios } from '../lib/api'
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../componentes/ui'
 import { dinero, duracion } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
+import EnCup from '../componentes/EnCup'
 
 export default function Servicios() {
   const q = useQuery({ queryKey:['servicios'], queryFn: obtenerServicios })
@@ -22,8 +23,9 @@ export default function Servicios() {
                 <h2 className="text-[19px] font-semibold font-sans">{s.name}</h2>
                 <p className="text-[14px] text-tinta-tenue">{duracion(s.duration_minutes)}</p>
               </div>
-              <span className="font-display text-[22px] shrink-0">
-                {dinero(Number(s.price), s.currency)}
+              <span className="font-display text-[22px] shrink-0 text-right">
+                {dinero(Number(s.price))}
+                <EnCup min={Number(s.price)} />
               </span>
             </div>
             {s.short_description && (

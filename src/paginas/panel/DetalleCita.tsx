@@ -12,6 +12,7 @@ import { mensajeDeError } from '../../lib/errores'
 import { numeroWhatsApp } from '../../lib/panel/whatsapp'
 import { Volver } from './comunes'
 import { IconoCalendario } from '../../componentes/iconos'
+import EnCup from '../../componentes/EnCup'
 
 export default function DetalleCita() {
   const { id = '' } = useParams()
@@ -95,13 +96,13 @@ export default function DetalleCita() {
           {Number(c.discount_amount ?? 0) > 0 && (
             <div className="flex justify-between text-estado-exito">
               <span>Descuento ({Number(c.discount_percent)}%)</span>
-              <span>−{dinero(Number(c.discount_amount), c.currency)}</span>
+              <span>−{dinero(Number(c.discount_amount))}</span>
             </div>
           )}
-          <div className="flex justify-between"><span>Total</span><span>{dinero(Number(c.total_amount), c.currency)}</span></div>
+          <div className="flex justify-between"><span>Total</span><span className="text-right">{dinero(Number(c.total_amount))}<EnCup min={Number(c.total_amount)} /></span></div>
           {Number(c.deposit_amount) > 0 && <>
-            <div className="flex justify-between"><span>Anticipo</span><span>{dinero(Number(c.deposit_amount), c.currency)}</span></div>
-            <div className="flex justify-between font-medium"><span>Saldo</span><span>{dinero(Number(c.balance_due), c.currency)}</span></div>
+            <div className="flex justify-between"><span>Anticipo</span><span>{dinero(Number(c.deposit_amount))}</span></div>
+            <div className="flex justify-between font-medium"><span>Saldo</span><span>{dinero(Number(c.balance_due))}</span></div>
           </>}
         </div>
       </Tarjeta>

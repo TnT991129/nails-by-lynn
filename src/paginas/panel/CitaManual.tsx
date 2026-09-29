@@ -123,7 +123,7 @@ export default function CitaManual() {
                   ${activo ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200'}`}>{activo ? '✓' : ''}</span>
                 <span className="flex-1">{s.name}</span>
                 <span className="text-[14px] text-tinta-tenue">
-                  {duracion(s.duration_minutes)} · {dinero(Number(s.price), s.currency)}
+                  {duracion(s.duration_minutes)} · {dinero(Number(s.price))}
                 </span>
               </button>
             )

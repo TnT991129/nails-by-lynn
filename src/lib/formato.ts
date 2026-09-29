@@ -42,14 +42,15 @@ export function duracion(min: number): string {
   return `${h} h ${m} min`
 }
 
-export function dinero(monto: number, moneda = 'CUP'): string {
+// Los precios del salón están en dólares (USD); los gastos pueden ir en CUP o USD
+export function dinero(monto: number, moneda = 'USD'): string {
   if (!monto || monto === 0) return 'Por definir'
   const n = new Intl.NumberFormat('es-CU', { maximumFractionDigits: 2 }).format(monto)
   return moneda === 'USD' ? `$${n}` : `${n} CUP`
 }
 
-/** Importe siempre con cifra (0 CUP, no "Por definir"): para totales, estadísticas y gastos */
-export function importe(monto: number, moneda = 'CUP'): string {
+/** Importe siempre con cifra ($0, no "Por definir"): para totales, estadísticas y gastos */
+export function importe(monto: number, moneda = 'USD'): string {
   const n = new Intl.NumberFormat('es-CU', { maximumFractionDigits: 2 }).format(monto || 0)
   return moneda === 'USD' ? `$${n}` : `${n} CUP`
 }
@@ -110,9 +111,15 @@ export function textoDias(dias: number[]): string {
   return n.length === 1 ? n[0] : `${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}`
 }
 
-/** Precio o rango: (2, 4) → "2–4 CUP" / "$2–4"; sin máximo (o igual) → precio normal */
-export function precioRango(min: number, max: number | null | undefined, moneda = 'CUP'): string {
+/** Precio o rango: (2, 4) → "$2–4" / "2–4 CUP"; sin máximo (o igual) → precio normal */
+export function precioRango(min: number, max: number | null | undefined, moneda = 'USD'): string {
   if (max === null || max === undefined || Number(max) <= Number(min)) return dinero(Number(min), moneda)
   const f = (n: number) => new Intl.NumberFormat('es-CU', { maximumFractionDigits: 2 }).format(n)
   return moneda === 'USD' ? `$${f(Number(min))}–${f(Number(max))}` : `${f(Number(min))}–${f(Number(max))} CUP`
+}
+
+/** Equivalente en CUP de un precio en USD con el dólar del día: "1.440 CUP" o "960–1.920 CUP" */
+export function enCup(min: number, max: number | null | undefined, tasa: number): string {
+  const f = (n: number) => new Intl.NumberFormat('es-CU', { maximumFractionDigits: 0 }).format(Math.round(n * tasa))
+  return max != null && Number(max) > Number(min) ? `${f(Number(min))}–${f(Number(max))} CUP` : `${f(Number(min))} CUP`
 }

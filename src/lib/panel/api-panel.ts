@@ -425,7 +425,10 @@ export async function resumenMes(año: number, mesCero: number): Promise<Resumen
 
   const completadas = (citas ?? []).filter(c => c.status === 'COMPLETADA')
   const ingresos = completadas.reduce((t, c) => t + Number(c.total_amount), 0)
-  const totalGastos = (gastos ?? []).reduce((t, g) => t + Number(g.amount), 0)
+  // Todo en dólares: los gastos en CUP se convierten con el último precio del dólar
+  const tasa = (gastos ?? []).some(g => g.currency === 'CUP') ? (await obtenerTasaPanel())?.tasa : undefined
+  const totalGastos = (gastos ?? []).reduce((t, g) =>
+    t + (g.currency === 'CUP' && tasa ? Number(g.amount) / tasa : Number(g.amount)), 0)
   const clientasSet = new Set(completadas.map(c => c.client_id))
 
   return {
@@ -438,7 +441,7 @@ export async function resumenMes(año: number, mesCero: number): Promise<Resumen
       c.status === 'CANCELADA_CLIENTA' || c.status === 'CANCELADA_NEGOCIO').length,
     ticket_promedio: completadas.length > 0 ? ingresos / completadas.length : 0,
     clientas_atendidas: clientasSet.size,
-    moneda: 'CUP',
+    moneda: 'USD',
   }
 }
 
@@ -875,4 +878,26 @@ export async function guardarOrden(
     cambios.map(c => sb.from(tabla).update({ sort_order: c.ahora }).eq('id', c.id)))
   const fallo = respuestas.find(r => r.error)?.error
   if (fallo) throw fallo
+}
+
+// ================== PRECIO DEL DÓLAR ==================
+// Lynn pone cada día cuántos CUP vale 1 USD; uno por día (se sobrescribe si lo cambia)
+
+export async function obtenerTasaPanel(): Promise<{ tasa: number; fecha: string } | null> {
+  const { data, error } = await sb.from('exchange_rates')
+    .select('cup_per_usd, effective_date')
+    .eq('business_id', NEGOCIO_ID)
+    .order('effective_date', { ascending: false })
+    .limit(1).maybeSingle()
+  if (error) throw error
+  return data ? { tasa: Number(data.cup_per_usd), fecha: data.effective_date } : null
+}
+
+export async function guardarTasa(cupPorUsd: number) {
+  const { error } = await sb.from('exchange_rates').upsert({
+    business_id: NEGOCIO_ID,
+    effective_date: fechaISO(new Date()),   // hoy en La Habana
+    cup_per_usd: cupPorUsd,
+  }, { onConflict: 'business_id,effective_date' })
+  if (error) throw error
 }

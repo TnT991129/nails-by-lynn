@@ -11,6 +11,7 @@ import { Boton, Esqueleto, Aviso } from '../componentes/ui'
 import { IconoAtras, IconoCerrar } from '../componentes/iconos'
 import { duracion, precioRango } from '../lib/formato'
 import { mensajeDeError, codigoDeError } from '../lib/errores'
+import EnCup from '../componentes/EnCup'
 
 export default function Reserva() {
   const navegar = useNavigate()
@@ -144,8 +145,9 @@ export default function Reserva() {
               {r.serviciosElegidos.map(s => s.name).join(' + ')} · {duracion(r.duracionTotal)}
             </p>
             {r.precioTotal > 0 && (
-              <span className="font-display text-[18px] text-rosa-700 shrink-0">
+              <span className="font-display text-[18px] text-rosa-700 shrink-0 text-right">
                 {precioRango(precioMostrado, r.precioMaximo > r.precioTotal ? precioMostrado + (r.precioMaximo - r.precioTotal) : null)}
+                <EnCup min={precioMostrado} max={r.precioMaximo > r.precioTotal ? precioMostrado + (r.precioMaximo - r.precioTotal) : null} />
               </span>
             )}
           </div>

@@ -7,7 +7,7 @@ import {
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
-import { precioRango } from '../../lib/formato'
+import { precioRango, dinero } from '../../lib/formato'
 import { Volver } from './comunes'
 import ListaOrdenable from './ListaOrdenable'
 
@@ -140,7 +140,7 @@ function FormularioNuevoServicio({ onCerrar }: { onCerrar: (nuevoId?: string) =>
           className="w-full px-3 py-2 rounded border border-rosa-200 text-[16px]" />
       </label>
       <div className="grid grid-cols-3 gap-2">
-        <Campo label="Precio" value={precio} onChange={setPrecio} inputMode="decimal" />
+        <Campo label="Precio (USD)" value={precio} onChange={setPrecio} inputMode="decimal" />
         <Campo label="Min." value={duracion} onChange={setDuracion} inputMode="numeric" />
         <Campo label="Buffer" value={buffer} onChange={setBuffer} inputMode="numeric" />
       </div>
@@ -231,7 +231,7 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso, asa }: 
           )}
         </div>
         <div className="text-[14px] text-tinta-tenue">
-          {servicio.duration_minutes} min · {Number(servicio.price).toLocaleString('es-CU')} {servicio.currency}
+          {servicio.duration_minutes} min · {dinero(Number(servicio.price))}
         </div>
         {(servicio.short_description ?? servicio.description) && (
           <div className="text-[13px] text-tinta-suave mt-1 line-clamp-2">
@@ -259,7 +259,7 @@ function ItemServicio({ servicio, editando, onEditar, onCerrar, onAviso, asa }: 
           className="w-full px-3 py-2 rounded border border-rosa-200 text-[16px]" />
       </label>
       <div className="grid grid-cols-3 gap-2">
-        <Campo label="Precio" value={precio} onChange={setPrecio} inputMode="decimal" />
+        <Campo label="Precio (USD)" value={precio} onChange={setPrecio} inputMode="decimal" />
         <Campo label="Min." value={duracion} onChange={setDuracion} inputMode="numeric" />
         <Campo label="Buffer" value={buffer} onChange={setBuffer} inputMode="numeric" />
       </div>
@@ -519,7 +519,7 @@ function CamposPrecio({ desde, hasta, setDesde, setHasta, minutos, setMinutos }:
   return (
     <div className="space-y-1.5">
       <div className="grid grid-cols-3 gap-2">
-        <Campo label="Precio desde" value={desde} onChange={setDesde} inputMode="decimal" />
+        <Campo label="Desde (USD)" value={desde} onChange={setDesde} inputMode="decimal" />
         <Campo label="Hasta (opcional)" value={hasta} onChange={setHasta} inputMode="decimal" />
         <Campo label="Minutos extra" value={minutos} onChange={setMinutos} inputMode="numeric" />
       </div>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listarGastos, crearGasto, eliminarGasto, type CategoriaGasto } from '../../lib/panel/api-panel'
 import { Boton, Campo, Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
-import { fechaLarga, fechaISO } from '../../lib/formato'
+import { fechaLarga, fechaISO, importe } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
 
@@ -132,7 +132,9 @@ export default function Gastos() {
 
       <div className="space-y-4">
         {Object.entries(porMes).map(([mesClave, gastos]) => {
-          const total = gastos?.reduce((t, g) => t + Number(g.amount), 0) ?? 0
+          const suma = (m: string) => gastos?.filter(g => g.currency === m).reduce((t, g) => t + Number(g.amount), 0) ?? 0
+          const total = [suma('CUP') > 0 && importe(suma('CUP'), 'CUP'), suma('USD') > 0 && importe(suma('USD'))]
+            .filter(Boolean).join(' + ') || importe(0, 'CUP')
           const [a, m] = mesClave.split('-')
           const nombreMes = new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' })
             .format(new Date(Number(a), Number(m) - 1, 1))
@@ -140,7 +142,7 @@ export default function Gastos() {
             <section key={mesClave}>
               <div className="flex justify-between items-baseline mb-2">
                 <h3 className="text-[14px] font-medium first-letter:uppercase">{nombreMes}</h3>
-                <span className="text-[14px] font-display">{total.toLocaleString('es-CU')} CUP</span>
+                <span className="text-[14px] font-display">{total}</span>
               </div>
               <div className="space-y-2">
                 {gastos?.map(g => (
@@ -158,7 +160,7 @@ export default function Gastos() {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-[14px] font-display">
-                        {Number(g.amount).toLocaleString('es-CU')} {g.currency}
+                        {importe(Number(g.amount), g.currency)}
                       </div>
                       <button onClick={() => eliminar(g.id)}
                         className="text-[12px] text-estado-error min-h-[44px]">Eliminar</button>

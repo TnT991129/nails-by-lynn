@@ -9,6 +9,7 @@ import { EnlacePoliticas } from '../../componentes/Politicas'
 import type { Datos } from './useReserva'
 import { useHorarioPublico } from '../../lib/useHorarioPublico'
 import CalendarioMes from '../../componentes/CalendarioMes'
+import EnCup from '../../componentes/EnCup'
 
 const NOMBRES_PASOS = ['Servicio','Extras','Fecha','Hora','Datos','Listo']
 
@@ -86,8 +87,9 @@ export function PasoServicio({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-[17px] font-semibold">{s.name}</span>
-                    <span className="font-display text-[19px] text-rosa-700 shrink-0">
-                      {dinero(Number(s.price), s.currency)}
+                    <span className="font-display text-[19px] text-rosa-700 shrink-0 text-right">
+                      {dinero(Number(s.price))}
+                      <EnCup min={Number(s.price)} />
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[13px] text-tinta-tenue mt-1">
@@ -130,8 +132,9 @@ export function PasoExtras({
                     <div className="text-[13px] text-tinta-tenue mt-0.5">+{a.extra_minutes} min</div>
                   </div>
                   {Number(a.extra_price) > 0 && (
-                    <span className="text-[14px] font-semibold text-rosa-700 shrink-0">
+                    <span className="text-[14px] font-semibold text-rosa-700 shrink-0 text-right">
                       +{precioRango(Number(a.extra_price), a.extra_price_max)}
+                      <EnCup min={Number(a.extra_price)} max={a.extra_price_max} />
                     </span>
                   )}
                 </div>
@@ -309,7 +312,7 @@ export function PasoResumen({
         <div className="p-5 space-y-2">
           {servicios.map(s => (
             <div key={s.id} className="flex justify-between text-[16px]">
-              <span>{s.name}</span><span>{dinero(Number(s.price), s.currency)}</span>
+              <span>{s.name}</span><span>{dinero(Number(s.price))}</span>
             </div>
           ))}
           {addons.map(a => (
@@ -325,8 +328,9 @@ export function PasoResumen({
           )}
           <div className="border-t border-dashed border-rosa-200 !mt-4 pt-4 flex justify-between items-baseline">
             <span className="text-[14px] text-tinta-tenue">Total</span>
-            <span className="font-display text-[26px] text-rosa-700">
+            <span className="font-display text-[26px] text-rosa-700 text-right">
               {precioRango(total - rebaja, totalMaximo > total ? totalMaximo - rebaja : null)}
+              <EnCup min={total - rebaja} max={totalMaximo > total ? totalMaximo - rebaja : null} className="!text-[13px]" />
             </span>
           </div>
           {totalMaximo > total && (

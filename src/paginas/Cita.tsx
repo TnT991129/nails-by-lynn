@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerCita, cancelarCita } from '../lib/api'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
 import { IconoCheck, IconoUbicacion, IconoWhatsApp, IconoReloj, IconoCalendario } from '../componentes/iconos'
-import { fechaLarga, hora, duracion, dinero } from '../lib/formato'
+import { fechaLarga, hora, duracion, dinero, importe } from '../lib/formato'
+import EnCup from '../componentes/EnCup'
 import { mensajeDeError } from '../lib/errores'
 import { olvidarToken, citaAvisada, marcarAvisada } from '../lib/almacenamiento'
 import { EnlacePoliticas } from '../componentes/Politicas'
@@ -29,7 +30,7 @@ function mensajeAvisoLynn(c: {
 📱 ${c.cliente.telefono}
 📅 ${fecha} a las ${hora}
 ⏱ ${c.duracion_minutos} min
-💵 ${c.total.toLocaleString('es-CU')} ${c.moneda}
+💵 ${importe(Number(c.total))}
 
 Servicios:
 ${servicios}
@@ -150,27 +151,28 @@ export default function Cita() {
           <div className="border-t border-dashed border-rosa-200 px-5 py-4 space-y-1.5 bg-rosa-50/40">
             {c.servicios?.map((s, i) => (
               <div key={i} className="flex justify-between text-[15px]">
-                <span>{s.nombre}</span><span className="font-medium">{dinero(Number(s.precio), c.moneda)}</span>
+                <span>{s.nombre}</span><span className="font-medium">{dinero(Number(s.precio))}</span>
               </div>
             ))}
             {Number(c.descuento_monto ?? 0) > 0 && (
               <>
                 <div className="flex justify-between text-[15px] text-estado-exito font-medium">
                   <span>🎁 Descuento ({Number(c.descuento_porcentaje)}%)</span>
-                  <span>−{dinero(Number(c.descuento_monto), c.moneda)}</span>
+                  <span>−{dinero(Number(c.descuento_monto))}</span>
                 </div>
                 <div className="flex justify-between text-[15px] font-semibold pt-1">
-                  <span>Total</span><span>{dinero(Number(c.total), c.moneda)}</span>
+                  <span>Total</span><span>{dinero(Number(c.total))}</span>
                 </div>
               </>
             )}
+            <EnCup min={Number(c.total)} className="text-right !text-[12px] pt-0.5" />
           </div>
           {Number(c.anticipo) > 0 && (
             <>
               <div className="border-t border-rosa-100 px-5 py-4 space-y-1 text-[14px]">
-                <div className="flex justify-between"><span>Precio</span><span>{dinero(Number(c.total), c.moneda)}</span></div>
-                <div className="flex justify-between"><span>Anticipo</span><span>{dinero(Number(c.anticipo), c.moneda)}</span></div>
-                <div className="flex justify-between font-medium"><span>Saldo</span><span>{dinero(Number(c.saldo), c.moneda)}</span></div>
+                <div className="flex justify-between"><span>Precio</span><span>{dinero(Number(c.total))}</span></div>
+                <div className="flex justify-between"><span>Anticipo</span><span>{dinero(Number(c.anticipo))}</span></div>
+                <div className="flex justify-between font-medium"><span>Saldo</span><span>{dinero(Number(c.saldo))}</span></div>
               </div>
             </>
           )}
