@@ -44,6 +44,8 @@ Tu cita en Nails by Lynn está confirmada:
 💅 ${d.servicios}
 🔖 Código: ${codigo}
 
+⏰ Tienes 15 minutos de cortesía. Si llegas más de 15 minutos tarde, el turno se cancela.
+
 Puedes ver o cancelar tu cita aquí:
 ${link}
 
