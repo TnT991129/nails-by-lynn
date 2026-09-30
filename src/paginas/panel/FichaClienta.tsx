@@ -6,7 +6,7 @@ import { obtenerClienta, citasDeClienta, actualizarNotasInternas, bloquearClient
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, dinero, importe } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
-import { Volver } from './comunes'
+import { Volver, ListaServicios } from './comunes'
 import DescuentoClienta from './DescuentoClienta'
 
 export default function FichaClienta() {
@@ -126,7 +126,7 @@ export default function FichaClienta() {
           <div className="text-[16px] mt-1 first-letter:uppercase">
             {fechaLarga(proxima.starts_at)} · <span className="normal-case">{hora(proxima.starts_at)}</span>
           </div>
-          <div className="text-[14px] text-tinta-suave break-words">{proxima.servicios}</div>
+          <ListaServicios texto={proxima.servicios} className="text-[14px] text-tinta-suave mt-1" />
         </Tarjeta>
       )}
 
@@ -156,7 +156,7 @@ export default function FichaClienta() {
                   <div className="text-[14px] first-letter:uppercase break-words">
                     {fechaLarga(x.starts_at)} · <span className="normal-case">{hora(x.starts_at)}</span>
                   </div>
-                  <div className="text-[12px] text-tinta-tenue break-words">{x.servicios}</div>
+                  <ListaServicios texto={x.servicios} className="text-[12px] text-tinta-tenue" />
                 </div>
                 <div className="shrink-0"><Pildora estado={x.status} /></div>
               </Tarjeta>

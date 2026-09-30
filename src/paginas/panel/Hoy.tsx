@@ -9,6 +9,7 @@ import TasaDolar from './TasaDolar'
 import EnCup from '../../componentes/EnCup'
 import { sumarDias } from '../../componentes/CalendarioMes'
 import { mensajeDeError } from '../../lib/errores'
+import { ListaServicios } from './comunes'
 
 // Hoy de 00:00 a 24:00 en hora de La Habana, aunque el móvil esté en otra zona
 function iniFin(fecha: Date) {
@@ -63,9 +64,8 @@ export default function Hoy() {
           <div className="text-[11px] font-semibold tracking-[0.2em] uppercase text-white/75">Próxima cita</div>
           <div className="font-display text-[36px] leading-none mt-2">{hora(proxima.starts_at)}</div>
           <div className="text-[17px] font-medium mt-2">{proxima.cliente_nombre}</div>
-          <div className="text-[14px] text-white/80">
-            {proxima.servicios} · {duracion(proxima.total_duration_minutes)}
-          </div>
+          <ListaServicios texto={proxima.servicios} vineta="text-white/60" className="text-[14px] text-white/85 mt-1" />
+          <div className="text-[13px] text-white/70 mt-1">{duracion(proxima.total_duration_minutes)}</div>
           <div className="mt-3 text-[13px] font-semibold inline-flex items-center gap-1.5">
             Ver detalle <IconoFlecha tam={15} />
           </div>
@@ -84,18 +84,20 @@ export default function Hoy() {
         <div className="space-y-2">
           {activas.map(c => (
             <Link key={c.id} to={`/panel/cita/${c.id}`} className="block">
-              <Tarjeta className="flex items-center gap-3">
-                <div className="text-center min-w-[64px]">
+              <Tarjeta className="flex items-start gap-3">
+                <div className="text-center min-w-[64px] pt-0.5">
                   <div className="font-display text-[19px]">{hora(c.starts_at)}</div>
                   <div className="text-[12px] text-tinta-tenue">
                     {duracion(c.total_duration_minutes)}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[16px] font-medium truncate">{c.cliente_nombre}</div>
-                  <div className="text-[14px] text-tinta-tenue truncate">{c.servicios}</div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="text-[16px] font-medium truncate">{c.cliente_nombre}</div>
+                    <div className="shrink-0"><Pildora estado={c.status} /></div>
+                  </div>
+                  <ListaServicios texto={c.servicios} className="text-[14px] text-tinta-tenue mt-1" />
                 </div>
-                <Pildora estado={c.status} />
               </Tarjeta>
             </Link>
           ))}

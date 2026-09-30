@@ -10,6 +10,7 @@ import { IconoAtras, IconoMas } from '../../componentes/iconos'
 import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, horaDeTurno } from '../../lib/formato'
 import { diaSemana, sumarDias, dos } from '../../componentes/CalendarioMes'
 import { mensajeDeError } from '../../lib/errores'
+import { ListaServicios } from './comunes'
 
 type Vista = 'dia' | 'semana' | 'mes'
 const VISTAS: { v: Vista; texto: string }[] = [{ v: 'dia', texto: 'Día' }, { v: 'semana', texto: 'Semana' }, { v: 'mes', texto: 'Mes' }]
@@ -175,16 +176,18 @@ function VistaDia({ j, compacta = false }: { j: Jornada; compacta?: boolean }) {
 function FilaCita({ c }: { c: CitaAgenda }) {
   return (
     <Link to={`/panel/cita/${c.id}`} className="block">
-      <Tarjeta className="flex items-center gap-3 !py-3.5">
-        <div className="text-center min-w-[64px]">
+      <Tarjeta className="flex items-start gap-3 !py-3.5">
+        <div className="text-center min-w-[64px] pt-0.5">
           <div className="font-display text-[17px]">{hora(c.starts_at)}</div>
           <div className="text-[11px] text-tinta-tenue">{duracion(c.total_duration_minutes)}</div>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-medium truncate">{c.cliente_nombre}</div>
-          <div className="text-[13px] text-tinta-tenue truncate">{c.servicios}</div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="text-[15px] font-medium truncate">{c.cliente_nombre}</div>
+            <div className="shrink-0"><Pildora estado={c.status} /></div>
+          </div>
+          <ListaServicios texto={c.servicios} className="text-[13px] text-tinta-tenue mt-1" />
         </div>
-        <Pildora estado={c.status} />
       </Tarjeta>
     </Link>
   )

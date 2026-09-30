@@ -10,7 +10,7 @@ import ReagendarCita from './ReagendarCita'
 import AvisoCancelacion from './AvisoCancelacion'
 import { mensajeDeError } from '../../lib/errores'
 import { numeroWhatsApp } from '../../lib/panel/whatsapp'
-import { Volver } from './comunes'
+import { Volver, ListaServicios } from './comunes'
 import { IconoCalendario } from '../../componentes/iconos'
 import EnCup from '../../componentes/EnCup'
 import DescuentoCita from './DescuentoCita'
@@ -90,7 +90,7 @@ export default function DetalleCita() {
         <hr className="border-rosa-100" />
         <div>
           <div className="text-[14px] text-tinta-tenue mb-1">Servicios</div>
-          <div className="text-[16px]">{c.servicios}</div>
+          <ListaServicios texto={c.servicios} className="text-[16px]" />
         </div>
         <hr className="border-rosa-100" />
         <div className="space-y-1 text-[14px]">

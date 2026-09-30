@@ -11,3 +11,20 @@ export function Volver() {
     </button>
   )
 }
+
+/** Servicios y complementos de una cita, uno debajo de otro ("A + B + C" → lista) */
+export function ListaServicios({ texto, className = '', vineta = 'text-rosa-600' }: {
+  texto: string | null | undefined; className?: string; vineta?: string
+}) {
+  const items = (texto ?? '').split(' + ').map(s => s.trim()).filter(Boolean)
+  return (
+    <ul className={`space-y-0.5 ${className}`}>
+      {items.map((s, i) => (
+        <li key={i} className="flex gap-1.5">
+          <span className={`shrink-0 ${vineta}`}>•</span>
+          <span className="min-w-0 break-words">{s}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
