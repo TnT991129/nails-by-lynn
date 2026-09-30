@@ -126,7 +126,7 @@ export default function FichaClienta() {
           <div className="text-[16px] mt-1 first-letter:uppercase">
             {fechaLarga(proxima.starts_at)} · <span className="normal-case">{hora(proxima.starts_at)}</span>
           </div>
-          <div className="text-[14px] text-tinta-suave">{proxima.servicios}</div>
+          <div className="text-[14px] text-tinta-suave break-words">{proxima.servicios}</div>
         </Tarjeta>
       )}
 
@@ -151,13 +151,14 @@ export default function FichaClienta() {
           {qCitas.data?.map(x => (
             <Link key={x.id} to={`/panel/cita/${x.id}`} className="block">
               <Tarjeta className="flex items-center justify-between gap-2">
-                <div>
-                  <div className="text-[14px] first-letter:uppercase">
+                {/* min-w-0 + break-words: los textos largos bajan de línea en vez de salirse */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] first-letter:uppercase break-words">
                     {fechaLarga(x.starts_at)} · <span className="normal-case">{hora(x.starts_at)}</span>
                   </div>
-                  <div className="text-[12px] text-tinta-tenue truncate">{x.servicios}</div>
+                  <div className="text-[12px] text-tinta-tenue break-words">{x.servicios}</div>
                 </div>
-                <Pildora estado={x.status} />
+                <div className="shrink-0"><Pildora estado={x.status} /></div>
               </Tarjeta>
             </Link>
           ))}
