@@ -23,6 +23,8 @@ const MENSAJES: Record<string, string> = {
   NOMBRE_INVALIDO:       'Escribe tu nombre.',
   extra_price_max:       'Falta ejecutar en Supabase el SQL de rangos de precio (rango_complementos.sql).',
   addons_rango_valido:   'El precio «hasta» no puede ser menor que el precio «desde».',
+  aplicar_descuento_cita: 'Falta ejecutar en Supabase el SQL complementos_y_descuentos.sql.',
+  DESCUENTO_INVALIDO:    'El descuento tiene que estar entre 0 y 100 %.',
   next_discount:         'Falta ejecutar en Supabase el SQL de descuentos (turnos_descuentos_cambios.sql).',
   LIMITE_REPROGRAMACIONES_MES:'Ya cambiaste una cita este mes. Si necesitas moverla, escríbeme por WhatsApp.',
   HORARIO_OCUPADO:       'Ese horario choca con otra cita. Elige otro.',

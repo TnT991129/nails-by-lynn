@@ -68,7 +68,8 @@ export default function FichaClienta() {
 
   const c = qCli.data!
   const h = qHist.data
-  const proxima = qCitas.data?.find(x =>
+  // La lista viene de la más nueva a la más vieja: la próxima es la última que cumple
+  const proxima = qCitas.data?.slice().reverse().find(x =>
     ['CONFIRMADA','PENDIENTE'].includes(x.status) &&
     new Date(x.starts_at).getTime() > Date.now())
 
@@ -129,7 +130,7 @@ export default function FichaClienta() {
         </Tarjeta>
       )}
 
-      <DescuentoClienta clienta={c} />
+      <DescuentoClienta clienta={c} proxima={proxima} />
 
       <Tarjeta className="space-y-2">
         <label className="block text-[14px] text-tinta-tenue">Sobre esta clienta</label>

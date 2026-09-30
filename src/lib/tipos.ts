@@ -68,7 +68,8 @@ export type CitaDetalle = {
   horas_minimas_reprogramar?: number
   cliente: { nombre: string; telefono: string }
   negocio: { nombre: string; ubicacion: string | null; whatsapp: string | null; zona: string }
-  servicios: { nombre: string; precio: number }[]
+  // complementos: llegan desde supabase/complementos_y_descuentos.sql
+  servicios: { nombre: string; precio: number; complementos?: { nombre: string; precio: number }[] }[]
 }
 
 export type ItemReserva = { service_id: string; addons: string[] }

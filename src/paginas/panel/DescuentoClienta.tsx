@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { aplicarDescuento, quitarDescuento, type Cliente } from '../../lib/panel/api-panel'
-import { enlaceWhatsApp, mensajeDescuento } from '../../lib/panel/whatsapp'
+import { aplicarDescuento, quitarDescuento, aplicarDescuentoCita, type Cliente, type CitaAgenda } from '../../lib/panel/api-panel'
+import { enlaceWhatsApp, mensajeDescuento, mensajeDescuentoCita } from '../../lib/panel/whatsapp'
+import { fechaLarga, hora } from '../../lib/formato'
 import { Boton, Tarjeta, Aviso } from '../../componentes/ui'
 import { IconoWhatsApp } from '../../componentes/iconos'
 import { mensajeDeError } from '../../lib/errores'
 
 const RAPIDOS = [10, 15, 20, 25]
 
-// Descuento para la próxima cita de la clienta. Se aplica solo al reservar y luego se consume.
-export default function DescuentoClienta({ clienta }: { clienta: Cliente }) {
+// Descuento para la próxima cita de la clienta.
+// Si ya tiene una cita reservada, se aplica directamente a esa cita;
+// si no, queda guardado y se aplica solo cuando reserve (y luego se consume).
+export default function DescuentoClienta({ clienta, proxima }: { clienta: Cliente; proxima?: CitaAgenda }) {
   const qc = useQueryClient()
   const activo = clienta.next_discount_percent ? Number(clienta.next_discount_percent) : null
   const [pct, setPct] = useState('15')
@@ -17,6 +20,9 @@ export default function DescuentoClienta({ clienta }: { clienta: Cliente }) {
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const nombre = clienta.full_name.trim().split(/\s+/)[0]
+
+  const descCita = proxima ? Number(proxima.discount_percent ?? 0) : 0
+  const cuando = proxima ? `${fechaLarga(proxima.starts_at)} a las ${hora(proxima.starts_at)}` : ''
 
   function refrescar() {
     qc.invalidateQueries({ queryKey: ['cli', clienta.id] })
@@ -27,7 +33,14 @@ export default function DescuentoClienta({ clienta }: { clienta: Cliente }) {
     const n = Number(pct.replace(',', '.'))
     if (!(n > 0 && n <= 100)) { setError('Pon un porcentaje entre 1 y 100.'); return }
     setTrabajando(true); setError(null)
-    try { await aplicarDescuento(clienta.id, n, nota.trim() || null); refrescar() }
+    try {
+      if (proxima) {
+        await aplicarDescuentoCita(proxima.id, n)
+        qc.invalidateQueries()   // cambia el total de la cita
+      } else {
+        await aplicarDescuento(clienta.id, n, nota.trim() || null); refrescar()
+      }
+    }
     catch (e) { setError(mensajeDeError(e)) }
     finally { setTrabajando(false) }
   }
@@ -44,7 +57,22 @@ export default function DescuentoClienta({ clienta }: { clienta: Cliente }) {
     <Tarjeta className="space-y-3">
       <div className="text-[14px] text-tinta-tenue">Descuento en su próxima cita</div>
 
-      {activo ? (
+      {!activo && descCita > 0 && proxima ? (
+        <>
+          <div className="rounded-lg bg-rosa-50 border border-rosa-100 p-3">
+            <div className="text-[18px] font-semibold text-rosa-800">🎁 {descCita}% de descuento</div>
+            <div className="text-[12px] text-tinta-tenue mt-1 first-letter:uppercase">
+              Aplicado a su cita del {cuando}. Para cambiarlo, abre la cita.
+            </div>
+          </div>
+          <a href={enlaceWhatsApp(clienta.phone, mensajeDescuentoCita(clienta.full_name, descCita, null, cuando))}
+             target="_blank" rel="noreferrer"
+             className="w-full min-h-[52px] rounded-full bg-whatsapp text-white font-semibold text-[15px]
+                        flex items-center justify-center gap-2 active:scale-[0.98] transition">
+            <IconoWhatsApp tam={20} /> Avisar a {nombre} por WhatsApp
+          </a>
+        </>
+      ) : activo ? (
         <>
           <div className="rounded-lg bg-rosa-50 border border-rosa-100 p-3">
             <div className="text-[18px] font-semibold text-rosa-800">🎁 {activo}% de descuento</div>
@@ -89,7 +117,11 @@ export default function DescuentoClienta({ clienta }: { clienta: Cliente }) {
             </label>
           </div>
           <Boton ancho cargando={trabajando} onClick={aplicar}>Aplicar descuento</Boton>
-          <p className="text-[12px] text-tinta-tenue">Después podrás avisarle por WhatsApp con un toque.</p>
+          <p className="text-[12px] text-tinta-tenue">
+            {proxima
+              ? <>Se aplica a su cita del {cuando}. Después podrás avisarle por WhatsApp.</>
+              : 'Se aplicará cuando reserve. Después podrás avisarle por WhatsApp con un toque.'}
+          </p>
         </>
       )}
       {error && <Aviso>{error}</Aviso>}

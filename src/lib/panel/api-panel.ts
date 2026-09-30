@@ -901,3 +901,9 @@ export async function guardarTasa(cupPorUsd: number) {
   }, { onConflict: 'business_id,effective_date' })
   if (error) throw error
 }
+
+// Descuento a una cita ya reservada (0 = quitarlo). Recalcula total y saldo en Supabase.
+export async function aplicarDescuentoCita(id: string, porcentaje: number) {
+  const { error } = await sb.rpc('aplicar_descuento_cita', { p_appointment_id: id, p_porcentaje: porcentaje })
+  if (error) throw error
+}

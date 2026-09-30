@@ -13,6 +13,7 @@ import { numeroWhatsApp } from '../../lib/panel/whatsapp'
 import { Volver } from './comunes'
 import { IconoCalendario } from '../../componentes/iconos'
 import EnCup from '../../componentes/EnCup'
+import DescuentoCita from './DescuentoCita'
 
 export default function DetalleCita() {
   const { id = '' } = useParams()
@@ -106,6 +107,8 @@ export default function DetalleCita() {
           </>}
         </div>
       </Tarjeta>
+
+      {!['CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO'].includes(c.status) && <DescuentoCita cita={c} />}
 
       <Tarjeta className="space-y-2">
         <div className="text-[14px] text-tinta-tenue">Clienta</div>

@@ -13,9 +13,10 @@ import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
 
 function mensajeAvisoLynn(c: {
   code: string; inicio: string; duracion_minutos: number;
-  total: number; moneda: string;
+  total: number; moneda: string; nota: string | null;
+  descuento_porcentaje?: number;
   cliente: { nombre: string; telefono: string };
-  servicios: { nombre: string; precio: number }[];
+  servicios: { nombre: string; precio: number; complementos?: { nombre: string }[] }[];
 }): string {
   const fecha = new Intl.DateTimeFormat('es', {
     timeZone: 'America/Havana', weekday: 'long', day: 'numeric', month: 'long'
@@ -23,17 +24,20 @@ function mensajeAvisoLynn(c: {
   const hora = new Intl.DateTimeFormat('es', {
     timeZone: 'America/Havana', hour: 'numeric', minute: '2-digit', hour12: true
   }).format(new Date(c.inicio))
-  const servicios = c.servicios.map(s => `• ${s.nombre}`).join('\n')
+  const servicios = c.servicios.map(s =>
+    [`• ${s.nombre}`, ...(s.complementos ?? []).map(a => `   + ${a.nombre}`)].join('\n')).join('\n')
+  const descuento = Number(c.descuento_porcentaje ?? 0) > 0 ? ` (con ${Number(c.descuento_porcentaje)}% de descuento 🎁)` : ''
+  const nota = c.nota?.trim() ? `\n\n📝 Nota: ${c.nota.trim()}` : ''
   return `Hola Lynn! Acabo de reservar una cita 💅
 
 👤 ${c.cliente.nombre}
 📱 ${c.cliente.telefono}
 📅 ${fecha} a las ${hora}
 ⏱ ${c.duracion_minutos} min
-💵 ${importe(Number(c.total))}
+💵 ${importe(Number(c.total))}${descuento}
 
 Servicios:
-${servicios}
+${servicios}${nota}
 
 🔖 Código: ${c.code}`
 }
@@ -150,8 +154,15 @@ export default function Cita() {
           </div>
           <div className="border-t border-dashed border-rosa-200 px-5 py-4 space-y-1.5 bg-rosa-50/40">
             {c.servicios?.map((s, i) => (
-              <div key={i} className="flex justify-between text-[15px]">
-                <span>{s.nombre}</span><span className="font-medium">{dinero(Number(s.precio))}</span>
+              <div key={i}>
+                <div className="flex justify-between text-[15px]">
+                  <span>{s.nombre}</span><span className="font-medium">{dinero(Number(s.precio))}</span>
+                </div>
+                {s.complementos?.map((a, j) => (
+                  <div key={j} className="flex justify-between text-[14px] text-tinta-tenue">
+                    <span>+ {a.nombre}</span><span>{Number(a.precio) > 0 ? dinero(Number(a.precio)) : '—'}</span>
+                  </div>
+                ))}
               </div>
             ))}
             {Number(c.descuento_monto ?? 0) > 0 && (

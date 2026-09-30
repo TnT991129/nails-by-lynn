@@ -158,3 +158,13 @@ ${urlPublica()}reservar
 
 ¡Te espero!`)
 }
+
+// Aviso de un descuento aplicado a una cita que ya tiene reservada
+export function mensajeDescuentoCita(nombre: string, porcentaje: number, nota: string | null, cuando: string): string {
+  return (
+`Hola ${primeroNombre(nombre)} 💖
+
+¡Tengo una sorpresa para ti! Tu cita del ${cuando} tiene un ${porcentaje}% de descuento${nota ? ` (${nota})` : ''} 🎁
+
+¡Te espero!`)
+}
