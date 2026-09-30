@@ -66,10 +66,12 @@ export function useReserva(servicios: Servicio[], addons: Addon[]) {
   )
 
   const items: ItemReserva[] = useMemo(
-    () => serviciosElegidos.map(s => ({
+    // Cada complemento se envía una sola vez: el de un servicio va con ese servicio
+    // y los generales solo con el primero (si no, se repetirían y se cobrarían dos veces)
+    () => serviciosElegidos.map((s, i) => ({
       service_id: s.id,
       addons: addonsActivos
-        .filter(a => a.service_id === null || a.service_id === s.id)
+        .filter(a => a.service_id === s.id || (i === 0 && !serviciosElegidos.some(x => x.id === a.service_id)))
         .map(a => a.id),
     })),
     [serviciosElegidos, addonsActivos],
