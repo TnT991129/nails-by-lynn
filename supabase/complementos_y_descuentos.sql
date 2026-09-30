@@ -1,17 +1,18 @@
 -- Complementos visibles en las citas + descuento a una cita ya reservada.
 -- Ejecutar una vez en Supabase → SQL Editor.
 
--- 1) Agenda del panel: cada servicio con sus complementos → "Polygel (+ Decoración, Retirada)"
+-- 1) Agenda del panel: primero los servicios y luego cada complemento una sola vez
+--    → "Polygel + Pedicura + Decoración + Retirada"
 create or replace view public.v_agenda with (security_invoker=true) as
  SELECT a.id, a.business_id, a.code, a.starts_at, a.ends_at, a.blocked_until, a.status, a.source,
     a.total_amount, a.currency, a.deposit_amount, a.balance_due, a.total_duration_minutes,
     a.client_note, a.internal_note,
     c.full_name AS cliente_nombre, c.phone AS cliente_telefono, c.id AS client_id,
-    ( SELECT string_agg(i.service_name_snapshot || coalesce(' (+ ' || (
-               SELECT string_agg(ad.name_snapshot, ', ' ORDER BY ad.name_snapshot)
-               FROM appointment_item_addons ad WHERE ad.appointment_item_id = i.id) || ')', ''),
-             ' + '::text ORDER BY i.sort_order)
-        FROM appointment_items i WHERE i.appointment_id = a.id) AS servicios,
+    ( SELECT string_agg(i.service_name_snapshot, ' + '::text ORDER BY i.sort_order)
+        FROM appointment_items i WHERE i.appointment_id = a.id)
+    || coalesce(' + ' || ( SELECT string_agg(DISTINCT ad.name_snapshot, ' + '::text ORDER BY ad.name_snapshot)
+        FROM appointment_item_addons ad JOIN appointment_items i ON i.id = ad.appointment_item_id
+        WHERE i.appointment_id = a.id), '') AS servicios,
     a.discount_percent, a.discount_amount, a.reschedule_count
    FROM appointments a
    JOIN clients c ON c.id = a.client_id;

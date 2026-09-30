@@ -11,12 +11,19 @@ import { olvidarToken, citaAvisada, marcarAvisada } from '../lib/almacenamiento'
 import { EnlacePoliticas } from '../componentes/Politicas'
 import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
 
+// Complementos de todos los servicios, sin repetir (citas antiguas los tenían por servicio)
+function complementosUnicos(servicios: { complementos?: { nombre: string; precio: number }[] }[]) {
+  const vistos = new Map<string, { nombre: string; precio: number }>()
+  for (const s of servicios) for (const a of s.complementos ?? []) if (!vistos.has(a.nombre)) vistos.set(a.nombre, a)
+  return [...vistos.values()]
+}
+
 function mensajeAvisoLynn(c: {
   code: string; inicio: string; duracion_minutos: number;
   total: number; moneda: string; nota: string | null;
   descuento_porcentaje?: number;
   cliente: { nombre: string; telefono: string };
-  servicios: { nombre: string; precio: number; complementos?: { nombre: string }[] }[];
+  servicios: { nombre: string; precio: number; complementos?: { nombre: string; precio: number }[] }[];
 }): string {
   const fecha = new Intl.DateTimeFormat('es', {
     timeZone: 'America/Havana', weekday: 'long', day: 'numeric', month: 'long'
@@ -24,8 +31,11 @@ function mensajeAvisoLynn(c: {
   const hora = new Intl.DateTimeFormat('es', {
     timeZone: 'America/Havana', hour: 'numeric', minute: '2-digit', hour12: true
   }).format(new Date(c.inicio))
-  const servicios = c.servicios.map(s =>
-    [`• ${s.nombre}`, ...(s.complementos ?? []).map(a => `   + ${a.nombre}`)].join('\n')).join('\n')
+  // Primero todos los servicios y luego cada complemento una sola vez
+  const servicios = [
+    ...c.servicios.map(s => `• ${s.nombre}`),
+    ...complementosUnicos(c.servicios).map(a => `+ ${a.nombre}`),
+  ].join('\n')
   const descuento = Number(c.descuento_porcentaje ?? 0) > 0 ? ` (con ${Number(c.descuento_porcentaje)}% de descuento 🎁)` : ''
   const nota = c.nota?.trim() ? `\n\n📝 Nota: ${c.nota.trim()}` : ''
   return `Hola Lynn! Acabo de reservar una cita 💅
@@ -154,15 +164,13 @@ export default function Cita() {
           </div>
           <div className="border-t border-dashed border-rosa-200 px-5 py-4 space-y-1.5 bg-rosa-50/40">
             {c.servicios?.map((s, i) => (
-              <div key={i}>
-                <div className="flex justify-between text-[15px]">
-                  <span>{s.nombre}</span><span className="font-medium">{dinero(Number(s.precio))}</span>
-                </div>
-                {s.complementos?.map((a, j) => (
-                  <div key={j} className="flex justify-between text-[14px] text-tinta-tenue">
-                    <span>+ {a.nombre}</span><span>{Number(a.precio) > 0 ? dinero(Number(a.precio)) : '—'}</span>
-                  </div>
-                ))}
+              <div key={i} className="flex justify-between text-[15px]">
+                <span>{s.nombre}</span><span className="font-medium">{dinero(Number(s.precio))}</span>
+              </div>
+            ))}
+            {complementosUnicos(c.servicios ?? []).map((a, j) => (
+              <div key={j} className="flex justify-between text-[14px] text-tinta-tenue">
+                <span>+ {a.nombre}</span><span>{Number(a.precio) > 0 ? dinero(Number(a.precio)) : '—'}</span>
               </div>
             ))}
             {Number(c.descuento_monto ?? 0) > 0 && (
