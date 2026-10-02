@@ -102,19 +102,20 @@ export default function DescuentoClienta({ clienta, proxima }: { clienta: Client
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-[110px_1fr] gap-2">
+          <div className={`grid gap-2 ${proxima ? 'grid-cols-[110px]' : 'grid-cols-[110px_1fr]'}`}>
             <label className="block">
               <span className="block text-[13px] text-tinta-suave mb-1">Otro %</span>
               <input value={pct} onChange={e => setPct(e.target.value)} inputMode="decimal"
                 className="w-full min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel
                            focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
             </label>
-            <label className="block">
+            {/* El motivo solo se guarda para el descuento de la próxima reserva */}
+            {!proxima && <label className="block">
               <span className="block text-[13px] text-tinta-suave mb-1">Motivo (opcional)</span>
               <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Ej: por tu cumpleaños"
                 className="w-full min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel
                            focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500" />
-            </label>
+            </label>}
           </div>
           <Boton ancho cargando={trabajando} onClick={aplicar}>Aplicar descuento</Boton>
           <p className="text-[12px] text-tinta-tenue">

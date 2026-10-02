@@ -26,7 +26,9 @@ function secciones(p: Politicas): Seccion[] {
     p.anticipo ? { titulo: 'Anticipo', texto: t.anticipo ??
       `Algunas citas requieren un anticipo. Si cancelas con más de ${horas(p.cancelar_gratis_horas)} de antelación, se devuelve.` } : null,
     t.no_show ? { titulo: 'Si no asistes', texto: t.no_show } : null,
-    t.retrasos ? { titulo: 'Retrasos', texto: t.retrasos } : null,
+    // Misma regla que el WhatsApp de confirmación
+    { titulo: 'Retrasos', texto: t.retrasos ??
+      'Tienes 15 minutos de cortesía. Si llegas más de 15 minutos tarde, el turno se cancela.' },
     t.reembolsos ? { titulo: 'Reembolsos', texto: t.reembolsos } : null,
     t.espera ? { titulo: 'Tiempo de espera', texto: t.espera } : null,
     { titulo: 'Privacidad', texto: t.privacidad ??
