@@ -103,7 +103,10 @@ O respóndeme por aquí y te busco un hueco 💗`)
       return (
 `¡Muchas gracias por tu visita, ${nombre}! 💅✨
 
-Espero que hayan quedado como querías. Si te gusta el resultado, me alegraría mucho una foto en tu Instagram etiquetando a Nails by Lynn.
+Espero que hayan quedado como querías. ¿Me cuentas qué te pareció? Son solo 10 segundos y me ayuda muchísimo ⭐
+${link}
+
+Si te gusta el resultado, me alegraría mucho una foto en tu Instagram etiquetando a Nails by Lynn.
 
 Para tu próxima cita:
 ${urlPublica()}reservar
@@ -167,4 +170,15 @@ export function mensajeDescuentoCita(nombre: string, porcentaje: number, nota: s
 ¡Tengo una sorpresa para ti! Tu cita del ${cuando} tiene un ${porcentaje}% de descuento${nota ? ` (${nota})` : ''} 🎁
 
 ¡Te espero!`)
+}
+
+// Felicitación de cumpleaños (con descuento opcional)
+export function mensajeCumple(nombre: string, porcentaje: number | null): string {
+  return (
+`¡Feliz cumpleaños, ${primeroNombre(nombre)}! 🎂💖
+
+Que tengas un día precioso.${porcentaje ? ` Para celebrarlo, tienes un ${porcentaje}% de descuento en tu próxima cita 🎁` : ''}
+
+Reserva aquí cuando quieras:
+${urlPublica()}reservar`)
 }

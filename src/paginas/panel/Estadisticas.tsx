@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { resumenMes, topServiciosMes, topClientasMes } from '../../lib/panel/api-panel'
+import { resumenMes, topServiciosMes, topClientasMes, cobradoMes } from '../../lib/panel/api-panel'
+import ResumenSemanal from './ResumenSemanal'
 import { Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
 import { importe, fechaISO } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
@@ -36,11 +37,17 @@ export default function Estadisticas() {
     queryKey: ['top-cli', año, mes],
     queryFn: () => topClientasMes(año, mes),
   })
+  const qCobrado = useQuery({
+    queryKey: ['cobrado', año, mes],
+    queryFn: () => cobradoMes(año, mes),
+  })
 
   return (
     <div className="p-5 space-y-5">
       <Volver />
       <h1 className="text-[30px] leading-tight">Estadísticas</h1>
+
+      <ResumenSemanal />
 
       <div className="flex items-center justify-between">
         <button onClick={() => mover(-1)} className="min-h-[44px] px-4 text-tinta-suave">←</button>
@@ -64,6 +71,22 @@ export default function Estadisticas() {
               <div className="font-display text-[24px] mt-1">{importe(qResumen.data.gastos)}</div>
             </Tarjeta>
           </div>
+
+          {qCobrado.data !== undefined && qResumen.data.ingresos > 0 && (
+            <Tarjeta className="py-3 space-y-1.5">
+              <div className="flex justify-between text-[14px]">
+                <span className="text-tinta-suave">Cobrado</span>
+                <b className="text-estado-exito">{importe(qCobrado.data)}</b>
+              </div>
+              <div className="flex justify-between text-[14px]">
+                <span className="text-tinta-suave">Pendiente de cobrar</span>
+                <b className={qResumen.data.ingresos - qCobrado.data > 0.009 ? 'text-estado-aviso' : ''}>
+                  {importe(Math.max(0, qResumen.data.ingresos - qCobrado.data))}
+                </b>
+              </div>
+              <p className="text-[11px] text-tinta-tenue">Se marca en el detalle de cada cita, botón «Cobrar».</p>
+            </Tarjeta>
+          )}
 
           <Tarjeta className={`text-center py-4 ${
             qResumen.data.neto >= 0 ? 'bg-rosa-50 border border-rosa-200' : 'bg-estado-error-fondo border border-estado-error/30'

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { obtenerServicios, obtenerAddons, obtenerDisponibilidad, obtenerDiasLaborables, obtenerDiasCerrados, descuentoPendiente } from '../lib/api'
+import { obtenerServicios, obtenerAddons, obtenerDisponibilidad, obtenerDiasLaborables, obtenerDiasCerrados, descuentoPendiente, obtenerFotosPublicas } from '../lib/api'
 import ListaEspera from '../caracteristicas/reserva/ListaEspera'
 import { useReserva } from '../caracteristicas/reserva/useReserva'
 import { Progreso, PasoServicio, PasoExtras, PasoFecha, PasoHora, PasoDatos, PasoResumen }
@@ -12,6 +12,7 @@ import { IconoAtras, IconoCerrar } from '../componentes/iconos'
 import { duracion, precioRango } from '../lib/formato'
 import { mensajeDeError, codigoDeError } from '../lib/errores'
 import EnCup from '../componentes/EnCup'
+import type { Repetir } from '../caracteristicas/reserva/repetir'
 
 export default function Reserva() {
   const navegar = useNavigate()
@@ -27,6 +28,11 @@ export default function Reserva() {
 
   const r = useReserva(qServicios.data ?? [], qAddons.data ?? [])
 
+  // Cuántas fotos de la galería tiene cada servicio (para el enlace «Ver trabajos»; no descarga imágenes)
+  const qFotos = useQuery({ queryKey: ['fotos'], queryFn: obtenerFotosPublicas, staleTime: 30 * 60_000 })
+  const fotosPorServicio: Record<string, number> = {}
+  for (const f of qFotos.data ?? []) if (f.service_id) fotosPorServicio[f.service_id] = (fotosPorServicio[f.service_id] ?? 0) + 1
+
   // Preseleccion desde "QUIERO ESTE DISEÑO" o desde la tarjeta de servicio
   useEffect(() => {
     const pre = params.get('servicio')
@@ -35,6 +41,20 @@ export default function Reserva() {
       if (s) r.alternarServicio(s.id)
     }
   }, [params, qServicios.data])
+
+  // "Reservar lo mismo otra vez": mismos servicios, complementos y datos de contacto
+  const ubicacion = useLocation()
+  const [repetido, setRepetido] = useState(false)
+  useEffect(() => {
+    const rep = (ubicacion.state as { repetir?: Repetir } | null)?.repetir
+    if (!rep || repetido || !qServicios.data || !qAddons.data) return
+    setRepetido(true)
+    qServicios.data.filter(s => rep.servicios.includes(s.name)).forEach(s => r.alternarServicio(s.id))
+    qAddons.data.filter(a => rep.complementos.includes(a.name)).forEach(a => r.alternarAddon(a.id))
+    if (rep.nombre || rep.telefono) {
+      r.setDatos(d => ({ ...d, nombre: d.nombre || rep.nombre || '', telefono: d.telefono || rep.telefono || '' }))
+    }
+  }, [ubicacion.state, qServicios.data, qAddons.data, repetido])
 
   // ¿Lynn le dejó un descuento a este teléfono? Se muestra en el resumen; el servidor lo aplica al confirmar
   const qDescuento = useQuery({
@@ -114,7 +134,7 @@ export default function Reserva() {
 
         {r.paso === 1 && (
           <PasoServicio servicios={qServicios.data ?? []} seleccionados={r.seleccionados}
-            alternar={r.alternarServicio} />
+            alternar={r.alternarServicio} fotosPorServicio={fotosPorServicio} />
         )}
         {r.paso === 2 && (
           <PasoExtras addons={r.addonsAplicables}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { obtenerCitaPanel, cambiarEstadoCita, actualizarNotaInterna } from '../../lib/panel/api-panel'
+import { obtenerCitaPanel, cambiarEstadoCita, actualizarNotaInterna, obtenerClienta } from '../../lib/panel/api-panel'
 import { sb } from '../../lib/panel/supabase-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
 import { fechaLarga, hora, duracion, dinero } from '../../lib/formato'
@@ -14,6 +14,11 @@ import { Volver, ListaServicios } from './comunes'
 import { IconoCalendario } from '../../componentes/iconos'
 import EnCup from '../../componentes/EnCup'
 import DescuentoCita from './DescuentoCita'
+import AvisoAlergias from './AvisoAlergias'
+import CobroCita from './CobroCita'
+import EsperaDelDia from './EsperaDelDia'
+import MensajeGracias from './MensajeGracias'
+import FotosTrabajo from './FotosTrabajo'
 
 export default function DetalleCita() {
   const { id = '' } = useParams()
@@ -41,6 +46,13 @@ export default function DetalleCita() {
       return { token: data.access_token as string, motivo: data.cancellation_reason as string | null }
     },
     enabled: !!q.data,
+  })
+
+  // Ficha de la clienta: para avisar de sus alergias
+  const qCli = useQuery({
+    queryKey: ['cli', q.data?.client_id],
+    queryFn: () => obtenerClienta(q.data!.client_id),
+    enabled: !!q.data?.client_id,
   })
 
   if (q.data && !notaCargada) {
@@ -77,6 +89,8 @@ export default function DetalleCita() {
     <div className="p-5 space-y-4">
       <Volver />
 
+      <AvisoAlergias texto={qCli.data?.allergies} />
+
       <Tarjeta className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="font-mono text-[14px] text-tinta-tenue">{c.code}</span>
@@ -108,7 +122,12 @@ export default function DetalleCita() {
         </div>
       </Tarjeta>
 
+      {['CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO'].includes(c.status) && <EsperaDelDia inicio={c.starts_at} />}
+
       {!['CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO'].includes(c.status) && <DescuentoCita cita={c} />}
+      {['CONFIRMADA', 'EN_CURSO', 'COMPLETADA', 'PENDIENTE'].includes(c.status) && <CobroCita cita={c} />}
+      {c.status === 'COMPLETADA' && qToken.data && <MensajeGracias cita={c} tokenAcceso={qToken.data.token} />}
+      {['EN_CURSO', 'COMPLETADA'].includes(c.status) && <FotosTrabajo clientId={c.client_id} titulo="Foto del trabajo" />}
 
       <Tarjeta className="space-y-2">
         <div className="text-[14px] text-tinta-tenue">Clienta</div>

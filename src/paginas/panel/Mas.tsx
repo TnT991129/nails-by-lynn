@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import InstalarPanel from './InstalarPanel'
 import TasaDolar from './TasaDolar'
 import {
-  IconoGrafico, IconoGaleria, IconoBillete, IconoDestellos, IconoCalendario, IconoReloj, IconoDescarga,
+  IconoGrafico, IconoGaleria, IconoBillete, IconoDestellos, IconoCalendario, IconoReloj, IconoDescarga, IconoCheck, IconoMas,
 } from '../../componentes/iconos'
 
 const ITEMS: { a: string; titulo: string; desc: string; icono: ReactNode }[] = [
@@ -13,6 +13,8 @@ const ITEMS: { a: string; titulo: string; desc: string; icono: ReactNode }[] = [
   { a: '/panel/servicios',    titulo: 'Servicios',       desc: 'Precios, fotos y complementos',      icono: <IconoDestellos /> },
   { a: '/panel/horarios',     titulo: 'Horarios',        desc: 'Semana, vacaciones y bloqueos',      icono: <IconoCalendario /> },
   { a: '/panel/espera',       titulo: 'Lista de espera', desc: 'Clientas esperando un turno libre',  icono: <IconoReloj /> },
+  { a: '/panel/opiniones',    titulo: 'Opiniones',       desc: 'Valoraciones y cuáles salen en la web', icono: <IconoCheck /> },
+  { a: '/panel/politicas',    titulo: 'Políticas',       desc: 'Reglas y textos que ven las clientas', icono: <IconoMas /> },
   { a: '/panel/respaldo',     titulo: 'Respaldo',        desc: 'Descargar copia de tus datos',       icono: <IconoDescarga /> },
 ]
 

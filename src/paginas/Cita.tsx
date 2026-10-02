@@ -9,6 +9,8 @@ import EnCup from '../componentes/EnCup'
 import { mensajeDeError } from '../lib/errores'
 import { olvidarToken, citaAvisada, marcarAvisada } from '../lib/almacenamiento'
 import { EnlacePoliticas } from '../componentes/Politicas'
+import ValorarCita from '../caracteristicas/resenas/ValorarCita'
+import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
 
 // Complementos de todos los servicios, sin repetir (citas antiguas los tenían por servicio)
@@ -198,6 +200,11 @@ export default function Cita() {
         </Tarjeta>
 
         {!esNueva && bloqueAviso}
+
+        {c.estado === 'COMPLETADA' && <ValorarCita token={token} resena={c.resena} />}
+        {['COMPLETADA', 'NO_SHOW', 'CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO'].includes(c.estado) && (
+          <BotonRepetir cita={c} />
+        )}
 
         {error && <Aviso>{error}</Aviso>}
 

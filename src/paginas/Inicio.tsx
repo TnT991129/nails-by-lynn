@@ -8,6 +8,7 @@ import { mensajeDeError } from '../lib/errores'
 import { useHorarioPublico } from '../lib/useHorarioPublico'
 import BotonTema from '../componentes/BotonTema'
 import EnCup from '../componentes/EnCup'
+import ResenasInicio from '../caracteristicas/resenas/ResenasInicio'
 
 
 export default function Inicio() {
@@ -142,6 +143,8 @@ export default function Inicio() {
           ))}
         </div>
       </section>
+
+      <ResenasInicio />
 
       {/* CÓMO FUNCIONA */}
       <section className="px-4 mt-12">

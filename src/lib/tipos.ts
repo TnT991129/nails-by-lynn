@@ -70,6 +70,12 @@ export type CitaDetalle = {
   negocio: { nombre: string; ubicacion: string | null; whatsapp: string | null; zona: string }
   // complementos: llegan desde supabase/complementos_y_descuentos.sql
   servicios: { nombre: string; precio: number; complementos?: { nombre: string; precio: number }[] }[]
+  resena?: { estrellas: number; comentario: string | null } | null   // supabase/mejoras.sql
+}
+
+export type Resenas = {
+  media: number | null; total: number
+  lista: { estrellas: number; comentario: string | null; nombre: string; fecha: string }[]
 }
 
 export type ItemReserva = { service_id: string; addons: string[] }

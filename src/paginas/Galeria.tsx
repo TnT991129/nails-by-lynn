@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { obtenerFotosPublicas, obtenerServicios } from '../lib/api'
 import { Esqueleto, Aviso, Vacio, Etiqueta } from '../componentes/ui'
 import { IconoCerrar } from '../componentes/iconos'
@@ -8,7 +9,9 @@ import { mensajeDeError } from '../lib/errores'
 export default function Galeria() {
   const qFotos = useQuery({ queryKey:['fotos'], queryFn: obtenerFotosPublicas })
   const qServ  = useQuery({ queryKey:['servicios'], queryFn: obtenerServicios })
-  const [filtro, setFiltro] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  // Desde la reserva («Ver fotos de este trabajo») llega ya filtrada por servicio
+  const [filtro, setFiltro] = useState<string | null>(params.get('servicio'))
   const [ampliada, setAmpliada] = useState<string | null>(null)
 
   const filtradas = useMemo(() => {

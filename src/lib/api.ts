@@ -1,5 +1,5 @@
 import { seleccionar, rpc, NEGOCIO_ID } from './supabase'
-import type { Servicio, Addon, Negocio, CitaCreada, CitaDetalle, ItemReserva, Politicas } from './tipos'
+import type { Servicio, Addon, Negocio, CitaCreada, CitaDetalle, ItemReserva, Politicas, Resenas } from './tipos'
 
 export async function obtenerNegocio(): Promise<Negocio> {
   const filas = await seleccionar<Negocio>('businesses', {
@@ -147,4 +147,15 @@ export function obtenerFotosPublicas() {
     orden: 'sort_order.asc,created_at.desc',
     limite: 200,
   })
+}
+
+/** La clienta valora su cita completada (1 a 5 estrellas y un comentario opcional) */
+export function dejarResena(token: string, estrellas: number, comentario: string | null) {
+  return rpc<{ ok: boolean }>('dejar_resena', { p_token: token, p_estrellas: estrellas, p_comentario: comentario })
+}
+
+/** Reseñas publicadas por Lynn (null si aún no existe la función o no hay conexión) */
+export async function obtenerResenas(): Promise<Resenas | null> {
+  try { return await rpc<Resenas>('obtener_resenas', { p_business_id: NEGOCIO_ID }) }
+  catch { return null }
 }

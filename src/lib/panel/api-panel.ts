@@ -19,6 +19,7 @@ export type Cliente = {
   total_spent_cup: number; is_blocked: boolean
   // Descuento para su próxima cita (columnas de supabase/turnos_descuentos_cambios.sql)
   next_discount_percent?: number | null; next_discount_note?: string | null
+  allergies?: string | null; birthday?: string | null   // supabase/mejoras.sql
   last_appointment_at: string | null; first_seen_at: string
 }
 
@@ -143,6 +144,7 @@ export function actualizarNotasInternas(id: string, notas: string) {
 
 export type DatosClienta = {
   full_name: string; phone: string; email: string | null; instagram: string | null
+  allergies?: string | null; birthday?: string | null
 }
 
 // Mismo formato que usa crear_cita, para que la clienta se reconozca si luego reserva por la web
@@ -906,4 +908,194 @@ export async function guardarTasa(cupPorUsd: number) {
 export async function aplicarDescuentoCita(id: string, porcentaje: number) {
   const { error } = await sb.rpc('aplicar_descuento_cita', { p_appointment_id: id, p_porcentaje: porcentaje })
   if (error) throw error
+}
+
+// ================== COBROS ==================
+// Cada cobro es una fila de payments ya pagada. Una cita puede tener varios (p. ej. parte en CUP y parte en USD).
+export type MetodoCobro = 'EFECTIVO' | 'TRANSFERMOVIL' | 'ENZONA' | 'OTRO'
+export type Cobro = {
+  id: string; amount: number; currency: 'CUP' | 'USD'; method: MetodoCobro | null
+  exchange_rate_used: number | null; created_at: string
+}
+
+export function cobrosDeCita(citaId: string) {
+  return ejecutar<Cobro[]>(sb.from('payments')
+    .select('id, amount, currency, method, exchange_rate_used, created_at')
+    .eq('appointment_id', citaId).eq('status', 'PAGADO_COMPLETO')
+    .order('created_at'))
+}
+
+export function registrarCobro(args: {
+  citaId: string; monto: number; moneda: 'CUP' | 'USD'; metodo: MetodoCobro; tasa: number | null
+}) {
+  return ejecutar(sb.from('payments').insert({
+    business_id: NEGOCIO_ID, appointment_id: args.citaId, type: 'PAGO_TOTAL',
+    amount: args.monto, currency: args.moneda, method: args.metodo,
+    exchange_rate_used: args.moneda === 'CUP' ? args.tasa : null,
+    status: 'PAGADO_COMPLETO', verified_at: new Date().toISOString(),
+  }).select('id').single())
+}
+
+export function eliminarCobro(id: string) {
+  return ejecutar(sb.from('payments').delete().eq('id', id))
+}
+
+// Un cobro en dólares: los CUP se pasan con el dólar de ese día (o el actual si no se guardó)
+export function cobroEnUsd(c: Pick<Cobro, 'amount' | 'currency' | 'exchange_rate_used'>, tasaActual: number | null) {
+  if (c.currency === 'USD') return Number(c.amount)
+  const tasa = Number(c.exchange_rate_used ?? tasaActual ?? 0)
+  return tasa > 0 ? Number(c.amount) / tasa : 0
+}
+
+// Cobrado en el mes (en USD), según la fecha de la cita
+export async function cobradoMes(año: number, mesCero: number): Promise<number> {
+  const { ini, fin } = rangoMes(año, mesCero)
+  const { data, error } = await sb.from('payments')
+    .select('amount, currency, exchange_rate_used, appointments!inner(starts_at)')
+    .eq('business_id', NEGOCIO_ID).eq('status', 'PAGADO_COMPLETO')
+    .gte('appointments.starts_at', ini).lt('appointments.starts_at', fin)
+  if (error) throw error
+  const filas = (data ?? []) as unknown as Cobro[]
+  const tasa = filas.some(p => p.currency === 'CUP' && !p.exchange_rate_used) ? (await obtenerTasaPanel())?.tasa ?? null : null
+  return filas.reduce((t, p) => t + cobroEnUsd(p, tasa), 0)
+}
+
+// ================== RESUMEN SEMANAL ==================
+export type ResumenSemana = {
+  desde: string; hasta: string
+  citas: number; ingresos: number; nuevas: number; noVino: number; canceladas: number
+}
+
+// Semana de lunes a domingo en hora de La Habana; desplazamiento 0 = esta semana, -1 = la anterior
+export async function resumenSemana(desplazamiento: number): Promise<ResumenSemana> {
+  const d = new Date(fechaISO(new Date()) + 'T12:00:00Z')
+  const dia = 86_400_000
+  const lunes = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * dia + desplazamiento * 7 * dia)
+  const iso = (x: Date) => x.toISOString().slice(0, 10)
+  const desde = iso(lunes), hasta = iso(new Date(lunes.getTime() + 7 * dia))
+  const ini = instanteEnHabana(desde, '00:00'), fin = instanteEnHabana(hasta, '00:00')
+
+  const [rCitas, rNuevas] = await Promise.all([
+    sb.from('appointments').select('status, total_amount').eq('business_id', NEGOCIO_ID)
+      .gte('starts_at', ini).lt('starts_at', fin),
+    sb.from('clients').select('id', { count: 'exact', head: true }).eq('business_id', NEGOCIO_ID)
+      .gte('first_seen_at', ini).lt('first_seen_at', fin),
+  ])
+  if (rCitas.error) throw rCitas.error
+  if (rNuevas.error) throw rNuevas.error
+  const citas = rCitas.data ?? []
+  const completadas = citas.filter(c => c.status === 'COMPLETADA')
+  return {
+    desde, hasta,
+    citas: completadas.length,
+    ingresos: completadas.reduce((t, c) => t + Number(c.total_amount), 0),
+    nuevas: rNuevas.count ?? 0,
+    noVino: citas.filter(c => c.status === 'NO_SHOW').length,
+    canceladas: citas.filter(c => c.status === 'CANCELADA_CLIENTA' || c.status === 'CANCELADA_NEGOCIO').length,
+  }
+}
+
+// ================== RECORDATORIOS ==================
+// Enlace privado de cada cita (para el mensaje de WhatsApp)
+export async function tokensDeCitas(ids: string[]): Promise<Record<string, string>> {
+  if (ids.length === 0) return {}
+  const { data, error } = await sb.from('appointments').select('id, access_token').in('id', ids)
+  if (error) throw error
+  return Object.fromEntries((data ?? []).map(f => [f.id as string, f.access_token as string]))
+}
+
+// Qué recordatorios ya se mandaron (tabla notifications)
+export async function recordatoriosEnviados(ids: string[]): Promise<string[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await sb.from('notifications').select('appointment_id')
+    .in('appointment_id', ids).eq('template_key', 'recordatorio').eq('status', 'ENVIADA')
+  if (error) throw error
+  return (data ?? []).map(f => f.appointment_id as string)
+}
+
+// ================== CUMPLEAÑOS ==================
+export type Cumple = { id: string; full_name: string; phone: string; birthday: string; dias: number }
+
+// Clientas que cumplen años en los próximos `dias` días (0 = hoy)
+export async function cumpleanosProximos(dias = 7): Promise<Cumple[]> {
+  const { data, error } = await sb.from('clients').select('id, full_name, phone, birthday')
+    .eq('business_id', NEGOCIO_ID).not('birthday', 'is', null)
+  if (error) {
+    if (String(error.message).includes('birthday')) return []   // aún sin el SQL de mejoras
+    throw error
+  }
+  const hoy = new Date(fechaISO(new Date()) + 'T12:00:00Z')
+  return (data ?? []).filter(c => typeof c.birthday === 'string' && c.birthday.length >= 10).map(c => {
+    const [, m, d] = (c.birthday as string).split('-').map(Number)
+    let prox = new Date(Date.UTC(hoy.getUTCFullYear(), m - 1, d, 12))
+    if (prox < hoy) prox = new Date(Date.UTC(hoy.getUTCFullYear() + 1, m - 1, d, 12))
+    return {
+      id: c.id as string, full_name: c.full_name as string, phone: c.phone as string,
+      birthday: c.birthday as string, dias: Math.round((prox.getTime() - hoy.getTime()) / 86_400_000),
+    }
+  }).filter(c => c.dias <= dias).sort((a, b) => a.dias - b.dias)
+}
+
+// ================== FOTOS DEL TRABAJO (ficha de clienta) ==================
+export type FotoTrabajo = { id: string; image_url: string; created_at: string; is_published: boolean }
+
+export function fotosDeClienta(clientId: string) {
+  return ejecutar<FotoTrabajo[]>(sb.from('gallery_photos')
+    .select('id, image_url, created_at, is_published')
+    .eq('business_id', NEGOCIO_ID).eq('client_id', clientId)
+    .order('created_at', { ascending: false }).limit(6))
+}
+
+// Foto privada del diseño: no sale en la galería pública hasta que Lynn la publique (con permiso)
+export async function subirFotoTrabajo(clientId: string, archivo: File) {
+  const { url } = await subirImagen(archivo, 1200)
+  return crearFoto({
+    image_url: url, service_id: null, caption: null, alt_text: 'Trabajo de Nails by Lynn',
+    has_consent: false, is_featured: false, is_published: false, client_id: clientId,
+  })
+}
+
+// ================== POLÍTICAS (textos y reglas que ve la clienta) ==================
+export type AjustesPoliticas = {
+  policy_cancellation: string | null; policy_reschedule: string | null; policy_late: string | null
+  policy_no_show: string | null; policy_refund: string | null; policy_waiting: string | null
+  privacy_notice: string | null
+  cancel_blocked_hours: number; reschedule_min_hours: number; max_reschedules: number
+  max_active_appointments_per_phone: number; max_advance_days: number; min_advance_hours: number
+}
+const CAMPOS_POLITICAS = 'policy_cancellation, policy_reschedule, policy_late, policy_no_show, policy_refund, ' +
+  'policy_waiting, privacy_notice, cancel_blocked_hours, reschedule_min_hours, max_reschedules, ' +
+  'max_active_appointments_per_phone, max_advance_days, min_advance_hours'
+
+export function obtenerAjustesPoliticas() {
+  return ejecutar<AjustesPoliticas>(sb.from('settings').select(CAMPOS_POLITICAS).eq('business_id', NEGOCIO_ID).single())
+}
+
+export function guardarAjustesPoliticas(a: AjustesPoliticas) {
+  return ejecutar(sb.from('settings').update({ ...a, updated_at: new Date().toISOString() })
+    .eq('business_id', NEGOCIO_ID).select('business_id').single())
+}
+
+// ================== RESEÑAS ==================
+export type Resena = {
+  id: string; rating: number; comment: string | null; is_published: boolean; created_at: string
+  appointment_id: string; clients: { full_name: string } | null
+}
+
+export async function listarResenas(): Promise<Resena[]> {
+  const { data, error } = await sb.from('reviews')
+    .select('id, rating, comment, is_published, created_at, appointment_id, clients(full_name)')
+    .eq('business_id', NEGOCIO_ID).order('created_at', { ascending: false }).limit(200)
+  if (error) throw error
+  return (data ?? []).map(f => ({ ...f, clients: unaFila(f.clients) })) as Resena[]
+}
+
+export function publicarResena(id: string, publicar: boolean) {
+  return ejecutar(sb.from('reviews')
+    .update({ is_published: publicar, published_at: publicar ? new Date().toISOString() : null })
+    .eq('id', id).select('id').single())
+}
+
+export function eliminarResena(id: string) {
+  return ejecutar(sb.from('reviews').delete().eq('id', id))
 }

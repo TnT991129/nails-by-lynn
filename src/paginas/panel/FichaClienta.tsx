@@ -8,6 +8,8 @@ import { fechaLarga, hora, dinero, importe } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver, ListaServicios } from './comunes'
 import DescuentoClienta from './DescuentoClienta'
+import AvisoAlergias from './AvisoAlergias'
+import FotosTrabajo from './FotosTrabajo'
 
 export default function FichaClienta() {
   const { id = '' } = useParams()
@@ -93,7 +95,15 @@ export default function FichaClienta() {
           {c.phone} · WhatsApp
         </a>
         {c.instagram && <div className="text-[14px] text-tinta-tenue">@{c.instagram.replace(/^@/,'')}</div>}
+        {c.birthday && (
+          <div className="text-[14px] text-tinta-tenue">
+            🎂 Cumple el {new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+              .format(new Date(c.birthday + 'T12:00:00Z'))}
+          </div>
+        )}
       </div>
+
+      <AvisoAlergias texto={c.allergies} />
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <Tarjeta className="py-3">
@@ -131,6 +141,8 @@ export default function FichaClienta() {
       )}
 
       <DescuentoClienta clienta={c} proxima={proxima} />
+
+      <FotosTrabajo clientId={c.id} />
 
       <Tarjeta className="space-y-2">
         <label className="block text-[14px] text-tinta-tenue">Sobre esta clienta</label>

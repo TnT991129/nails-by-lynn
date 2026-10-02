@@ -5,6 +5,7 @@ import { tokensGuardados, citaAvisada } from '../lib/almacenamiento'
 import { Pildora, Esqueleto, Vacio, Etiqueta, estiloBoton } from '../componentes/ui'
 import { IconoReloj } from '../componentes/iconos'
 import { hora, ZONA } from '../lib/formato'
+import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 
 export default function MisCitas() {
   const tokens = tokensGuardados()
@@ -106,7 +107,14 @@ export default function MisCitas() {
         {pasadas.length > 0 && (
           <section>
             <h2 className="text-[22px] mb-3">Historial</h2>
-            <div className="space-y-3">{pasadas.map(c => <Fila key={c.token} c={c} pasada />)}</div>
+            <div className="space-y-3">
+              {pasadas.map(c => (
+                <div key={c.token}>
+                  <Fila c={c} pasada />
+                  <div className="flex justify-end -mt-1"><BotonRepetir cita={c} compacto /></div>
+                </div>
+              ))}
+            </div>
           </section>
         )}
       </div>

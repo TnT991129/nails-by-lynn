@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { sb } from '../../lib/panel/supabase-panel'
 import { IconoInicio, IconoCalendario, IconoPersonas, IconoCuadricula, IconoSalir } from '../../componentes/iconos'
 import BotonTema from '../../componentes/BotonTema'
+import PedirTasa from './PedirTasa'
 
 const ITEMS: { a: string; etiqueta: string; icono: ReactNode }[] = [
   { a: '/panel',          etiqueta: 'Hoy',      icono: <IconoInicio /> },
@@ -37,6 +38,7 @@ export default function Marco() {
         </div>
       </header>
       <main className="pb-24"><Outlet /></main>
+      <PedirTasa />
       <nav className="fixed bottom-0 inset-x-0 z-20 bg-papel/90 backdrop-blur-md border-t border-rosa-100
                       shadow-flota pb-[env(safe-area-inset-bottom)]">
         <ul className="flex max-w-lg mx-auto">

@@ -6,6 +6,8 @@ import { Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
 import { IconoFlecha } from '../../componentes/iconos'
 import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, importe } from '../../lib/formato'
 import TasaDolar from './TasaDolar'
+import RecordatoriosManana from './RecordatoriosManana'
+import Cumpleanos from './Cumpleanos'
 import EnCup from '../../componentes/EnCup'
 import { sumarDias } from '../../componentes/CalendarioMes'
 import { mensajeDeError } from '../../lib/errores'
@@ -43,6 +45,8 @@ export default function Hoy() {
       </div>
 
       <TasaDolar />
+      <RecordatoriosManana />
+      <Cumpleanos />
 
       <div className="grid grid-cols-2 gap-3">
         <Tarjeta className="text-center py-4">

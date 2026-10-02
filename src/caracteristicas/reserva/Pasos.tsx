@@ -56,9 +56,10 @@ const opcion = (activo: boolean) =>
    ${activo ? 'border-rosa-600 ring-4 ring-rosa-100' : 'border-rosa-100 shadow-suave'}`
 
 export function PasoServicio({
-  servicios, seleccionados, alternar,
+  servicios, seleccionados, alternar, fotosPorServicio = {},
 }: {
   servicios: Servicio[]; seleccionados: string[]; alternar: (id: string) => void
+  fotosPorServicio?: Record<string, number>   // cuántas fotos de la galería tiene cada servicio
 }) {
   // Sin servicios activos (Lynn los ocultó o borró): explicarlo en vez de dejar la pantalla vacía
   if (servicios.length === 0) {
@@ -76,8 +77,10 @@ export function PasoServicio({
       <div className="space-y-3">
         {servicios.map(s => {
           const activo = seleccionados.includes(s.id)
+          const fotos = fotosPorServicio[s.id] ?? 0
           return (
-            <button key={s.id} onClick={() => alternar(s.id)} aria-pressed={activo} className={opcion(activo)}>
+            <div key={s.id}>
+            <button onClick={() => alternar(s.id)} aria-pressed={activo} className={opcion(activo)}>
               <div className="flex items-start gap-3">
                 <Marca activo={activo} />
                 {s.cover_image_url && (
@@ -101,6 +104,13 @@ export function PasoServicio({
                 </div>
               </div>
             </button>
+            {fotos > 0 && (
+              <Link to={`/galeria?servicio=${s.id}`}
+                className="inline-flex items-center gap-1 text-[13px] font-semibold text-rosa-800 min-h-[36px] px-2 mt-0.5">
+                📷 Ver {fotos} {fotos === 1 ? "foto de este trabajo" : "fotos de este trabajo"}
+              </Link>
+            )}
+            </div>
           )
         })}
       </div>
@@ -117,6 +127,12 @@ export function PasoExtras({
     <div className="space-y-5 animate-entrada">
       <Titulo titulo="¿Necesitas algo más?"
         texto="Añade uno o varios extras, o sigue sin añadir nada." />
+      {addons.some(a => a.extra_price_max != null && Number(a.extra_price_max) > Number(a.extra_price)) && (
+        <p className="text-[13px] text-tinta-tenue -mt-2 px-1">
+          💡 Los extras con precio «desde–hasta» varían según el tamaño de la uña y lo elaborado del diseño.
+          Lynn te confirma el precio final al verlo.
+        </p>
+      )}
       {addons.length === 0 ? (
         <p className="text-[14px] text-tinta-tenue">No hay extras disponibles para este servicio.</p>
       ) : (
