@@ -53,8 +53,10 @@ export default function Clientas() {
                 <div className="text-[16px] font-medium truncate">
                   {c.full_name}{c.is_blocked && <span className="text-[12px] text-estado-error"> · bloqueada</span>}
                 </div>
-                <div className="text-[14px] text-tinta-tenue shrink-0">
-                  {c.total_appointments} {c.total_appointments === 1 ? 'cita' : 'citas'}
+                {/* Cuenta todas las citas no canceladas, también las reservadas que aún no han pasado */}
+                <div className="text-[14px] text-tinta-tenue shrink-0 text-right">
+                  {(() => { const n = k?.citas ?? c.total_appointments; return `${n} ${n === 1 ? 'cita' : 'citas'}` })()}
+                  {k?.proximas ? <div className="text-[12px] text-rosa-700 font-semibold">{k.proximas} {k.proximas === 1 ? 'próxima' : 'próximas'}</div> : null}
                 </div>
               </div>
               <div className="text-[14px] text-tinta-tenue truncate">

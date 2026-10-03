@@ -69,7 +69,8 @@ export type CitaDetalle = {
   cliente: { nombre: string; telefono: string }
   negocio: { nombre: string; ubicacion: string | null; whatsapp: string | null; zona: string }
   // complementos: llegan desde supabase/complementos_y_descuentos.sql
-  servicios: { nombre: string; precio: number; complementos?: { nombre: string; precio: number }[] }[]
+  servicios: { nombre: string; precio: number; complementos?: { nombre: string; precio: number; precio_max?: number | null }[] }[]
+  total_maximo?: number | null   // si lleva algo con precio en rango (supabase/rango_en_citas.sql)
   resena?: { estrellas: number; comentario: string | null } | null   // supabase/mejoras.sql
 }
 

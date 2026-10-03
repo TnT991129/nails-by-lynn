@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerCitaPanel, cambiarEstadoCita, actualizarNotaInterna, obtenerClienta } from '../../lib/panel/api-panel'
 import { sb } from '../../lib/panel/supabase-panel'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso } from '../../componentes/ui'
-import { fechaLarga, hora, duracion, dinero } from '../../lib/formato'
+import { fechaLarga, hora, duracion, dinero, precioRango } from '../../lib/formato'
 import BloqueMensajes from './BloqueMensajes'
 import ReagendarCita from './ReagendarCita'
 import AvisoCancelacion from './AvisoCancelacion'
@@ -114,7 +114,7 @@ export default function DetalleCita() {
               <span>−{dinero(Number(c.discount_amount))}</span>
             </div>
           )}
-          <div className="flex justify-between"><span>Total</span><span className="text-right">{dinero(Number(c.total_amount))}<EnCup min={Number(c.total_amount)} /></span></div>
+          <div className="flex justify-between"><span>Total</span><span className="text-right">{precioRango(Number(c.total_amount), c.total_amount_max)}<EnCup min={Number(c.total_amount)} max={c.total_amount_max} /></span></div>
           {Number(c.deposit_amount) > 0 && <>
             <div className="flex justify-between"><span>Anticipo</span><span>{dinero(Number(c.deposit_amount))}</span></div>
             <div className="flex justify-between font-medium"><span>Saldo</span><span>{dinero(Number(c.balance_due))}</span></div>

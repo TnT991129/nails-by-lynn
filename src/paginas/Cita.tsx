@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerCita, cancelarCita } from '../lib/api'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
 import { IconoCheck, IconoUbicacion, IconoWhatsApp, IconoReloj, IconoCalendario } from '../componentes/iconos'
-import { fechaLarga, hora, duracion, dinero, importe } from '../lib/formato'
+import { fechaLarga, hora, duracion, dinero, precioRango } from '../lib/formato'
 import EnCup from '../componentes/EnCup'
 import { mensajeDeError } from '../lib/errores'
 import { olvidarToken, citaAvisada, marcarAvisada } from '../lib/almacenamiento'
@@ -14,18 +14,20 @@ import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
 
 // Complementos de todos los servicios, sin repetir (citas antiguas los tenían por servicio)
-function complementosUnicos(servicios: { complementos?: { nombre: string; precio: number }[] }[]) {
-  const vistos = new Map<string, { nombre: string; precio: number }>()
+type ComplementoCita = { nombre: string; precio: number; precio_max?: number | null }
+
+function complementosUnicos(servicios: { complementos?: ComplementoCita[] }[]) {
+  const vistos = new Map<string, ComplementoCita>()
   for (const s of servicios) for (const a of s.complementos ?? []) if (!vistos.has(a.nombre)) vistos.set(a.nombre, a)
   return [...vistos.values()]
 }
 
 function mensajeAvisoLynn(c: {
   code: string; inicio: string; duracion_minutos: number;
-  total: number; moneda: string; nota: string | null;
+  total: number; total_maximo?: number | null; moneda: string; nota: string | null;
   descuento_porcentaje?: number;
   cliente: { nombre: string; telefono: string };
-  servicios: { nombre: string; precio: number; complementos?: { nombre: string; precio: number }[] }[];
+  servicios: { nombre: string; precio: number; complementos?: ComplementoCita[] }[];
 }): string {
   const fecha = new Intl.DateTimeFormat('es', {
     timeZone: 'America/Havana', weekday: 'long', day: 'numeric', month: 'long'
@@ -46,7 +48,7 @@ function mensajeAvisoLynn(c: {
 📱 ${c.cliente.telefono}
 📅 ${fecha} a las ${hora}
 ⏱ ${c.duracion_minutos} min
-💵 ${importe(Number(c.total))}${descuento}
+💵 ${precioRango(Number(c.total), c.total_maximo)}${descuento}
 
 Servicios:
 ${servicios}${nota}
@@ -172,21 +174,23 @@ export default function Cita() {
             ))}
             {complementosUnicos(c.servicios ?? []).map((a, j) => (
               <div key={j} className="flex justify-between text-[14px] text-tinta-tenue">
-                <span>+ {a.nombre}</span><span>{Number(a.precio) > 0 ? dinero(Number(a.precio)) : '—'}</span>
+                <span>+ {a.nombre}</span>
+                <span>{Number(a.precio) > 0 || a.precio_max ? precioRango(Number(a.precio), a.precio_max) : '—'}</span>
               </div>
             ))}
             {Number(c.descuento_monto ?? 0) > 0 && (
-              <>
-                <div className="flex justify-between text-[15px] text-estado-exito font-medium">
-                  <span>🎁 Descuento ({Number(c.descuento_porcentaje)}%)</span>
-                  <span>−{dinero(Number(c.descuento_monto))}</span>
-                </div>
-                <div className="flex justify-between text-[15px] font-semibold pt-1">
-                  <span>Total</span><span>{dinero(Number(c.total))}</span>
-                </div>
-              </>
+              <div className="flex justify-between text-[15px] text-estado-exito font-medium">
+                <span>🎁 Descuento ({Number(c.descuento_porcentaje)}%)</span>
+                <span>−{dinero(Number(c.descuento_monto))}</span>
+              </div>
             )}
-            <EnCup min={Number(c.total)} className="text-right !text-[12px] pt-0.5" />
+            <div className="flex justify-between text-[15px] font-semibold pt-1">
+              <span>Total</span><span>{precioRango(Number(c.total), c.total_maximo)}</span>
+            </div>
+            <EnCup min={Number(c.total)} max={c.total_maximo} className="text-right !text-[12px]" />
+            {Number(c.total_maximo ?? 0) > Number(c.total) && (
+              <p className="text-[12px] text-tinta-tenue text-right">El precio final depende del trabajo.</p>
+            )}
           </div>
           {Number(c.anticipo) > 0 && (
             <>

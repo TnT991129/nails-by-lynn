@@ -108,7 +108,7 @@ export default function FichaClienta() {
       <div className="grid grid-cols-3 gap-2 text-center">
         <Tarjeta className="py-3">
           <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Citas</div>
-          <div className="font-display text-[24px]">{c.total_appointments}</div>
+          <div className="font-display text-[24px]">{qCont.data?.[c.id]?.citas ?? c.total_appointments}</div>
         </Tarjeta>
         <Tarjeta className="py-3">
           <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Gasto</div>

@@ -5,7 +5,7 @@ import {
   type CitaAgenda, type MetodoCobro,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Aviso } from '../../componentes/ui'
-import { importe } from '../../lib/formato'
+import { importe, precioRango } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 
 const FORMAS: { clave: string; etiqueta: string; metodo: MetodoCobro; moneda: 'CUP' | 'USD' }[] = [
@@ -73,7 +73,7 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
         <div>
           <div className="text-[14px] text-tinta-tenue">Cobro</div>
           <div className={`text-[16px] font-semibold ${falta <= 0 && total > 0 ? 'text-estado-exito' : ''}`}>
-            {total <= 0 ? 'Sin precio' : falta <= 0 ? '✓ Pagado' : pagado > 0 ? `Falta ${importe(falta)}` : `Pendiente · ${importe(total)}`}
+            {total <= 0 ? 'Sin precio' : falta <= 0 ? '✓ Pagado' : pagado > 0 ? `Falta ${importe(falta)}` : `Pendiente · ${precioRango(total, cita.total_amount_max)}`}
           </div>
         </div>
         {!abierto && falta > 0 && (

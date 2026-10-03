@@ -10,6 +10,7 @@ export type CitaAgenda = {
   cliente_nombre: string; cliente_telefono: string; client_id: string
   servicios: string | null
   discount_percent?: number; discount_amount?: number   // desde supabase/turnos_descuentos_cambios.sql
+  total_amount_max?: number | null   // total con precios en rango (supabase/rango_en_citas.sql)
 }
 
 export type Cliente = {
@@ -836,16 +837,24 @@ export function turnosDelDia(reglas: { start_time: string; end_time: string; is_
 
 // ================== CONTADORES POR CLIENTA ==================
 // Calculados desde sus citas: cancelaciones hechas por ella y cambios de fecha que hizo ella misma.
-export type ContadoresClienta = { canceladas: number; reagendadas: number; noAsistio: number }
+export type ContadoresClienta = {
+  citas: number       // todas las que no se cancelaron (reservadas, hechas, faltas)
+  proximas: number    // reservadas que aún no han pasado
+  canceladas: number; reagendadas: number; noAsistio: number
+}
 
 export async function contadoresClientas(): Promise<Record<string, ContadoresClienta>> {
   const { data, error } = await sb.from('appointments')
-    .select('client_id, status, reschedule_count')
+    .select('client_id, status, reschedule_count, starts_at')
     .eq('business_id', NEGOCIO_ID).limit(5000)
   if (error) throw error
   const r: Record<string, ContadoresClienta> = {}
-  for (const f of (data ?? []) as { client_id: string; status: string; reschedule_count: number }[]) {
-    const c = (r[f.client_id] ??= { canceladas: 0, reagendadas: 0, noAsistio: 0 })
+  const ahora = Date.now()
+  for (const f of (data ?? []) as { client_id: string; status: string; reschedule_count: number; starts_at: string }[]) {
+    const c = (r[f.client_id] ??= { citas: 0, proximas: 0, canceladas: 0, reagendadas: 0, noAsistio: 0 })
+    const cancelada = f.status === 'CANCELADA_CLIENTA' || f.status === 'CANCELADA_NEGOCIO'
+    if (!cancelada) c.citas++
+    if (['PENDIENTE', 'CONFIRMADA'].includes(f.status) && new Date(f.starts_at).getTime() > ahora) c.proximas++
     if (f.status === 'CANCELADA_CLIENTA') c.canceladas++
     if (f.status === 'NO_SHOW') c.noAsistio++
     c.reagendadas += f.reschedule_count ?? 0
