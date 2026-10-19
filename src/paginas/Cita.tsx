@@ -10,6 +10,7 @@ import { mensajeDeError } from '../lib/errores'
 import { olvidarToken, citaAvisada, marcarAvisada } from '../lib/almacenamiento'
 import { EnlacePoliticas } from '../componentes/Politicas'
 import ValorarCita from '../caracteristicas/resenas/ValorarCita'
+import EditarCita from '../caracteristicas/reserva/EditarCita'
 import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
 
@@ -71,6 +72,7 @@ export default function Cita() {
   const [error, setError] = useState<string | null>(null)
   const [trabajando, setTrabajando] = useState(false)
   const [reprogramando, setReprogramando] = useState(false)
+  const [editando, setEditando] = useState(false)
   const [avisadaAhora, setAvisadaAhora] = useState(false)
 
   const q = useQuery({ queryKey:['cita', token], queryFn: () => obtenerCita(token) })
@@ -99,6 +101,8 @@ export default function Cita() {
   // Un cambio al mes por clienta (lo decide el servidor; si aún no llega el dato, no se limita aquí)
   const cambioDelMes = c.cambio_mes_disponible !== false
   const puedeCambiar = activa && quedanCambios && aTiempo && cambioDelMes
+  // Cambiar servicios: mismo plazo que la fecha, pero no gasta cambios (el servidor lo vuelve a comprobar)
+  const puedeEditar = activa && (!reglasCambio || aTiempo)
 
   // Insistimos en que avise a Lynn: es como ella se entera de la reserva
   const avisada = avisadaAhora || citaAvisada(c.code)
@@ -216,8 +220,18 @@ export default function Cita() {
           <ReprogramarCita token={token} cita={c} onCerrar={() => setReprogramando(false)} />
         )}
 
-        {activa && !confirmando && !reprogramando && (
+        {editando && (
+          <EditarCita token={token} cita={c} onCerrar={() => setEditando(false)} />
+        )}
+
+        {activa && !confirmando && !reprogramando && !editando && (
           <div className="space-y-3">
+            {puedeEditar && (
+              <Boton variante="secundario" ancho onClick={() => { setEditando(true); setError(null) }}
+                     className="!text-[15px]">
+                ✏️ Cambiar servicios o nota
+              </Boton>
+            )}
             {/* Acciones principales, lado a lado; cancelar queda como enlace discreto */}
             <div className={`grid gap-2.5 ${puedeCambiar && c.negocio.whatsapp ? 'grid-cols-2' : 'grid-cols-1'}`}>
               {puedeCambiar && (

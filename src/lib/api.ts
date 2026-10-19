@@ -159,3 +159,10 @@ export async function obtenerResenas(): Promise<Resenas | null> {
   try { return await rpc<Resenas>('obtener_resenas', { p_business_id: NEGOCIO_ID }) }
   catch { return null }
 }
+
+/** La clienta cambia servicios, complementos o nota de su cita (el servidor recalcula precio y duración) */
+export function editarCita(token: string, items: ItemReserva[], nota: string | null) {
+  return rpc<{ ok: boolean; total: number; duracion: number }>('editar_cita', {
+    p_token: token, p_items: items, p_nota: nota,
+  })
+}
