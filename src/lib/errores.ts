@@ -31,6 +31,8 @@ const MENSAJES: Record<string, string> = {
   dejar_resena:          'Las valoraciones aún no están activadas.',
   allergies:             'Falta ejecutar en Supabase el SQL de mejoras (mejoras.sql).',
   birthday:              'Falta ejecutar en Supabase el SQL de mejoras (mejoras.sql).',
+  pa_verificacion:       'No se pudo guardar el cobro. Sal del panel y vuelve a entrar.',
+  pa_monto:              'El monto no puede ser negativo.',
   next_discount:         'Falta ejecutar en Supabase el SQL de descuentos (turnos_descuentos_cambios.sql).',
   LIMITE_REPROGRAMACIONES_MES:'Ya cambiaste una cita este mes. Si necesitas moverla, escríbeme por WhatsApp.',
   HORARIO_OCUPADO:       'Ese horario choca con otra cita. Elige otro.',

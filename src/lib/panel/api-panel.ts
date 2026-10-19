@@ -934,14 +934,19 @@ export function cobrosDeCita(citaId: string) {
     .order('created_at'))
 }
 
-export function registrarCobro(args: {
+export async function registrarCobro(args: {
   citaId: string; monto: number; moneda: 'CUP' | 'USD'; metodo: MetodoCobro; tasa: number | null
 }) {
+  // La base exige que un pago verificado diga quién lo verificó (regla pa_verificacion):
+  // es Lynn, la usuaria con la sesión abierta en el panel.
+  const { data: { session } } = await sb.auth.getSession()
+  const yo = session?.user.id ?? null
   return ejecutar(sb.from('payments').insert({
     business_id: NEGOCIO_ID, appointment_id: args.citaId, type: 'PAGO_TOTAL',
     amount: args.monto, currency: args.moneda, method: args.metodo,
     exchange_rate_used: args.moneda === 'CUP' ? args.tasa : null,
-    status: 'PAGADO_COMPLETO', verified_at: new Date().toISOString(),
+    status: 'PAGADO_COMPLETO',
+    verified_by: yo, verified_at: yo ? new Date().toISOString() : null,
   }).select('id').single())
 }
 
