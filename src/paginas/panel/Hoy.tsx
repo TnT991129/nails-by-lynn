@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { citasEnRango } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
-import { IconoFlecha } from '../../componentes/iconos'
 import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, importe } from '../../lib/formato'
 import TasaDolar from './TasaDolar'
 import RecordatoriosManana from './RecordatoriosManana'
@@ -27,12 +26,8 @@ export default function Hoy() {
     refetchInterval: 60_000,
   })
 
-  const ahora = Date.now()
   const activas = (q.data ?? []).filter(c =>
     c.status !== 'CANCELADA_CLIENTA' && c.status !== 'CANCELADA_NEGOCIO')
-  // Próxima = la primera que aún no ha terminado y sigue pendiente de atender
-  const proxima = activas.find(c => ['PENDIENTE', 'CONFIRMADA', 'EN_CURSO'].includes(c.status)
-    && new Date(c.ends_at).getTime() >= ahora)
   const ingresoDia = activas
     .filter(c => c.status === 'COMPLETADA')
     .reduce((t, c) => t + Number(c.total_amount), 0)
@@ -61,20 +56,6 @@ export default function Hoy() {
         </Tarjeta>
       </div>
 
-      {proxima && (
-        <Link to={`/panel/cita/${proxima.id}`}
-          className="block rounded-xl bg-gradient-to-br from-rosa-600 to-[#8f0d47] text-white p-5 shadow-boton
-                     active:scale-[0.99] transition">
-          <div className="text-[11px] font-semibold tracking-[0.2em] uppercase text-white/75">Próxima cita</div>
-          <div className="font-display text-[36px] leading-none mt-2">{hora(proxima.starts_at)}</div>
-          <div className="text-[17px] font-medium mt-2">{proxima.cliente_nombre}</div>
-          <ListaServicios texto={proxima.servicios} vineta="text-white/60" className="text-[14px] text-white/85 mt-1" />
-          <div className="text-[13px] text-white/70 mt-1">{duracion(proxima.total_duration_minutes)}</div>
-          <div className="mt-3 text-[13px] font-semibold inline-flex items-center gap-1.5">
-            Ver detalle <IconoFlecha tam={15} />
-          </div>
-        </Link>
-      )}
 
       <section>
         <h2 className="text-[19px] font-semibold mb-3">Citas de hoy</h2>
