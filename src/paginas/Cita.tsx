@@ -13,6 +13,7 @@ import ValorarCita from '../caracteristicas/resenas/ValorarCita'
 import EditarCita from '../caracteristicas/reserva/EditarCita'
 import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
+import AvisosCita from '../caracteristicas/reserva/AvisosCita'
 import { useTextos, conNegritas } from '../lib/textos'
 
 // Complementos de todos los servicios, sin repetir (citas antiguas los tenían por servicio)
@@ -207,6 +208,8 @@ export default function Cita() {
         </Tarjeta>
 
         {!esNueva && bloqueAviso}
+
+        {activa && <AvisosCita token={token} />}
 
         {c.estado === 'COMPLETADA' && <ValorarCita token={token} resena={c.resena} />}
         {['COMPLETADA', 'NO_SHOW', 'CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO'].includes(c.estado) && (

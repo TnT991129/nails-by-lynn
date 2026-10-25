@@ -93,6 +93,21 @@ en este orden:
 8. `panel_editar_y_politicas.sql`
 9. `textos_web.sql`
 10. `fotos_permisos.sql`
+11. `notificaciones_push.sql` (y la Edge Function de abajo)
+
+### Avisos al móvil de las clientas (Web Push)
+
+1. Supabase → Edge Functions → *Deploy a new function* → *Via editor*. Nombre: `enviar-push`.
+   Pega `supabase/functions/enviar-push/index.ts` y despliega.
+2. En los ajustes de esa función, desactiva **Enforce JWT verification** (la llama la base de datos;
+   solo envía lo que ya está en la cola, así que no se puede abusar de ella).
+3. Edge Functions → Secrets: crea `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` con los valores de
+   `supabase/.env.push.local` (ese archivo no se sube a GitHub; si se pierde, se generan claves nuevas
+   y se cambia también la pública en `src/lib/push.ts`).
+4. Ejecuta `notificaciones_push.sql`.
+
+La clienta activa los avisos con el botón «Activar avisos» de la página de su cita. En el iPhone
+solo funcionan con la web añadida a la pantalla de inicio (iOS 16.4 o más).
 
 Los textos de la web de las clientas están en `src/lib/textos.ts` (texto por defecto de cada uno);
 Lynn los cambia en Panel → Más → Textos de la web.

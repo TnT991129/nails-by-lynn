@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import type { Servicio, Addon, ItemReserva, CitaCreada } from '../../lib/tipos'
 import { crearCita, crearHold } from '../../lib/api'
 import { tokenSesion, nuevoTokenSesion, idDispositivo, guardarToken } from '../../lib/almacenamiento'
+import { vincularPush } from '../../lib/push'
 
 export type Paso = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -114,6 +115,7 @@ export function useReserva(servicios: Servicio[], addons: Addon[]) {
       dispositivo: idDispositivo(),
     })
     guardarToken(cita.access_token)
+    vincularPush(cita.access_token)   // si este móvil ya tenía avisos activados, también valen para esta cita
     return cita
   }, [inicio, items, datos])
 

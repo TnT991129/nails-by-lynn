@@ -124,6 +124,33 @@ async function primeroRed(peticion, nombreCache) {
   }
 }
 
+// ---------- Avisos de la cita (Web Push, los manda la Edge Function «enviar-push») ----------
+self.addEventListener('push', evento => {
+  let d = {}
+  try { d = evento.data ? evento.data.json() : {} } catch { d = { body: evento.data ? evento.data.text() : '' } }
+  evento.waitUntil(self.registration.showNotification(d.title || 'Nails by Lynn', {
+    body: d.body || '',
+    icon: `${BASE}icono-192.png`,
+    tag: d.tag,              // un aviso nuevo de la misma cita sustituye al anterior
+    renotify: !!d.tag,
+    data: { url: d.url || BASE },
+  }))
+})
+
+// Al tocar el aviso se abre la cita (en la ventana de la web si ya está abierta)
+self.addEventListener('notificationclick', evento => {
+  evento.notification.close()
+  const url = (evento.notification.data && evento.notification.data.url) || BASE
+  evento.waitUntil((async () => {
+    const ventanas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const abierta = ventanas.find(v => v.url.startsWith(self.registration.scope))
+    if (abierta) {
+      try { await abierta.navigate(url); return abierta.focus() } catch { /* ventana no controlada */ }
+    }
+    return self.clients.openWindow(url)
+  })())
+})
+
 // Borra las entradas más antiguas para no llenar el móvil
 async function recortar(cache, maximo) {
   const claves = await cache.keys()
