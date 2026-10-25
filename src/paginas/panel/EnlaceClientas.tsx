@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Tarjeta } from '../../componentes/ui'
 import { urlPublica } from '../../lib/panel/whatsapp'
 
-// El enlace que Lynn pasa a las clientas para reservar: a mano para copiarlo o compartirlo
+// El enlace que Lynn pasa a las clientas (la portada de la web): a mano para copiarlo o compartirlo
 export default function EnlaceClientas() {
-  const enlace = `${urlPublica()}reservar`
+  const enlace = urlPublica()
   const [copiado, setCopiado] = useState(false)
   const puedeCompartir = typeof navigator !== 'undefined' && 'share' in navigator
 
