@@ -85,7 +85,7 @@ export default function GaleriaPanel() {
         <div className="text-[14px] font-medium">Subir foto nueva</div>
 
         {!previa && (
-          <label className="block w-full border-2 border-dashed border-rosa-300 rounded
+          <label className="w-full border-2 border-dashed border-rosa-300 rounded
                             p-6 text-center cursor-pointer hover:bg-rosa-50 min-h-[100px]
                             flex flex-col items-center justify-center">
             <span className="text-[24px] mb-1">📷</span>
@@ -206,24 +206,34 @@ function ThumbFoto({ foto }: { foto: FotoPanel }) {
   const qc = useQueryClient()
   const [abierto, setAbierto] = useState(false)
   const [trabajando, setTrabajando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function toggle(campo: 'is_featured' | 'is_published') {
-    setTrabajando(true)
+    const cambios: Partial<FotoPanel> = { [campo]: !foto[campo] }
+    // La base no deja publicar una foto sin el permiso de la clienta (regla gp_consentimiento):
+    // se pregunta y se guardan las dos cosas a la vez
+    if (campo === 'is_published' && !foto.is_published && !foto.has_consent) {
+      if (!confirm('¿La clienta autorizó publicar esta foto en la web?')) return
+      cambios.has_consent = true
+    }
+    setTrabajando(true); setError(null)
     try {
-      await actualizarFoto(foto.id, { [campo]: !foto[campo] })
+      await actualizarFoto(foto.id, cambios)
       qc.invalidateQueries({ queryKey: ['fotos-panel'] })
-    } catch (e) { alert(mensajeDeError(e)) }
+      qc.invalidateQueries({ queryKey: ['fotos'] })
+    } catch (e) { setError(mensajeDeErrorConDetalle(e)) }
     finally { setTrabajando(false) }
   }
 
   async function borrar() {
     if (!confirm('¿Eliminar esta foto?')) return
-    setTrabajando(true)
+    setTrabajando(true); setError(null)
     try {
       await eliminarFoto(foto.id, foto.image_url)
       qc.invalidateQueries({ queryKey: ['fotos-panel'] })
+      qc.invalidateQueries({ queryKey: ['fotos'] })
       setAbierto(false)
-    } catch (e) { alert(mensajeDeError(e)) }
+    } catch (e) { setError(mensajeDeErrorConDetalle(e)) }
     finally { setTrabajando(false) }
   }
 
@@ -253,6 +263,10 @@ function ThumbFoto({ foto }: { foto: FotoPanel }) {
             <img src={foto.image_url} alt=""
                  className="w-full aspect-square object-cover rounded" />
             {foto.caption && <p className="text-[14px] text-tinta-suave">{foto.caption}</p>}
+            {!foto.has_consent && (
+              <p className="text-[12px] text-tinta-tenue">Sin permiso de la clienta para publicarla en la web.</p>
+            )}
+            {error && <Aviso>{error}</Aviso>}
             <div className="grid grid-cols-2 gap-2">
               <Boton variante="secundario" onClick={() => toggle('is_featured')} cargando={trabajando}>
                 {foto.is_featured ? '⭐ Quitar destacada' : '⭐ Destacar'}

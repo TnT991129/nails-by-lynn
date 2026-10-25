@@ -50,6 +50,7 @@ const MENSAJES: Record<string, string> = {
   CLIENTA_CON_CITAS_ACTIVAS:'Tiene citas pendientes. Cancélalas primero para poder eliminarla.',
   CLIENTA_NO_ENCONTRADA: 'No encontramos esa clienta.',
   NO_AUTORIZADA:         'Tu sesión no tiene permiso para esto. Vuelve a entrar al panel.',
+  gp_consentimiento:     'Para publicar esta foto, la clienta tiene que haber dado permiso.',
   IMAGEN_INVALIDA:       'No se pudo abrir esa foto. Prueba con otra, o haz una captura de pantalla de la foto y sube la captura.',
   SUBIDA_LENTA:          'La conexión está muy lenta y la foto no terminó de subir. Prueba con wifi o en otro momento.',
   SUBIDA_SIN_PERMISO:    'Supabase no deja subir fotos con esta cuenta. Sal del panel, vuelve a entrar y prueba otra vez.',
