@@ -606,12 +606,22 @@ export async function subirImagen(original: File, maxLado = 1600): Promise<{ url
   const nombre = `${crypto.randomUUID()}.${ext}`
   const path = `${NEGOCIO_ID}/${nombre}`
 
-  const { error } = await sb.storage.from('galeria').upload(path, archivo, {
+  const subida = sb.storage.from('galeria').upload(path, archivo, {
     cacheControl: '31536000',
     upsert: false,
-    contentType: archivo.type,
+    contentType: archivo.type || 'image/jpeg',
   })
-  if (error) throw error
+  // Con la conexión de Cuba una subida puede quedarse colgada: se avisa en vez de girar para siempre
+  const limite = new Promise<never>((_, rechazar) => setTimeout(() => rechazar(new Error('SUBIDA_LENTA')), 120_000))
+  const { error } = await Promise.race([subida, limite])
+  if (error) {
+    const m = `${(error as { message?: string }).message ?? ''} ${(error as { statusCode?: string }).statusCode ?? ''}`
+    if (/row-level security|unauthorized|403/i.test(m)) throw new Error('SUBIDA_SIN_PERMISO')
+    if (/exceeded|too large|413/i.test(m)) throw new Error('FOTO_DEMASIADO_GRANDE')
+    if (/mime|content.?type/i.test(m)) throw new Error('TIPO_NO_ADMITIDO')
+    if (/bucket not found/i.test(m)) throw new Error('FALTA_BUCKET')
+    throw error
+  }
 
   const { data } = sb.storage.from('galeria').getPublicUrl(path)
   return { url: data.publicUrl, path }
@@ -1131,6 +1141,19 @@ export function obtenerAjustesPoliticas() {
 
 export function guardarAjustesPoliticas(a: AjustesPoliticas) {
   return ejecutar(sb.from('settings').update({ ...a, updated_at: new Date().toISOString() })
+    .eq('business_id', NEGOCIO_ID).select('business_id').single())
+}
+
+// ================== TEXTOS DE LA WEB ==================
+// Solo se guardan los que Lynn cambió (supabase/textos_web.sql)
+export async function obtenerTextosPanel(): Promise<Record<string, string>> {
+  const { data, error } = await sb.from('settings').select('site_texts').eq('business_id', NEGOCIO_ID).single()
+  if (error) throw error
+  return (data?.site_texts ?? {}) as Record<string, string>
+}
+
+export function guardarTextosPanel(textos: Record<string, string>) {
+  return ejecutar(sb.from('settings').update({ site_texts: textos, updated_at: new Date().toISOString() })
     .eq('business_id', NEGOCIO_ID).select('business_id').single())
 }
 

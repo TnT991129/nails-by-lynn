@@ -91,6 +91,10 @@ en este orden:
 7. `revision_seguridad_octubre.sql` (incluye lo de `mejoras.sql`; no ejecutes `mejoras.sql`
    después de `rango_en_citas.sql`, porque instala una versión anterior de `obtener_cita_por_token`)
 8. `panel_editar_y_politicas.sql`
+9. `textos_web.sql`
+
+Los textos de la web de las clientas están en `src/lib/textos.ts` (texto por defecto de cada uno);
+Lynn los cambia en Panel → Más → Textos de la web.
 
 `restaurar_servicios.sql` solo se usa si se borran los servicios por error.
 **`esquema.sql` no se ejecuta**: es una copia de referencia antigua.

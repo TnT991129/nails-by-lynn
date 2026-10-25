@@ -24,6 +24,7 @@ const GaleriaPanel = lazy(() => import('./GaleriaPanel'))
 const ListaEspera = lazy(() => import('./ListaEspera'))
 const PoliticasPanel = lazy(() => import('./PoliticasPanel'))
 const ResenasPanel = lazy(() => import('./ResenasPanel'))
+const TextosWeb = lazy(() => import('./TextosWeb'))
 
 function Cargando() {
   return <div className="p-5"><Esqueleto className="h-24" /></div>
@@ -63,6 +64,7 @@ export default function Panel() {
             <Route path="espera" element={<ListaEspera />} />
             <Route path="politicas" element={<PoliticasPanel />} />
             <Route path="opiniones" element={<ResenasPanel />} />
+            <Route path="textos" element={<TextosWeb />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/panel/entrar" replace />} />

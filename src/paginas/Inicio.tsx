@@ -9,6 +9,7 @@ import { useHorarioPublico } from '../lib/useHorarioPublico'
 import BotonTema from '../componentes/BotonTema'
 import EnCup from '../componentes/EnCup'
 import ResenasInicio from '../caracteristicas/resenas/ResenasInicio'
+import { useTextos } from '../lib/textos'
 
 
 export default function Inicio() {
@@ -19,11 +20,13 @@ export default function Inicio() {
   const cerrado = n && !n.is_accepting_bookings
   const horario = useHorarioPublico()
   const mayus = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+  const t = useTextos()
+  const ubicacion = n?.location_label ?? 'Peñas Altas'
 
   const PASOS = [
-    { titulo: 'Elige tu servicio', texto: 'Y los extras que quieras añadir.' },
-    { titulo: 'Escoge día y turno', texto: horario.turnos ? `Turnos a las ${horario.turnos}.` : 'Elige el turno que prefieras.' },
-    { titulo: 'Confirma y avisa', texto: 'Tu cita queda guardada al instante.' },
+    { titulo: t('inicio.paso1_titulo'), texto: t('inicio.paso1_texto') },
+    { titulo: t('inicio.paso2_titulo'), texto: horario.turnos ? t('inicio.paso2_texto', { turnos: horario.turnos }) : 'Elige el turno que prefieras.' },
+    { titulo: t('inicio.paso3_titulo'), texto: t('inicio.paso3_texto') },
   ]
 
   return (
@@ -53,16 +56,16 @@ export default function Inicio() {
           <div className="absolute inset-x-0 bottom-0 p-6 text-white">
             <span className="inline-block text-[11px] font-semibold tracking-[0.2em] uppercase
                              bg-white/15 backdrop-blur px-3 py-1 rounded-full border border-white/25">
-              Estudio de uñas · {n?.location_label ?? 'Peñas Altas'}
+              {t('inicio.etiqueta', { ubicacion })}
             </span>
             {qNegocio.isLoading
               ? <Esqueleto className="h-9 w-56 mt-4 bg-white/30" />
               : <h1 className="font-display text-[34px] leading-[1.1] mt-3">
-                  {n?.tagline ?? 'Uñas que hablan por ti'}
+                  {t('inicio.titulo', {}, n?.tagline)}
                 </h1>}
             {!cerrado && (
               <Link to="/reservar" className={`${estiloBoton('primario', true)} mt-5`}>
-                Reservar cita <IconoFlecha tam={18} />
+                {t('inicio.boton_reservar')} <IconoFlecha tam={18} />
               </Link>
             )}
           </div>
@@ -70,7 +73,7 @@ export default function Inicio() {
 
         {cerrado && (
           <div className="mt-4">
-            <Aviso tipo="aviso">{n.closed_message ?? 'Ahora mismo no estamos tomando reservas.'}</Aviso>
+            <Aviso tipo="aviso">{t('inicio.cerrado', {}, n.closed_message)}</Aviso>
           </div>
         )}
 
@@ -79,15 +82,15 @@ export default function Inicio() {
           <div className="bg-papel rounded-lg border border-rosa-100/80 p-3.5 flex items-start gap-2.5">
             <IconoReloj tam={20} className="text-rosa-600 shrink-0 mt-0.5" />
             <div className="text-[13px] leading-snug">
-              <div className="font-semibold">{horario.dias ? mayus(horario.dias) : 'Horario'}</div>
-              <div className="text-tinta-tenue">{horario.turnos || 'Con cita previa'}</div>
+              <div className="font-semibold">{horario.dias ? mayus(horario.dias) : t('inicio.horario_titulo')}</div>
+              <div className="text-tinta-tenue">{horario.turnos || t('inicio.horario_texto')}</div>
             </div>
           </div>
           <div className="bg-papel rounded-lg border border-rosa-100/80 p-3.5 flex items-start gap-2.5">
             <IconoUbicacion tam={20} className="text-rosa-600 shrink-0 mt-0.5" />
             <div className="text-[13px] leading-snug">
-              <div className="font-semibold">{n?.location_label ?? 'Peñas Altas'}</div>
-              <div className="text-tinta-tenue">Cita previa</div>
+              <div className="font-semibold">{ubicacion}</div>
+              <div className="text-tinta-tenue">{t('inicio.ubicacion_texto')}</div>
             </div>
           </div>
         </div>
@@ -95,10 +98,10 @@ export default function Inicio() {
 
       {/* SERVICIOS */}
       <section className="px-4 mt-12">
-        <Etiqueta>Servicios</Etiqueta>
+        <Etiqueta>{t('inicio.servicios_etiqueta')}</Etiqueta>
         <div className="flex items-end justify-between gap-3 mt-2 mb-5">
-          <h2 className="text-[28px] leading-tight">Elige tu estilo</h2>
-          <span className="text-[13px] text-tinta-tenue pb-1">Toca para reservar</span>
+          <h2 className="text-[28px] leading-tight">{t('inicio.servicios_titulo')}</h2>
+          <span className="text-[13px] text-tinta-tenue pb-1">{t('inicio.servicios_ayuda')}</span>
         </div>
 
         <div className="space-y-3">
@@ -107,7 +110,7 @@ export default function Inicio() {
           {qServicios.isError && <Aviso>{mensajeDeError(qServicios.error)}</Aviso>}
           {qServicios.data && qServicios.data.length === 0 && (
             <p className="text-[14px] text-tinta-tenue bg-papel rounded-lg border border-rosa-100 p-4">
-              Estoy actualizando mis servicios. Escríbeme por WhatsApp para reservar.
+              {t('inicio.sin_servicios')}
             </p>
           )}
           {qServicios.data?.map(s => (
@@ -148,11 +151,11 @@ export default function Inicio() {
 
       {/* CÓMO FUNCIONA */}
       <section className="px-4 mt-12">
-        <Etiqueta>Así de fácil</Etiqueta>
-        <h2 className="text-[28px] leading-tight mt-2 mb-5">Reserva en un minuto</h2>
+        <Etiqueta>{t('inicio.pasos_etiqueta')}</Etiqueta>
+        <h2 className="text-[28px] leading-tight mt-2 mb-5">{t('inicio.pasos_titulo')}</h2>
         <ol className="space-y-3">
           {PASOS.map((p, i) => (
-            <li key={p.titulo} className="flex items-center gap-4 bg-papel rounded-lg border border-rosa-100/80 p-4">
+            <li key={i} className="flex items-center gap-4 bg-papel rounded-lg border border-rosa-100/80 p-4">
               <span className="w-10 h-10 rounded-full bg-rosa-600 text-white font-display text-[18px]
                                flex items-center justify-center shrink-0">{i + 1}</span>
               <div>
@@ -169,31 +172,31 @@ export default function Inicio() {
         <section className="px-4 mt-12">
           <div className="rounded-xl bg-noche text-white p-6 relative overflow-hidden">
             <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-rosa-600/40 blur-2xl" aria-hidden />
-            <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#FBA2D0]">Contacto</span>
-            <h2 className="text-[26px] leading-tight mt-2">¿Tienes alguna duda?</h2>
+            <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#FBA2D0]">{t('inicio.contacto_etiqueta')}</span>
+            <h2 className="text-[26px] leading-tight mt-2">{t('inicio.contacto_titulo')}</h2>
             <p className="text-white/70 text-[14px] mt-2">
-              Escríbeme y te respondo en cuanto pueda. Estoy en {n.location_label}.
+              {t('inicio.contacto_texto', { ubicacion })}
             </p>
             <div className="mt-5 space-y-2.5 relative">
               {n.phone_whatsapp && (
                 <a href={`https://wa.me/${numeroWhatsApp(n.phone_whatsapp)}`} target="_blank" rel="noreferrer"
                    className="min-h-[52px] w-full rounded-full bg-whatsapp text-white font-semibold
                               inline-flex items-center justify-center gap-2 active:scale-[0.98] transition">
-                  <IconoWhatsApp tam={20} /> Escribir por WhatsApp
+                  <IconoWhatsApp tam={20} /> {t('inicio.boton_whatsapp')}
                 </a>
               )}
               {!cerrado && (
                 <Link to="/reservar"
                   className="min-h-[52px] w-full rounded-full border border-white/30 text-white font-semibold
                              inline-flex items-center justify-center gap-2 active:scale-[0.98] transition">
-                  <IconoCalendario tam={19} /> Reservar cita
+                  <IconoCalendario tam={19} /> {t('inicio.boton_reservar')}
                 </Link>
               )}
             </div>
           </div>
           <p className="text-center mt-4">
             <Link to="/politicas" className="text-[13px] text-tinta-tenue underline underline-offset-2 inline-block min-h-[44px] leading-[44px]">
-              Políticas del estudio
+              {t('inicio.enlace_politicas')}
             </Link>
           </p>
         </section>

@@ -6,9 +6,11 @@ import { Pildora, Esqueleto, Vacio, Etiqueta, estiloBoton } from '../componentes
 import { IconoReloj } from '../componentes/iconos'
 import { hora, ZONA } from '../lib/formato'
 import { BotonRepetir } from '../caracteristicas/reserva/repetir'
+import { useTextos } from '../lib/textos'
 
 export default function MisCitas() {
   const tokens = tokensGuardados()
+  const t = useTextos()
 
   const resultados = useQueries({
     queries: tokens.map(t => ({
@@ -31,8 +33,8 @@ export default function MisCitas() {
 
   const Encabezado = (
     <section className="px-4 pt-8 pb-5">
-      <Etiqueta>Tus reservas</Etiqueta>
-      <h1 className="text-[34px] leading-tight mt-1">Mis citas</h1>
+      <Etiqueta>{t('mis_citas.etiqueta')}</Etiqueta>
+      <h1 className="text-[34px] leading-tight mt-1">{t('mis_citas.titulo')}</h1>
     </section>
   )
 
@@ -40,8 +42,8 @@ export default function MisCitas() {
     return (
       <div className="pb-28">
         {Encabezado}
-        <Vacio titulo="Aún no tienes citas" texto="Reserva la primera y aparecerá aquí.">
-          <Link to="/reservar" className={estiloBoton()}>Reservar cita</Link>
+        <Vacio titulo={t('mis_citas.vacio_titulo')} texto={t('mis_citas.vacio_texto')}>
+          <Link to="/reservar" className={estiloBoton()}>{t('inicio.boton_reservar')}</Link>
         </Vacio>
       </div>
     )
@@ -84,7 +86,7 @@ export default function MisCitas() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Pildora estado={c.estado} />
               {!pasada && ['PENDIENTE', 'CONFIRMADA'].includes(c.estado) && !citaAvisada(c.code) && (
-                <span className="text-[12px] font-semibold text-whatsapp-texto">● Falta avisar a Lynn</span>
+                <span className="text-[12px] font-semibold text-whatsapp-texto">{t('mis_citas.falta_avisar')}</span>
               )}
             </div>
           </div>
@@ -99,14 +101,14 @@ export default function MisCitas() {
       <div className="px-4 space-y-8">
         <section>
           {proximas.length === 0
-            ? <Vacio titulo="Sin citas próximas" texto="Reserva cuando quieras.">
-                <Link to="/reservar" className={estiloBoton()}>Reservar cita</Link>
+            ? <Vacio titulo={t('mis_citas.sin_proximas_titulo')} texto={t('mis_citas.sin_proximas_texto')}>
+                <Link to="/reservar" className={estiloBoton()}>{t('inicio.boton_reservar')}</Link>
               </Vacio>
             : <div className="space-y-3">{proximas.map(c => <Fila key={c.token} c={c} />)}</div>}
         </section>
         {pasadas.length > 0 && (
           <section>
-            <h2 className="text-[22px] mb-3">Historial</h2>
+            <h2 className="text-[22px] mb-3">{t('mis_citas.historial')}</h2>
             <div className="space-y-3">
               {pasadas.map(c => (
                 <div key={c.token}>

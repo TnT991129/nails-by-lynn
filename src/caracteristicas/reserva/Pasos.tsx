@@ -12,6 +12,7 @@ import type { Datos } from './useReserva'
 import { useHorarioPublico } from '../../lib/useHorarioPublico'
 import CalendarioMes from '../../componentes/CalendarioMes'
 import EnCup from '../../componentes/EnCup'
+import { useTextos, conNegritas } from '../../lib/textos'
 
 const NOMBRES_PASOS = ['Servicio','Extras','Fecha','Hora','Datos','Listo']
 
@@ -63,6 +64,7 @@ export function PasoServicio({
   servicios: Servicio[]; seleccionados: string[]; alternar: (id: string) => void
   fotosPorServicio?: Record<string, number>   // cuántas fotos de la galería tiene cada servicio
 }) {
+  const t = useTextos()
   // Sin servicios activos (Lynn los ocultó o borró): explicarlo en vez de dejar la pantalla vacía
   if (servicios.length === 0) {
     return (
@@ -75,7 +77,7 @@ export function PasoServicio({
 
   return (
     <div className="space-y-5 animate-entrada">
-      <Titulo titulo="¿Qué te vas a hacer?" texto="Puedes elegir más de un servicio." />
+      <Titulo titulo={t('reserva.paso1_titulo')} texto={t('reserva.paso1_texto')} />
       <div className="space-y-3">
         {servicios.map(s => {
           const activo = seleccionados.includes(s.id)
@@ -125,10 +127,10 @@ export function PasoExtras({
 }: {
   addons: Addon[]; addonsElegidos: string[]; alternarAddon: (id: string) => void
 }) {
+  const t = useTextos()
   return (
     <div className="space-y-5 animate-entrada">
-      <Titulo titulo="¿Necesitas algo más?"
-        texto="Añade uno o varios extras, o sigue sin añadir nada." />
+      <Titulo titulo={t('reserva.paso2_titulo')} texto={t('reserva.paso2_texto')} />
       {addons.some(a => a.extra_price_max != null && Number(a.extra_price_max) > Number(a.extra_price)) && (
         <p className="text-[13px] text-tinta-tenue -mt-2 px-1">
           💡 Los extras con precio «desde–hasta» varían según el tamaño de la uña y lo elaborado del diseño.
@@ -173,11 +175,12 @@ export function PasoFecha({
   diasLaborables?: number[]; diasCerrados?: { desde: string; hasta: string }[]
 }) {
   const horario = useHorarioPublico()
+  const t = useTextos()
   const qPoliticas = useQuery({ queryKey: ['politicas'], queryFn: obtenerPoliticas, staleTime: 10 * 60_000 })
   const dias = Math.max(1, Number(qPoliticas.data?.max_dias_antelacion ?? 60))
   return (
     <div className="space-y-5 animate-entrada">
-      <Titulo titulo="¿Qué día te viene bien?" texto={horario.dias ? `Trabajo de ${horario.dias}.` : undefined} />
+      <Titulo titulo={t('reserva.paso3_titulo')} texto={horario.dias ? t('reserva.paso3_texto', { dias: horario.dias }) : undefined} />
       <CalendarioMes fecha={fecha} setFecha={setFecha} diasLaborables={diasLaborables}
                      diasCerrados={diasCerrados} maxDias={dias + 1} />
       {fecha ? (
@@ -203,6 +206,7 @@ export function PasoHora({
 }) {
   const [tick, setTick] = useState(0)
   const horario = useHorarioPublico()
+  const t = useTextos()
   useEffect(() => {
     if (!expiraEn) return
     const id = setInterval(() => setTick(t => t + 1), 1000)
@@ -237,7 +241,7 @@ export function PasoHora({
 
   return (
     <div className="space-y-5 animate-entrada">
-      <Titulo titulo="Elige tu turno" />
+      <Titulo titulo={t('reserva.paso4_titulo')} />
       {restante && (
         <p className={`inline-flex items-center gap-2 text-[13px] font-medium px-3 py-1.5 rounded-full
                        ${urgente ? 'bg-estado-aviso-fondo text-estado-aviso' : 'bg-rosa-50 text-rosa-800'}`}
@@ -274,18 +278,19 @@ export function PasoHora({
 export function PasoDatos({
   datos, setDatos, intentado,
 }: { datos: Datos; setDatos: (d: Datos) => void; intentado: boolean }) {
+  const t = useTextos()
   const set = (k: keyof Datos) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setDatos({ ...datos, [k]: e.target.value })
 
   return (
     <div className="space-y-4 animate-entrada">
-      <Titulo titulo="Cuéntanos de ti" texto="Solo lo necesario para confirmarte la cita." />
+      <Titulo titulo={t('reserva.paso5_titulo')} texto={t('reserva.paso5_texto')} />
       <Campo etiqueta="Nombre completo" value={datos.nombre} onChange={set('nombre')}
              placeholder="María González" autoComplete="name"
              error={intentado ? validarNombre(datos.nombre) ?? undefined : undefined} />
       <Campo etiqueta="Teléfono" value={datos.telefono} onChange={set('telefono')}
              placeholder="5455 9179" inputMode="tel" autoComplete="tel"
-             ayuda="Te escribo aquí para confirmarte la cita."
+             ayuda={t('reserva.ayuda_telefono')}
              error={intentado ? validarTelefono(datos.telefono) ?? undefined : undefined} />
       <Campo etiqueta="Correo (opcional)" value={datos.email} onChange={set('email')}
              placeholder="tucorreo@ejemplo.com" inputMode="email" autoComplete="email"
@@ -294,7 +299,7 @@ export function PasoDatos({
              placeholder="@tuusuario" />
       <label className="block">
         <span className="block text-[14px] font-medium text-tinta-suave mb-1.5">
-          ¿Algo que deba saber? (opcional)
+          {t('reserva.ayuda_nota')}
         </span>
         <textarea value={datos.nota} rows={3}
           onChange={e => setDatos({ ...datos, nota: e.target.value })}
@@ -316,9 +321,10 @@ export function PasoResumen({
   descuento?: number | null   // % que Lynn le dejó para esta cita
 }) {
   const rebaja = descuento ? Math.round(total * descuento) / 100 : 0
+  const t = useTextos()
   return (
     <div className="space-y-5 animate-entrada">
-      <Titulo titulo="Revisa tu cita" texto="Si todo está bien, confírmala abajo." />
+      <Titulo titulo={t('reserva.paso6_titulo')} texto={t('reserva.paso6_texto')} />
       <Tarjeta className="p-0 overflow-hidden">
         <div className="bg-rosa-600 text-white p-5 flex items-center gap-4">
           <span className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
@@ -371,8 +377,7 @@ export function PasoResumen({
         <span className="w-7 h-7 rounded-full bg-whatsapp text-white text-[14px] font-bold
                          flex items-center justify-center shrink-0" aria-hidden>!</span>
         <p className="text-[14px] text-tinta-suave">
-          <b className="text-tinta">Importante:</b> al confirmar, toca el botón verde
-          <b className="text-tinta"> «Avisar a Lynn por WhatsApp»</b> para que sepa de tu cita y te la confirme.
+          {conNegritas(t('reserva.importante'))}
         </p>
       </div>
     </div>

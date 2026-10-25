@@ -115,7 +115,7 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
             <span className="text-[14px] shrink-0">{f.moneda}</span>
           </label>
           {f.moneda === 'CUP' && !tasa && (
-            <p className="text-[12px] text-estado-aviso">Pon el precio del dólar en «Hoy» para pasar los CUP a dólares.</p>
+            <p className="text-[12px] text-estado-aviso">Pon el precio del dólar en «Más» para pasar los CUP a dólares.</p>
           )}
           {error && <Aviso>{error}</Aviso>}
           <div className="flex gap-2">

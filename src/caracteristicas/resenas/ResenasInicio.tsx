@@ -2,18 +2,20 @@ import { useQuery } from '@tanstack/react-query'
 import { obtenerResenas } from '../../lib/api'
 import { Etiqueta } from '../../componentes/ui'
 import Estrellas from '../../componentes/Estrellas'
+import { useTextos } from '../../lib/textos'
 
 // Reseñas publicadas por Lynn. Si no hay ninguna, la sección no aparece.
 export default function ResenasInicio() {
   const q = useQuery({ queryKey: ['resenas'], queryFn: obtenerResenas, staleTime: 30 * 60_000 })
+  const t = useTextos()
   const r = q.data
   if (!r || r.total === 0) return null
 
   return (
     <section className="px-4 mt-12">
-      <Etiqueta>Opiniones</Etiqueta>
+      <Etiqueta>{t('inicio.resenas_etiqueta')}</Etiqueta>
       <div className="flex items-end justify-between gap-3 mt-1">
-        <h2 className="text-[28px] leading-tight">Lo que dicen ellas</h2>
+        <h2 className="text-[28px] leading-tight">{t('inicio.resenas_titulo')}</h2>
         <div className="text-right shrink-0">
           <div className="font-display text-[22px] leading-none">{Number(r.media).toLocaleString('es-CU')}</div>
           <div className="text-[12px] text-tinta-tenue">{r.total} {r.total === 1 ? 'opinión' : 'opiniones'}</div>

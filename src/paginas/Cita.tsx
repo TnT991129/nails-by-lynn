@@ -13,6 +13,7 @@ import ValorarCita from '../caracteristicas/resenas/ValorarCita'
 import EditarCita from '../caracteristicas/reserva/EditarCita'
 import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
+import { useTextos, conNegritas } from '../lib/textos'
 
 // Complementos de todos los servicios, sin repetir (citas antiguas los tenían por servicio)
 type ComplementoCita = { nombre: string; precio: number; precio_max?: number | null }
@@ -72,6 +73,7 @@ export default function Cita() {
   const [reprogramando, setReprogramando] = useState(false)
   const [editando, setEditando] = useState(false)
   const [avisadaAhora, setAvisadaAhora] = useState(false)
+  const t = useTextos()
 
   const q = useQuery({ queryKey:['cita', token], queryFn: () => obtenerCita(token) })
 
@@ -112,15 +114,14 @@ export default function Cita() {
         {esNueva ? 'Último paso' : '¿Ya avisaste a Lynn?'}
       </span>
       <p className="text-[15px] text-tinta leading-snug">
-        <b>Avisa a Lynn por WhatsApp</b> para que sepa de tu cita y te la confirme.
-        El mensaje ya va escrito: solo tienes que tocar <b>Enviar</b>.
+        {conNegritas(t('cita.aviso_texto'))}
       </p>
       <a href={enlaceAviso} target="_blank" rel="noreferrer" onClick={alAvisar}
          className="w-full min-h-[56px] bg-whatsapp hover:bg-whatsapp-oscuro text-white font-semibold text-[17px]
                     rounded-full px-4 flex items-center justify-center gap-2 animate-latido
                     shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)] active:scale-[0.98] transition">
         <IconoWhatsApp tam={22} />
-        Avisar a Lynn por WhatsApp
+        {t('cita.aviso_boton')}
       </a>
     </div>
   ) : esNueva && (
@@ -138,14 +139,14 @@ export default function Cita() {
                           flex items-center justify-center mx-auto mb-6 animate-entrada">
             <IconoCheck tam={36} strokeWidth={2.6} />
           </div>
-          <h1 className="text-[32px] leading-tight">¡Tu cita está reservada!</h1>
+          <h1 className="text-[32px] leading-tight">{t('cita.nueva_titulo')}</h1>
           <p className="text-[15px] text-tinta-suave mt-3 max-w-xs mx-auto">
-            Tu turno ya está guardado. Te falta un paso: avisar a Lynn 👇
+            {t('cita.nueva_texto')}
           </p>
         </section>
       ) : (
         <section className="px-4 pt-8 pb-2">
-          <h1 className="text-[34px] leading-tight">Tu cita</h1>
+          <h1 className="text-[34px] leading-tight">{t('cita.titulo')}</h1>
         </section>
       )}
 
@@ -241,7 +242,7 @@ export default function Cita() {
               {c.negocio.whatsapp && (
                 <a href={`https://wa.me/${numeroWhatsApp(c.negocio.whatsapp)}`} target="_blank" rel="noreferrer"
                    className={`${estiloBoton('secundario')} !px-3 !text-[15px]`}>
-                  <IconoWhatsApp tam={18} /> Escribir a Lynn
+                  <IconoWhatsApp tam={18} /> {t('cita.boton_escribir')}
                 </a>
               )}
             </div>

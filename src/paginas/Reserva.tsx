@@ -13,6 +13,7 @@ import { duracion, precioRango } from '../lib/formato'
 import { mensajeDeError, codigoDeError } from '../lib/errores'
 import EnCup from '../componentes/EnCup'
 import type { Repetir } from '../caracteristicas/reserva/repetir'
+import { useTextos } from '../lib/textos'
 
 export default function Reserva() {
   const navegar = useNavigate()
@@ -20,6 +21,7 @@ export default function Reserva() {
   const [intentado, setIntentado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const t = useTextos()
 
   const qServicios = useQuery({ queryKey:['servicios'], queryFn: obtenerServicios })
   const qAddons = useQuery({ queryKey:['addons'], queryFn: obtenerAddons })
@@ -121,7 +123,7 @@ export default function Reserva() {
           <button onClick={() => r.paso === 1 ? navegar('/') : r.setPaso((r.paso - 1) as 1)}
                   className="w-11 h-11 rounded-full flex items-center justify-center text-tinta-suave hover:bg-rosa-50"
                   aria-label="Volver"><IconoAtras /></button>
-          <span className="font-display text-[19px]">Reservar cita</span>
+          <span className="font-display text-[19px]">{t('reserva.cabecera')}</span>
           <button onClick={() => navegar('/')}
                   className="w-11 h-11 rounded-full flex items-center justify-center text-tinta-suave hover:bg-rosa-50"
                   aria-label="Cerrar"><IconoCerrar /></button>
@@ -174,7 +176,7 @@ export default function Reserva() {
         )}
         <Boton ancho cargando={enviando} disabled={!puedeSeguir}
           onClick={() => r.paso === 6 ? confirmar() : r.setPaso((r.paso + 1) as 2)}>
-          {r.paso === 6 ? 'Confirmar cita' : (r.paso === 2 && r.addonsElegidos.length === 0 ? 'Continuar sin extras' : 'Continuar')}
+          {r.paso === 6 ? t('reserva.boton_confirmar') : (r.paso === 2 && r.addonsElegidos.length === 0 ? 'Continuar sin extras' : 'Continuar')}
         </Boton>
       </footer>
     </div>

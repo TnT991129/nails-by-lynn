@@ -40,6 +40,7 @@ const MENSAJES: Record<string, string> = {
   editar_cita:           'Cambiar servicios aún no está activado. Escríbele a Lynn por WhatsApp.',
   editar_cita_panel:     'Falta ejecutar en Supabase el SQL panel_editar_y_politicas.sql.',
   policy_sections:       'Falta ejecutar en Supabase el SQL panel_editar_y_politicas.sql.',
+  site_texts:            'Falta ejecutar en Supabase el SQL textos_web.sql.',
   next_discount:         'Falta ejecutar en Supabase el SQL de descuentos (turnos_descuentos_cambios.sql).',
   LIMITE_REPROGRAMACIONES_MES:'Ya cambiaste una cita este mes. Si necesitas moverla, escríbeme por WhatsApp.',
   HORARIO_OCUPADO:       'Ese horario choca con otra cita. Elige otro.',
@@ -49,6 +50,19 @@ const MENSAJES: Record<string, string> = {
   CLIENTA_CON_CITAS_ACTIVAS:'Tiene citas pendientes. Cancélalas primero para poder eliminarla.',
   CLIENTA_NO_ENCONTRADA: 'No encontramos esa clienta.',
   NO_AUTORIZADA:         'Tu sesión no tiene permiso para esto. Vuelve a entrar al panel.',
+  IMAGEN_INVALIDA:       'No se pudo abrir esa foto. Prueba con otra, o haz una captura de pantalla de la foto y sube la captura.',
+  SUBIDA_LENTA:          'La conexión está muy lenta y la foto no terminó de subir. Prueba con wifi o en otro momento.',
+  SUBIDA_SIN_PERMISO:    'Supabase no deja subir fotos con esta cuenta. Sal del panel, vuelve a entrar y prueba otra vez.',
+  FOTO_DEMASIADO_GRANDE: 'La foto pesa demasiado. Prueba con otra o haz una captura de pantalla de ella.',
+  TIPO_NO_ADMITIDO:      'Ese tipo de archivo no se admite. Sube una foto JPG, PNG o WebP.',
+  FALTA_BUCKET:          'Falta el espacio de fotos «galeria» en Supabase (Storage).',
+}
+
+/** Igual que mensajeDeError, pero si el error es desconocido añade el detalle técnico (para el panel) */
+export function mensajeDeErrorConDetalle(e: unknown): string {
+  const mensaje = mensajeDeError(e)
+  const raw = (e as { message?: string })?.message ?? ''
+  return mensaje === 'Algo salió mal de nuestro lado. Inténtalo otra vez.' && raw ? `${mensaje} (Detalle: ${raw})` : mensaje
 }
 
 export function mensajeDeError(e: unknown): string {

@@ -5,7 +5,7 @@ import {
   catalogoServicios, guardarOrden, type FotoPanel,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
-import { mensajeDeError } from '../../lib/errores'
+import { mensajeDeError, mensajeDeErrorConDetalle } from '../../lib/errores'
 import { Volver } from './comunes'
 import ListaOrdenable from './ListaOrdenable'
 
@@ -69,7 +69,7 @@ export default function GaleriaPanel() {
       setPrevia(null); setCaption(''); setServicioId(''); setTieneConsentimiento(false)
       qc.invalidateQueries({ queryKey: ['fotos-panel'] })
     } catch (e) {
-      setError(mensajeDeError(e))
+      setError(mensajeDeErrorConDetalle(e))
     } finally {
       setSubiendo(false)
     }
@@ -90,7 +90,7 @@ export default function GaleriaPanel() {
                             flex flex-col items-center justify-center">
             <span className="text-[24px] mb-1">📷</span>
             <span className="text-[14px] text-tinta-suave">Tocar para elegir foto</span>
-            <input type="file" accept="image/jpeg,image/png,image/webp"
+            <input type="file" accept="image/*"
               onChange={e => elegirArchivo(e.target.files?.[0] ?? null)}
               className="hidden" />
           </label>

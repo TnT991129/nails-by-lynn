@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fotosDeClienta, subirFotoTrabajo } from '../../lib/panel/api-panel'
 import { Tarjeta, Aviso, Boton } from '../../componentes/ui'
 import { fechaLarga } from '../../lib/formato'
-import { mensajeDeError } from '../../lib/errores'
+import { mensajeDeErrorConDetalle } from '../../lib/errores'
 
 // Fotos de los diseños que Lynn le hizo a la clienta. Son privadas: no salen en la galería
 // pública hasta que Lynn las publique desde Galería (y solo con permiso de la clienta).
@@ -21,7 +21,7 @@ export default function FotosTrabajo({ clientId, titulo = 'Sus diseños' }: { cl
       await subirFotoTrabajo(clientId, archivo)
       qc.invalidateQueries({ queryKey: ['fotos-clienta', clientId] })
       qc.invalidateQueries({ queryKey: ['fotos-panel'] })
-    } catch (e) { setError(mensajeDeError(e)) }
+    } catch (e) { setError(mensajeDeErrorConDetalle(e)) }
     finally { setSubiendo(false); if (entrada.current) entrada.current.value = '' }
   }
 

@@ -5,6 +5,7 @@ import { obtenerFotosPublicas, obtenerServicios } from '../lib/api'
 import { Esqueleto, Aviso, Vacio, Etiqueta } from '../componentes/ui'
 import { IconoCerrar } from '../componentes/iconos'
 import { mensajeDeError } from '../lib/errores'
+import { useTextos } from '../lib/textos'
 
 export default function Galeria() {
   const qFotos = useQuery({ queryKey:['fotos'], queryFn: obtenerFotosPublicas })
@@ -13,6 +14,7 @@ export default function Galeria() {
   // Desde la reserva («Ver fotos de este trabajo») llega ya filtrada por servicio
   const [filtro, setFiltro] = useState<string | null>(params.get('servicio'))
   const [ampliada, setAmpliada] = useState<string | null>(null)
+  const t = useTextos()
 
   const filtradas = useMemo(() => {
     const todas = qFotos.data ?? []
@@ -25,11 +27,9 @@ export default function Galeria() {
   return (
     <div className="pb-28">
       <section className="px-4 pt-8 pb-5">
-        <Etiqueta>Portafolio</Etiqueta>
-        <h1 className="text-[34px] leading-tight mt-1">Galería</h1>
-        <p className="text-tinta-tenue mt-1.5 text-[15px]">
-          Los últimos trabajos, hechos con mucho cariño.
-        </p>
+        <Etiqueta>{t('galeria.etiqueta')}</Etiqueta>
+        <h1 className="text-[34px] leading-tight mt-1">{t('galeria.titulo')}</h1>
+        <p className="text-tinta-tenue mt-1.5 text-[15px]">{t('galeria.texto')}</p>
       </section>
 
       {qFotos.isLoading && (
@@ -44,8 +44,7 @@ export default function Galeria() {
 
       {qFotos.data && qFotos.data.length === 0 && (
         <div className="px-4">
-          <Vacio titulo="Aún no hay fotos"
-            texto="Pronto tendremos los primeros trabajos aquí." />
+          <Vacio titulo={t('galeria.vacio_titulo')} texto={t('galeria.vacio_texto')} />
         </div>
       )}
 
@@ -54,7 +53,7 @@ export default function Galeria() {
           {destacadas.length > 0 && !filtro && (
             <section className="mb-6">
               <div className="px-4 mb-3">
-                <Etiqueta>Favoritas</Etiqueta>
+                <Etiqueta>{t('galeria.favoritas')}</Etiqueta>
               </div>
               <div className="flex gap-3 px-4 overflow-x-auto sin-scrollbar snap-x snap-mandatory">
                 {destacadas.map(f => (

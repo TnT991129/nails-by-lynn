@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import { citasEnRango } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
 import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, importe } from '../../lib/formato'
-import TasaDolar from './TasaDolar'
 import RecordatoriosManana from './RecordatoriosManana'
 import Cumpleanos from './Cumpleanos'
 import EnlaceClientas from './EnlaceClientas'
@@ -41,7 +40,6 @@ export default function Hoy() {
       </div>
 
       <EnlaceClientas />
-      <TasaDolar />
       <RecordatoriosManana />
       <Cumpleanos />
 
