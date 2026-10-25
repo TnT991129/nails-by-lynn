@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import InstalarPanel from './InstalarPanel'
 import TasaDolar from './TasaDolar'
+import AvisosMovil from './AvisosMovil'
 import {
   IconoGrafico, IconoGaleria, IconoBillete, IconoDestellos, IconoCalendario, IconoReloj, IconoDescarga, IconoCheck, IconoMas, IconoInicio,
 } from '../../componentes/iconos'
@@ -24,6 +25,7 @@ export default function Mas() {
     <div className="p-5 space-y-3">
       <h1 className="text-[30px] leading-tight mb-1">Más</h1>
       <InstalarPanel />
+      <AvisosMovil />
       <TasaDolar />
       <div className="bg-papel rounded-xl border border-rosa-100/80 shadow-suave divide-y divide-rosa-100 overflow-hidden">
         {ITEMS.map(i => (

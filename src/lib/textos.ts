@@ -92,35 +92,6 @@ export const TEXTOS = {
   'servicios.boton':      { grupo: 'Servicios', etiqueta: 'Botón de cada servicio', defecto: 'Reservar' },
   'politicas.etiqueta':   { grupo: 'Políticas', etiqueta: 'Etiqueta', defecto: 'Nails by Lynn' },
   'politicas.titulo':     { grupo: 'Políticas', etiqueta: 'Título', defecto: 'Políticas del estudio' },
-
-  // ---------- Tarjeta para activar los avisos (en la página de la cita) ----------
-  'avisos.titulo':   { grupo: 'Activar avisos', etiqueta: 'Título', defecto: '🔔 Avisos de tu cita en este móvil' },
-  'avisos.texto':    { grupo: 'Activar avisos', etiqueta: 'Texto', largo: true,
-    defecto: 'Te aviso aquí si tu cita cambia o se cancela, y el día antes para recordártela.' },
-  'avisos.boton':    { grupo: 'Activar avisos', etiqueta: 'Botón', defecto: 'Activar avisos' },
-  'avisos.activos':  { grupo: 'Activar avisos', etiqueta: 'Cuando ya están activados', defecto: '🔔 Avisos activados en este móvil' },
-  'avisos.ios':      { grupo: 'Activar avisos', etiqueta: 'iPhone: cómo activarlos', largo: true,
-    defecto: 'Para recibir avisos en el iPhone, añade esta web a tu pantalla de inicio: toca **Compartir** y luego **«Añadir a pantalla de inicio»**. Después ábrela desde ese icono.' },
-  'avisos.bloqueados': { grupo: 'Activar avisos', etiqueta: 'Si el navegador los bloqueó', largo: true,
-    defecto: 'Los avisos están bloqueados para esta web. Puedes permitirlos en los ajustes del navegador.' },
-
-  // ---------- Notificaciones que llegan al móvil (mismos textos que supabase/functions/enviar-push) ----------
-  'notif.creada_titulo':            { grupo: 'Notificaciones al móvil', etiqueta: 'Reserva: título', defecto: '¡Cita reservada! 💅' },
-  'notif.creada_texto':             { grupo: 'Notificaciones al móvil', etiqueta: 'Reserva: texto', defecto: 'Te espero el {fecha} a las {hora}. Código {codigo}.', variables: '{fecha}, {hora} y {codigo}' },
-  'notif.confirmada_titulo':        { grupo: 'Notificaciones al móvil', etiqueta: 'Confirmada: título', defecto: 'Cita confirmada ✅' },
-  'notif.confirmada_texto':         { grupo: 'Notificaciones al móvil', etiqueta: 'Confirmada: texto', defecto: 'Lynn confirmó tu cita del {fecha} a las {hora}.', variables: '{fecha}, {hora} y {codigo}' },
-  'notif.reagendada_titulo':        { grupo: 'Notificaciones al móvil', etiqueta: 'Cambio de fecha: título', defecto: 'Tu cita cambió de fecha 📅' },
-  'notif.reagendada_texto':         { grupo: 'Notificaciones al móvil', etiqueta: 'Cambio de fecha: texto', defecto: 'Ahora es el {fecha} a las {hora}.', variables: '{fecha}, {hora} y {codigo}' },
-  'notif.actualizada_titulo':       { grupo: 'Notificaciones al móvil', etiqueta: 'Servicios cambiados: título', defecto: 'Tu cita se actualizó ✏️' },
-  'notif.actualizada_texto':        { grupo: 'Notificaciones al móvil', etiqueta: 'Servicios cambiados: texto', defecto: 'Revisa los servicios y el precio de tu cita del {fecha}.', variables: '{fecha}, {hora} y {codigo}' },
-  'notif.cancelada_negocio_titulo': { grupo: 'Notificaciones al móvil', etiqueta: 'Cancelada por ti: título', defecto: 'Cita cancelada' },
-  'notif.cancelada_negocio_texto':  { grupo: 'Notificaciones al móvil', etiqueta: 'Cancelada por ti: texto', defecto: 'Lynn tuvo que cancelar tu cita del {fecha} a las {hora}. Toca para ver más.', variables: '{fecha}, {hora} y {codigo}' },
-  'notif.cancelada_clienta_titulo': { grupo: 'Notificaciones al móvil', etiqueta: 'Cancelada por ella: título', defecto: 'Cita cancelada' },
-  'notif.cancelada_clienta_texto':  { grupo: 'Notificaciones al móvil', etiqueta: 'Cancelada por ella: texto', defecto: 'Cancelaste tu cita del {fecha} a las {hora}. ¡Te espero otro día!', variables: '{fecha}, {hora} y {codigo}' },
-  'notif.completada_titulo':        { grupo: 'Notificaciones al móvil', etiqueta: 'Completada: título', defecto: '¡Gracias por tu visita! 💖' },
-  'notif.completada_texto':         { grupo: 'Notificaciones al móvil', etiqueta: 'Completada: texto', defecto: '¿Me cuentas qué te pareció? Toca para valorar tu cita.', variables: '{fecha}, {hora} y {codigo}' },
-  'notif.recordatorio_titulo':      { grupo: 'Notificaciones al móvil', etiqueta: 'Recordatorio (día antes): título', defecto: 'Mañana tienes cita 💅' },
-  'notif.recordatorio_texto':       { grupo: 'Notificaciones al móvil', etiqueta: 'Recordatorio (día antes): texto', defecto: 'Te espero el {fecha} a las {hora}.', variables: '{fecha}, {hora} y {codigo}' },
 } satisfies Record<string, DefTexto>
 
 export type ClaveTexto = keyof typeof TEXTOS
