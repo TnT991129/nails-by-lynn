@@ -124,7 +124,7 @@ set search_path = public, extensions
 as $$
 begin
   perform net.http_post(
-    url := 'https://wxkywplcbfrldnoajirn.supabase.co/functions/v1/enviar-push',
+    url := 'https://wxkywplcbfrldnoajirn.supabase.co/functions/v1/super-handler',
     body := '{}'::jsonb,
     headers := '{"Content-Type": "application/json"}'::jsonb,
     timeout_milliseconds := 20000);

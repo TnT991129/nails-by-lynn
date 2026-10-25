@@ -10,8 +10,18 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.1
 import webpush from 'npm:web-push@3.6.7'
 
 const SITIO = (Deno.env.get('SITIO_URL') ?? 'https://tnt991129.github.io/nails-by-lynn/').replace(/\/?$/, '/')
-webpush.setVapidDetails(SITIO, Deno.env.get('VAPID_PUBLIC_KEY')!, Deno.env.get('VAPID_PRIVATE_KEY')!)
 const ZONA = 'America/Havana'
+
+// Las claves se comprueban al recibir la llamada: si faltan, se dice cuál en vez de romper la función
+function prepararClaves(): string | null {
+  const publica = Deno.env.get('VAPID_PUBLIC_KEY')?.trim()
+  const privada = Deno.env.get('VAPID_PRIVATE_KEY')?.trim()
+  if (!publica) return 'Falta el secreto VAPID_PUBLIC_KEY (Edge Functions → Secrets)'
+  if (!privada) return 'Falta el secreto VAPID_PRIVATE_KEY (Edge Functions → Secrets)'
+  try { webpush.setVapidDetails(SITIO, publica, privada) }
+  catch (e) { return `Los secretos VAPID no son válidos: ${(e as Error).message}` }
+  return null
+}
 
 type Item = { id: number; business_id: string; evento: string; ref_id: string }
 type Aviso = { title: string; body: string; url: string; tag: string }
@@ -90,6 +100,8 @@ async function enviar(sb: SupabaseClient, item: Item): Promise<string> {
 }
 
 Deno.serve(async () => {
+  const fallo = prepararClaves()
+  if (fallo) return Response.json({ error: fallo }, { status: 500 })
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     { auth: { persistSession: false } })
   const { data: cola, error } = await sb.rpc('tomar_cola_push', { p_limite: 50 })
