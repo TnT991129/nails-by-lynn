@@ -75,10 +75,25 @@ manipula el JavaScript, el precio real no cambia.
 **Sin cuentas de clienta.** El token de cada cita se guarda en el dispositivo y
 "Mis citas" los lee. El enlace del WhatsApp funciona desde cualquier teléfono.
 
-## Lo que falta
+**El panel (`/panel`) sí usa `@supabase/supabase-js`**, cargado aparte solo en esa ruta.
 
-- Galería y portafolio
-- Panel de Lynn (agenda, clientas, servicios, horarios, estadísticas)
-- Reprogramar desde la pantalla de cita (la función `reprogramarCita` ya existe)
-- Foto para el hero y para las tarjetas de servicio
-- Service worker de la PWA
+## Base de datos (carpeta `supabase/`)
+
+Cada archivo `.sql` es una migración que se ejecuta **una vez** en Supabase → SQL Editor,
+en este orden:
+
+1. `turnos_fijos.sql`, `eliminar_clienta.sql`, `seguridad.sql`
+2. `politicas_y_espera.sql`, `reprogramar_clienta.sql`
+3. `turnos_descuentos_cambios.sql`, `correcciones_revision.sql`
+4. `rango_complementos.sql`, `tasa_dolar.sql`
+5. `agenda_complementos.sql`, `complementos_y_descuentos.sql`
+6. `mejoras.sql`, `rango_en_citas.sql`, `editar_cita.sql`
+7. `revision_seguridad_octubre.sql` (incluye lo de `mejoras.sql`; no ejecutes `mejoras.sql`
+   después de `rango_en_citas.sql`, porque instala una versión anterior de `obtener_cita_por_token`)
+8. `panel_editar_y_politicas.sql`
+
+`restaurar_servicios.sql` solo se usa si se borran los servicios por error.
+**`esquema.sql` no se ejecuta**: es una copia de referencia antigua.
+
+En Supabase → Authentication → Sign In / Providers conviene tener **desactivado
+«Allow new users to sign up»**: la única cuenta debe ser la de Lynn.

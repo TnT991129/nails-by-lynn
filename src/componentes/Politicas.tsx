@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { obtenerPoliticas } from '../lib/api'
-import type { Politicas } from '../lib/tipos'
+import type { Politicas, SeccionPolitica as Seccion } from '../lib/tipos'
 import { Esqueleto, Aviso } from './ui'
 import { IconoCerrar } from './iconos'
 import { mensajeDeError } from '../lib/errores'
 
-type Seccion = { titulo: string; texto: string }
-
 const horas = (n: number) => (n === 1 ? '1 hora' : `${n} horas`)
 
+/** Lo que ven las clientas: las secciones que escribió Lynn o, si aún no las guardó, los textos de siempre */
+export function secciones(p: Politicas): Seccion[] {
+  const propias = (p.secciones ?? []).filter(s => s?.titulo?.trim() && s?.texto?.trim())
+  return propias.length > 0 ? propias : seccionesPorDefecto(p)
+}
+
 // Si Lynn no escribió un texto propio, se explica la regla que aplica el sistema (nunca se inventan reglas)
-function secciones(p: Politicas): Seccion[] {
+export function seccionesPorDefecto(p: Politicas): Seccion[] {
   const t = p.textos
   const lista: (Seccion | null)[] = [
     { titulo: 'Reservas', texto:
@@ -43,8 +47,8 @@ export function ContenidoPoliticas() {
   if (q.isError) return <Aviso>{mensajeDeError(q.error)}</Aviso>
   return (
     <div className="space-y-5">
-      {secciones(q.data!).map(s => (
-        <section key={s.titulo}>
+      {secciones(q.data!).map((s, i) => (
+        <section key={i}>
           <h3 className="text-[15px] font-semibold text-rosa-800">{s.titulo}</h3>
           <p className="text-[14px] text-tinta-suave mt-1 whitespace-pre-line leading-relaxed">{s.texto}</p>
         </section>

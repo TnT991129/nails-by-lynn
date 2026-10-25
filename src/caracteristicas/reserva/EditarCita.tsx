@@ -6,13 +6,12 @@ import { PasoServicio, PasoExtras } from './Pasos'
 import { Boton, Tarjeta, Aviso, Esqueleto } from '../../componentes/ui'
 import { IconoWhatsApp, IconoCheck } from '../../componentes/iconos'
 import EnCup from '../../componentes/EnCup'
-import { duracion, precioRango } from '../../lib/formato'
+import { duracion, precioRango, numeroWhatsApp } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 
 function enlaceAvisoEdicion(c: CitaDetalle, servicios: string[], nota: string): string | null {
   if (!c.negocio.whatsapp) return null
-  const digitos = c.negocio.whatsapp.replace(/\D/g, '')
-  const numero = digitos.length === 8 ? '53' + digitos : digitos
+  const numero = numeroWhatsApp(c.negocio.whatsapp)
   const mensaje = `Hola Lynn! Cambié los servicios de mi cita 💅
 
 👤 ${c.cliente.nombre}

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerCita, cancelarCita } from '../lib/api'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
 import { IconoCheck, IconoUbicacion, IconoWhatsApp, IconoReloj, IconoCalendario } from '../componentes/iconos'
-import { fechaLarga, hora, duracion, dinero, precioRango } from '../lib/formato'
+import { fechaLarga, hora, duracion, dinero, precioRango, numeroWhatsApp } from '../lib/formato'
 import EnCup from '../componentes/EnCup'
 import { mensajeDeError } from '../lib/errores'
 import { olvidarToken, citaAvisada, marcarAvisada } from '../lib/almacenamiento'
@@ -58,9 +58,7 @@ ${servicios}${nota}
 }
 
 function enlaceAvisoLynn(telefonoLynn: string, mensaje: string): string {
-  const digitos = telefonoLynn.replace(/\D/g, '')
-  const conPrefijo = digitos.length === 8 ? '53' + digitos : digitos
-  return `https://wa.me/${conPrefijo}?text=${encodeURIComponent(mensaje)}`
+  return `https://wa.me/${numeroWhatsApp(telefonoLynn)}?text=${encodeURIComponent(mensaje)}`
 }
 
 export default function Cita() {
@@ -241,7 +239,7 @@ export default function Cita() {
                 </Boton>
               )}
               {c.negocio.whatsapp && (
-                <a href={`https://wa.me/53${c.negocio.whatsapp}`} target="_blank" rel="noreferrer"
+                <a href={`https://wa.me/${numeroWhatsApp(c.negocio.whatsapp)}`} target="_blank" rel="noreferrer"
                    className={`${estiloBoton('secundario')} !px-3 !text-[15px]`}>
                   <IconoWhatsApp tam={18} /> Escribir a Lynn
                 </a>

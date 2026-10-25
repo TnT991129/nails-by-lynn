@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { obtenerPoliticas } from '../../lib/api'
 import type { Servicio, Addon } from '../../lib/tipos'
 import { Tarjeta, Campo, Esqueleto, Aviso, Vacio } from '../../componentes/ui'
 import { IconoCheck, IconoReloj, IconoSol, IconoTarde, IconoCalendario } from '../../componentes/iconos'
@@ -163,19 +165,21 @@ export function PasoExtras({
   )
 }
 
-// Calendario mensual. maxDias = 60 coincide con settings.max_advance_days del servidor.
+// Calendario mensual. Los días hacia adelante salen de settings.max_advance_days (Lynn los cambia en Políticas).
 export function PasoFecha({
-  fecha, setFecha, diasLaborables, diasCerrados = [], maxDias = 60,
+  fecha, setFecha, diasLaborables, diasCerrados = [],
 }: {
   fecha: string | null; setFecha: (f: string) => void
-  diasLaborables?: number[]; diasCerrados?: { desde: string; hasta: string }[]; maxDias?: number
+  diasLaborables?: number[]; diasCerrados?: { desde: string; hasta: string }[]
 }) {
   const horario = useHorarioPublico()
+  const qPoliticas = useQuery({ queryKey: ['politicas'], queryFn: obtenerPoliticas, staleTime: 10 * 60_000 })
+  const dias = Math.max(1, Number(qPoliticas.data?.max_dias_antelacion ?? 60))
   return (
     <div className="space-y-5 animate-entrada">
       <Titulo titulo="¿Qué día te viene bien?" texto={horario.dias ? `Trabajo de ${horario.dias}.` : undefined} />
       <CalendarioMes fecha={fecha} setFecha={setFecha} diasLaborables={diasLaborables}
-                     diasCerrados={diasCerrados} maxDias={maxDias} />
+                     diasCerrados={diasCerrados} maxDias={dias + 1} />
       {fecha ? (
         <p className="flex items-center gap-2 text-[15px] bg-rosa-50 text-rosa-800 rounded-lg px-4 py-3">
           <IconoCalendario tam={18} />
@@ -183,7 +187,7 @@ export function PasoFecha({
         </p>
       ) : (
         <p className="text-[13px] text-tinta-tenue text-center">
-          Puedes reservar hasta {maxDias} días por adelantado.
+          Puedes reservar hasta {dias} días por adelantado.
         </p>
       )}
     </div>

@@ -1,3 +1,8 @@
+-- ⚠️ NO EJECUTAR. Copia de referencia DESACTUALIZADA (25/09/2026).
+-- No incluye las migraciones posteriores y contiene versiones antiguas e inseguras de
+-- exportar_respaldo, cancelar_cita, crear_cita, crear_hold y validar_turno.
+-- Para ver la estructura real, ejecuta supabase/exportar_esquema.sql en Supabase y pega aquí el resultado.
+--
 -- Estructura de la base de datos de Nails by Lynn (sin datos).
 -- Generado con supabase/exportar_esquema.sql. Es una copia de referencia:
 -- la fuente de verdad sigue siendo Supabase. Actualízala tras cada cambio de SQL.

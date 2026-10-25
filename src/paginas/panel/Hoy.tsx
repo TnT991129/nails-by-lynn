@@ -7,6 +7,7 @@ import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, importe } from 
 import TasaDolar from './TasaDolar'
 import RecordatoriosManana from './RecordatoriosManana'
 import Cumpleanos from './Cumpleanos'
+import EnlaceClientas from './EnlaceClientas'
 import EnCup from '../../componentes/EnCup'
 import { sumarDias } from '../../componentes/CalendarioMes'
 import { mensajeDeError } from '../../lib/errores'
@@ -39,6 +40,7 @@ export default function Hoy() {
         <h1 className="text-[30px] leading-tight mt-1">Hoy</h1>
       </div>
 
+      <EnlaceClientas />
       <TasaDolar />
       <RecordatoriosManana />
       <Cumpleanos />

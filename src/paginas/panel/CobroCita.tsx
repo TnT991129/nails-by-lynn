@@ -5,7 +5,7 @@ import {
   type CitaAgenda, type MetodoCobro,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Aviso } from '../../componentes/ui'
-import { importe, precioRango } from '../../lib/formato'
+import { importe, precioRango, leerNumero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 
 const FORMAS: { clave: string; etiqueta: string; metodo: MetodoCobro; moneda: 'CUP' | 'USD' }[] = [
@@ -44,7 +44,7 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
   }
 
   async function guardar() {
-    const n = Number(monto.replace(',', '.'))
+    const n = leerNumero(monto)
     if (!(n > 0)) { setError('Escribe cuánto pagó.'); return }
     setTrabajando(true); setError(null)
     try {

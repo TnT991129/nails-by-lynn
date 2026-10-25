@@ -19,6 +19,7 @@ import CobroCita from './CobroCita'
 import EsperaDelDia from './EsperaDelDia'
 import MensajeGracias from './MensajeGracias'
 import FotosTrabajo from './FotosTrabajo'
+import EditarServiciosCita from './EditarServiciosCita'
 
 export default function DetalleCita() {
   const { id = '' } = useParams()
@@ -28,6 +29,7 @@ export default function DetalleCita() {
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reagendando, setReagendando] = useState(false)
+  const [editando, setEditando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [motivo, setMotivo] = useState('')
 
@@ -154,9 +156,15 @@ export default function DetalleCita() {
 
       {error && <Aviso>{error}</Aviso>}
 
-      {activa && (reagendando
-        ? <ReagendarCita cita={c} tokenAcceso={qToken.data?.token} onCerrar={() => setReagendando(false)} />
-        : <Boton variante="secundario" ancho onClick={() => setReagendando(true)}><IconoCalendario tam={18} /> Reagendar</Boton>
+      {activa && editando && <EditarServiciosCita cita={c} onCerrar={() => setEditando(false)} />}
+      {activa && reagendando && (
+        <ReagendarCita cita={c} tokenAcceso={qToken.data?.token} onCerrar={() => setReagendando(false)} />
+      )}
+      {activa && !editando && !reagendando && (
+        <div className="grid grid-cols-2 gap-2">
+          <Boton variante="secundario" onClick={() => setEditando(true)}>✏️ Servicios</Boton>
+          <Boton variante="secundario" onClick={() => setReagendando(true)}><IconoCalendario tam={18} /> Reagendar</Boton>
+        </div>
       )}
 
       {activa && (
@@ -206,6 +214,15 @@ export default function DetalleCita() {
             </Tarjeta>
           )}
         </div>
+      )}
+
+      {/* Un toque por error en «Completada» o «No asistió» se puede deshacer (los contadores se corrigen solos) */}
+      {['COMPLETADA', 'NO_SHOW'].includes(c.status) && (
+        <button onClick={() => { if (confirm('¿Volver a dejar la cita como confirmada?')) cambiar('CONFIRMADA') }}
+                disabled={trabajando}
+                className="w-full min-h-[44px] text-[14px] text-tinta-suave underline underline-offset-2 disabled:opacity-60">
+          ↩ Deshacer «{c.status === 'COMPLETADA' ? 'Completada' : 'No asistió'}»
+        </button>
       )}
 
       <Tarjeta className="space-y-2">

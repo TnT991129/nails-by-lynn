@@ -49,13 +49,11 @@ export default function BloqueMensajes({ cita, tokenAcceso }: {
       const mensaje = armarMensaje(clave, datos)
       const url = enlaceWhatsApp(cita.cliente_telefono, mensaje)
 
-      // Marcamos como enviado ANTES de abrir WhatsApp, porque a veces el navegador
-      // no vuelve al panel y perderíamos el registro.
+      // WhatsApp se abre en el mismo toque: si esperamos a guardar, Safari del iPhone bloquea la ventana.
+      // El registro sigue en segundo plano (la pestaña del panel queda abierta detrás).
+      window.open(url, '_blank', 'noopener,noreferrer')
       await registrarEnvio(cita.id, clave, mensaje, cita.cliente_telefono)
       qc.invalidateQueries({ queryKey: ['notifs', cita.id] })
-
-      // Abrir WhatsApp en pestaña nueva
-      window.open(url, '_blank', 'noopener,noreferrer')
     } catch (e) {
       setError(mensajeDeError(e))
     } finally {

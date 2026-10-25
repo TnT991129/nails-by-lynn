@@ -81,6 +81,8 @@ export type Resenas = {
 
 export type ItemReserva = { service_id: string; addons: string[] }
 
+export type SeccionPolitica = { titulo: string; texto: string }
+
 export type Politicas = {
   cancelar_minimo_horas: number
   cancelar_gratis_horas: number
@@ -89,5 +91,7 @@ export type Politicas = {
   max_citas_activas: number
   max_dias_antelacion: number
   anticipo: boolean
+  // Secciones que escribe Lynn en el panel (supabase/panel_editar_y_politicas.sql); null = textos de siempre
+  secciones?: SeccionPolitica[] | null
   textos: Record<'cancelacion' | 'cambios' | 'anticipo' | 'no_show' | 'retrasos' | 'reembolsos' | 'espera' | 'privacidad', string | null>
 }

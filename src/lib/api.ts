@@ -2,7 +2,10 @@ import { seleccionar, rpc, NEGOCIO_ID } from './supabase'
 import type { Servicio, Addon, Negocio, CitaCreada, CitaDetalle, ItemReserva, Politicas, Resenas } from './tipos'
 
 export async function obtenerNegocio(): Promise<Negocio> {
+  // Solo las columnas públicas: la dirección exacta y las coordenadas no se pueden leer sin sesión
   const filas = await seleccionar<Negocio>('businesses', {
+    select: 'id,name,tagline,description,phone_whatsapp,instagram_url,location_label,timezone,'
+          + 'default_currency,is_accepting_bookings,closed_message',
     filtros: { id: `eq.${NEGOCIO_ID}` }, limite: 1,
   })
   if (!filas.length) throw new Error('NEGOCIO_NO_EXISTE')

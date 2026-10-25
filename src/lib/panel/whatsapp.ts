@@ -1,7 +1,9 @@
 // Plantillas de mensajes y helper para abrir WhatsApp.
 // Los textos viven aquí para que Lynn pueda cambiarlos en un solo lugar.
 
-import { hora, fechaLarga } from '../formato'
+import { hora, fechaLarga, numeroWhatsApp } from '../formato'
+
+export { numeroWhatsApp }
 
 export type PlantillaKey = 'confirmacion' | 'recordatorio' | 'retraso' | 'gracias' | 'reagendada' | 'cancelacion'
 
@@ -17,7 +19,7 @@ export type DatosMensaje = {
 }
 
 // Base pública del sitio (se usa para armar el link de la cita)
-function urlPublica(): string {
+export function urlPublica(): string {
   const origen = window.location.origin
   const base = import.meta.env.BASE_URL || '/'
   return `${origen}${base}`
@@ -116,12 +118,6 @@ ${urlPublica()}reservar
 }
 
 // Devuelve el URL wa.me con el mensaje ya codificado
-// Número listo para wa.me: solo dígitos y con prefijo 53 si es un móvil cubano de 8 dígitos
-export function numeroWhatsApp(telefono: string): string {
-  const soloDigitos = telefono.replace(/\D/g, '')
-  return soloDigitos.length === 8 ? '53' + soloDigitos : soloDigitos
-}
-
 export function enlaceWhatsApp(telefono: string, mensaje: string): string {
   const texto = encodeURIComponent(mensaje)
   return `https://wa.me/${numeroWhatsApp(telefono)}?text=${texto}`

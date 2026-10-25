@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listarGastos, crearGasto, eliminarGasto, type CategoriaGasto } from '../../lib/panel/api-panel'
 import { Boton, Campo, Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
-import { fechaLarga, fechaISO, importe } from '../../lib/formato'
+import { fechaLarga, fechaISO, importe, leerNumero } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver } from './comunes'
 
@@ -36,11 +36,11 @@ export default function Gastos() {
   const q = useQuery({ queryKey: ['gastos'], queryFn: () => listarGastos(100) })
 
   async function guardar() {
+    const m = leerNumero(monto)
+    if (isNaN(m) || m <= 0) { setError('Revisa el monto.'); return }
+    if (!descripcion.trim()) { setError('Escribe qué compraste.'); return }
     setGuardando(true); setError(null)
     try {
-      const m = Number(monto)
-      if (isNaN(m) || m <= 0) throw new Error('Monto inválido')
-      if (!descripcion.trim()) throw new Error('Escribe qué compraste')
       await crearGasto({ date: fecha, category: categoria, description: descripcion.trim(), amount: m, currency: moneda })
       qc.invalidateQueries({ queryKey: ['gastos'] })
       qc.invalidateQueries({ queryKey: ['resumen'] })

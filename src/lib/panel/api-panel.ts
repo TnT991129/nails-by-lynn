@@ -30,6 +30,20 @@ async function ejecutar<T>(op: PromiseLike<{ data: T | null; error: unknown }>):
   return data as T
 }
 
+// Supabase devuelve como máximo 1000 filas por consulta: se piden por páginas hasta tenerlas todas
+const PAGINA = 1000
+async function todasLasFilas<T>(
+  pedir: (desde: number, hasta: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const filas: T[] = []
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data, error } = await pedir(desde, desde + PAGINA - 1)
+    if (error) throw error
+    filas.push(...(data ?? []))
+    if (!data || data.length < PAGINA) return filas
+  }
+}
+
 // ---------- AGENDA ----------
 export function citasEnRango(desde: string, hasta: string) {
   return ejecutar<CitaAgenda[]>(
@@ -50,7 +64,8 @@ export async function obtenerCitaPanel(id: string): Promise<CitaAgenda> {
 export function cambiarEstadoCita(id: string, nuevoEstado:
   'CONFIRMADA'|'EN_CURSO'|'COMPLETADA'|'NO_SHOW'|'CANCELADA_NEGOCIO', motivo?: string) {
   const parche: Record<string, unknown> = { status: nuevoEstado, updated_at: new Date().toISOString() }
-  if (nuevoEstado === 'COMPLETADA') parche.completed_at = new Date().toISOString()
+  // Deshacer «Completada» o «No asistió» (vuelve a CONFIRMADA) también borra la fecha de completada
+  parche.completed_at = nuevoEstado === 'COMPLETADA' ? new Date().toISOString() : null
   if (nuevoEstado === 'CANCELADA_NEGOCIO') {
     parche.cancelled_at = new Date().toISOString()
     parche.cancelled_by = 'PROFESIONAL'
@@ -128,8 +143,9 @@ export function bloqueosEnRango(desde: string, hasta: string) {
 // ---------- CLIENTAS ----------
 export function listarClientas(busqueda?: string) {
   let q = sb.from('clients').select('*').eq('business_id', NEGOCIO_ID)
-  if (busqueda) {
-    const t = busqueda.trim()
+  // Comas, paréntesis y comodines romperían el filtro .or() de PostgREST
+  const t = (busqueda ?? '').replace(/[,()*%\\:"]/g, ' ').trim()
+  if (t) {
     q = q.or(`full_name.ilike.%${t}%,phone.ilike.%${t}%,instagram.ilike.%${t}%`)
   }
   return ejecutar<Cliente[]>(q.order('last_appointment_at', { ascending: false, nullsFirst: false }).limit(200))
@@ -293,19 +309,28 @@ export async function guardarHorariosDia(
   weekday: number,
   turnos: { start_time: string; end_time: string }[]
 ) {
-  // 1) Borrar las reglas actuales del dia
-  const { error: e1 } = await sb.from('schedule_rules').delete()
+  // 1) Apuntar las reglas actuales del dia
+  const { data: viejas, error: e1 } = await sb.from('schedule_rules').select('id')
     .eq('business_id', NEGOCIO_ID).eq('weekday', weekday)
   if (e1) throw e1
 
-  // 2) Insertar las nuevas (si hay). Sin turnos = dia cerrado.
-  if (turnos.length === 0) return
-  const filas = turnos.map(t => ({
-    business_id: NEGOCIO_ID, weekday,
-    start_time: t.start_time, end_time: t.end_time, is_active: true,
-  }))
-  const { error: e2 } = await sb.from('schedule_rules').insert(filas)
-  if (e2) throw e2
+  // 2) Insertar las nuevas primero (sin turnos = dia cerrado): si se corta la conexión aquí,
+  //    el día conserva su horario anterior en vez de quedarse cerrado
+  if (turnos.length > 0) {
+    const filas = turnos.map(t => ({
+      business_id: NEGOCIO_ID, weekday,
+      start_time: t.start_time, end_time: t.end_time, is_active: true,
+    }))
+    const { error: e2 } = await sb.from('schedule_rules').insert(filas)
+    if (e2) throw e2
+  }
+
+  // 3) Borrar las anteriores
+  const ids = (viejas ?? []).map(v => v.id as string)
+  if (ids.length > 0) {
+    const { error: e3 } = await sb.from('schedule_rules').delete().in('id', ids)
+    if (e3) throw e3
+  }
 }
 
 // ================== BLOQUEOS ==================
@@ -421,17 +446,22 @@ export async function resumenMes(año: number, mesCero: number): Promise<Resumen
 
   // Traer gastos del mes
   const { data: gastos, error: eG } = await sb.from('expenses')
-    .select('amount, currency')
+    .select('amount, currency, exchange_rate_used')
     .eq('business_id', NEGOCIO_ID)
     .gte('date', diaIni).lt('date', diaFin)
   if (eG) throw eG
 
   const completadas = (citas ?? []).filter(c => c.status === 'COMPLETADA')
   const ingresos = completadas.reduce((t, c) => t + Number(c.total_amount), 0)
-  // Todo en dólares: los gastos en CUP se convierten con el último precio del dólar
-  const tasa = (gastos ?? []).some(g => g.currency === 'CUP') ? (await obtenerTasaPanel())?.tasa : undefined
-  const totalGastos = (gastos ?? []).reduce((t, g) =>
-    t + (g.currency === 'CUP' && tasa ? Number(g.amount) / tasa : Number(g.amount)), 0)
+  // Todo en dólares: los gastos en CUP se convierten con el dólar del día en que se apuntaron
+  // (los antiguos, que no lo guardaban, con el último precio del dólar)
+  const tasa = (gastos ?? []).some(g => g.currency === 'CUP' && !g.exchange_rate_used)
+    ? (await obtenerTasaPanel())?.tasa : undefined
+  const totalGastos = (gastos ?? []).reduce((t, g) => {
+    if (g.currency !== 'CUP') return t + Number(g.amount)
+    const tg = Number(g.exchange_rate_used ?? tasa ?? 0)
+    return t + (tg > 0 ? Number(g.amount) / tg : 0)
+  }, 0)
   const clientasSet = new Set(completadas.map(c => c.client_id))
 
   return {
@@ -516,13 +546,15 @@ export function listarGastos(limite = 100) {
   )
 }
 
-export function crearGasto(args: {
+export async function crearGasto(args: {
   date: string; category: CategoriaGasto; description: string;
   amount: number; currency: 'CUP' | 'USD';
 }) {
+  // Se guarda el dólar de ese momento para que las estadísticas no cambien al actualizarlo
+  const tasa = args.currency === 'CUP' ? (await obtenerTasaPanel())?.tasa ?? null : null
   return ejecutar(
     sb.from('expenses').insert({
-      business_id: NEGOCIO_ID, ...args,
+      business_id: NEGOCIO_ID, ...args, exchange_rate_used: tasa,
     }).select().single()
   )
 }
@@ -539,27 +571,22 @@ export async function exportarRespaldoCompleto() {
 }
 
 // Descargas rápidas por tabla (para abrir en Excel)
-export async function citasParaCsv() {
-  const { data, error } = await sb.from('v_agenda').select('*')
-    .eq('business_id', NEGOCIO_ID).order('starts_at', { ascending: false })
-  if (error) throw error
-  return data as Record<string, unknown>[]
+export function citasParaCsv() {
+  return todasLasFilas<Record<string, unknown>>((desde, hasta) => sb.from('v_agenda').select('*')
+    .eq('business_id', NEGOCIO_ID).order('starts_at', { ascending: false }).order('id').range(desde, hasta))
 }
 
-export async function clientasParaCsv() {
-  const { data, error } = await sb.from('clients').select(
+export function clientasParaCsv() {
+  return todasLasFilas<Record<string, unknown>>((desde, hasta) => sb.from('clients').select(
     'full_name, phone, email, instagram, total_appointments, total_no_shows, total_cancellations, total_spent_cup, first_seen_at, last_appointment_at'
   ).eq('business_id', NEGOCIO_ID)
-    .order('total_spent_cup', { ascending: false })
-  if (error) throw error
-  return data as Record<string, unknown>[]
+    .order('total_spent_cup', { ascending: false }).order('id').range(desde, hasta))
 }
 
-export async function gastosParaCsv() {
-  const { data, error } = await sb.from('expenses').select('date, category, description, amount, currency')
-    .eq('business_id', NEGOCIO_ID).order('date', { ascending: false })
-  if (error) throw error
-  return data as Record<string, unknown>[]
+export function gastosParaCsv() {
+  return todasLasFilas<Record<string, unknown>>((desde, hasta) => sb.from('expenses')
+    .select('date, category, description, amount, currency')
+    .eq('business_id', NEGOCIO_ID).order('date', { ascending: false }).order('id').range(desde, hasta))
 }
 
 // ================== GALERÍA (panel) ==================
@@ -844,13 +871,12 @@ export type ContadoresClienta = {
 }
 
 export async function contadoresClientas(): Promise<Record<string, ContadoresClienta>> {
-  const { data, error } = await sb.from('appointments')
+  const data = await todasLasFilas((desde, hasta) => sb.from('appointments')
     .select('client_id, status, reschedule_count, starts_at')
-    .eq('business_id', NEGOCIO_ID).limit(5000)
-  if (error) throw error
+    .eq('business_id', NEGOCIO_ID).order('id').range(desde, hasta))
   const r: Record<string, ContadoresClienta> = {}
   const ahora = Date.now()
-  for (const f of (data ?? []) as { client_id: string; status: string; reschedule_count: number; starts_at: string }[]) {
+  for (const f of data as { client_id: string; status: string; reschedule_count: number; starts_at: string }[]) {
     const c = (r[f.client_id] ??= { citas: 0, proximas: 0, canceladas: 0, reagendadas: 0, noAsistio: 0 })
     const cancelada = f.status === 'CANCELADA_CLIENTA' || f.status === 'CANCELADA_NEGOCIO'
     if (!cancelada) c.citas++
@@ -910,6 +936,26 @@ export async function guardarTasa(cupPorUsd: number) {
     effective_date: fechaISO(new Date()),   // hoy en La Habana
     cup_per_usd: cupPorUsd,
   }, { onConflict: 'business_id,effective_date' })
+  if (error) throw error
+}
+
+// ================== EDITAR SERVICIOS DE UNA CITA ==================
+// Servicios y complementos que lleva ahora la cita (por id, para marcarlos al editar)
+export async function serviciosDeCita(citaId: string): Promise<{ service_id: string | null; addons: string[] }[]> {
+  const { data, error } = await sb.from('appointment_items')
+    .select('service_id, sort_order, appointment_item_addons(addon_id)')
+    .eq('appointment_id', citaId).order('sort_order')
+  if (error) throw error
+  return (data ?? []).map(f => ({
+    service_id: f.service_id as string | null,
+    addons: ((f.appointment_item_addons ?? []) as { addon_id: string | null }[])
+      .map(a => a.addon_id).filter((x): x is string => !!x),
+  }))
+}
+
+// Lynn cambia servicios y complementos (sin plazo). Precio y duración se recalculan en Supabase.
+export async function editarCitaPanel(citaId: string, items: { service_id: string; addons: string[] }[], nota: string | null) {
+  const { error } = await sb.rpc('editar_cita_panel', { p_appointment_id: citaId, p_items: items, p_nota: nota })
   if (error) throw error
 }
 
@@ -1071,15 +1117,13 @@ export async function subirFotoTrabajo(clientId: string, archivo: File) {
 
 // ================== POLÍTICAS (textos y reglas que ve la clienta) ==================
 export type AjustesPoliticas = {
-  policy_cancellation: string | null; policy_reschedule: string | null; policy_late: string | null
-  policy_no_show: string | null; policy_refund: string | null; policy_waiting: string | null
-  privacy_notice: string | null
   cancel_blocked_hours: number; reschedule_min_hours: number; max_reschedules: number
   max_active_appointments_per_phone: number; max_advance_days: number; min_advance_hours: number
+  // Textos libres: [{ titulo, texto }] (supabase/panel_editar_y_politicas.sql); null = textos de siempre
+  policy_sections: { titulo: string; texto: string }[] | null
 }
-const CAMPOS_POLITICAS = 'policy_cancellation, policy_reschedule, policy_late, policy_no_show, policy_refund, ' +
-  'policy_waiting, privacy_notice, cancel_blocked_hours, reschedule_min_hours, max_reschedules, ' +
-  'max_active_appointments_per_phone, max_advance_days, min_advance_hours'
+const CAMPOS_POLITICAS = 'cancel_blocked_hours, reschedule_min_hours, max_reschedules, ' +
+  'max_active_appointments_per_phone, max_advance_days, min_advance_hours, policy_sections'
 
 export function obtenerAjustesPoliticas() {
   return ejecutar<AjustesPoliticas>(sb.from('settings').select(CAMPOS_POLITICAS).eq('business_id', NEGOCIO_ID).single())

@@ -73,6 +73,20 @@ export function instanteEnHabana(fecha: string, hhmm: string): string {
   return new Date(supuesto - (pared - supuesto)).toISOString()
 }
 
+/** Número listo para wa.me: solo dígitos y con prefijo 53 si es un móvil cubano de 8 dígitos */
+export function numeroWhatsApp(telefono: string): string {
+  const soloDigitos = telefono.replace(/\D/g, '')
+  return soloDigitos.length === 8 ? '53' + soloDigitos : soloDigitos
+}
+
+/** Importe escrito a mano: "14.400" y "14400" → 14400; "12,5" y "12.5" → 12.5; "1.440,50" → 1440.5 */
+export function leerNumero(texto: string): number {
+  const t = texto.trim().replace(/\s/g, '')
+  if (t.includes('.') && t.includes(',')) return Number(t.replace(/\./g, '').replace(',', '.'))
+  if (/^\d{1,3}(\.\d{3})+$/.test(t)) return Number(t.replace(/\./g, ''))   // punto de miles
+  return Number(t.replace(',', '.'))
+}
+
 /** Descripción de un servicio apta para mostrar ("Por definir" es texto de relleno inicial) */
 export function descripcionServicio(texto: string | null | undefined): string | null {
   const t = texto?.trim()

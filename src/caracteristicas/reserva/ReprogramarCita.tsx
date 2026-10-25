@@ -5,13 +5,12 @@ import type { CitaDetalle } from '../../lib/tipos'
 import { PasoFecha, PasoHora } from './Pasos'
 import { Boton, Tarjeta, Aviso } from '../../componentes/ui'
 import { IconoWhatsApp, IconoCheck } from '../../componentes/iconos'
-import { fechaLarga, hora } from '../../lib/formato'
+import { fechaLarga, hora, numeroWhatsApp } from '../../lib/formato'
 import { mensajeDeError, codigoDeError } from '../../lib/errores'
 
 function enlaceAvisoCambio(c: CitaDetalle, anterior: string, nuevo: string): string | null {
   if (!c.negocio.whatsapp) return null
-  const digitos = c.negocio.whatsapp.replace(/\D/g, '')
-  const numero = digitos.length === 8 ? '53' + digitos : digitos
+  const numero = numeroWhatsApp(c.negocio.whatsapp)
   const mensaje = `Hola Lynn! Cambié la fecha de mi cita 💅
 
 👤 ${c.cliente.nombre}

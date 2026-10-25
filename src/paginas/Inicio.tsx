@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { obtenerNegocio, obtenerServicios } from '../lib/api'
 import { Etiqueta, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
 import { IconoReloj, IconoUbicacion, IconoFlecha, IconoWhatsApp, IconoCalendario } from '../componentes/iconos'
-import { dinero, duracion, descripcionServicio } from '../lib/formato'
+import { dinero, duracion, descripcionServicio, numeroWhatsApp } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
 import { useHorarioPublico } from '../lib/useHorarioPublico'
 import BotonTema from '../componentes/BotonTema'
@@ -176,7 +176,7 @@ export default function Inicio() {
             </p>
             <div className="mt-5 space-y-2.5 relative">
               {n.phone_whatsapp && (
-                <a href={`https://wa.me/53${n.phone_whatsapp}`} target="_blank" rel="noreferrer"
+                <a href={`https://wa.me/${numeroWhatsApp(n.phone_whatsapp)}`} target="_blank" rel="noreferrer"
                    className="min-h-[52px] w-full rounded-full bg-whatsapp text-white font-semibold
                               inline-flex items-center justify-center gap-2 active:scale-[0.98] transition">
                   <IconoWhatsApp tam={20} /> Escribir por WhatsApp
