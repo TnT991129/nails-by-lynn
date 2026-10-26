@@ -108,7 +108,8 @@ export default function Inicio() {
       <section className="px-4 mt-12">
         <Etiqueta>{t('inicio.servicios_etiqueta')}</Etiqueta>
         <div className="flex items-end justify-between gap-3 mt-2 mb-5">
-          <h2 className="text-[28px] leading-tight">{t('inicio.servicios_titulo')}</h2>
+          {/* Título solo si Lynn escribe uno en «Textos de la web» */}
+          {t('inicio.servicios_titulo') ? <h2 className="text-[28px] leading-tight">{t('inicio.servicios_titulo')}</h2> : <span />}
           <span className="text-[13px] text-tinta-tenue pb-1">{t('inicio.servicios_ayuda')}</span>
         </div>
 

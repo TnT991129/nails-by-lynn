@@ -18,7 +18,7 @@ export const TEXTOS = {
   'inicio.horario_texto':   { grupo: 'Inicio', etiqueta: 'Recuadro de horario (si no hay turnos)', defecto: 'Con cita previa' },
   'inicio.ubicacion_texto': { grupo: 'Inicio', etiqueta: 'Recuadro de ubicación (debajo del lugar)', defecto: 'Cita previa' },
   'inicio.servicios_etiqueta': { grupo: 'Inicio', etiqueta: 'Servicios: etiqueta', defecto: 'Servicios' },
-  'inicio.servicios_titulo':   { grupo: 'Inicio', etiqueta: 'Servicios: título', defecto: 'Elige tu estilo' },
+  'inicio.servicios_titulo':   { grupo: 'Inicio', etiqueta: 'Servicios: título (vacío = no sale ninguno)', defecto: '' },
   'inicio.servicios_ayuda':    { grupo: 'Inicio', etiqueta: 'Servicios: ayuda', defecto: 'Toca para reservar' },
   'inicio.sin_servicios':      { grupo: 'Inicio', etiqueta: 'Si no hay servicios activos', defecto: 'Estoy actualizando mis servicios. Escríbeme por WhatsApp para reservar.', largo: true },
   'inicio.resenas_etiqueta':   { grupo: 'Inicio', etiqueta: 'Opiniones: etiqueta', defecto: 'Opiniones' },
