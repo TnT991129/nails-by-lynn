@@ -60,7 +60,16 @@ const MENSAJES: Record<string, string> = {
   SUBIDA_SIN_PERMISO:    'Supabase no deja subir fotos con esta cuenta. Sal del panel, vuelve a entrar y prueba otra vez.',
   FOTO_DEMASIADO_GRANDE: 'La foto pesa demasiado. Prueba con otra o haz una captura de pantalla de ella.',
   TIPO_NO_ADMITIDO:      'Ese tipo de archivo no se admite. Sube una foto JPG, PNG o WebP.',
+  SIN_CONEXION_FOTO:     'No hay conexión suficiente para subir la foto. Revisa los datos o el wifi y vuelve a intentarlo.',
+  SUBIDA_FALLIDA:        'La foto no se pudo subir.',
   FALTA_BUCKET:          'Falta el espacio de fotos «galeria» en Supabase (Storage).',
+}
+
+/** Mensaje de un fallo al subir una foto: el claro para Lynn y, debajo, en qué paso falló y por qué */
+export function mensajeDeErrorSubida(e: unknown): string {
+  const { paso, detalle } = (e ?? {}) as { paso?: string; detalle?: string }
+  if (!paso) return mensajeDeErrorConDetalle(e)
+  return `${mensajeDeError(e)} (Falló al ${paso}${detalle ? `: ${detalle}` : ''})`
 }
 
 /** Igual que mensajeDeError, pero si el error es desconocido añade el detalle técnico (para el panel) */

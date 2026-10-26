@@ -4,7 +4,7 @@ import type { Servicio, Addon, Negocio, CitaCreada, CitaDetalle, ItemReserva, Po
 export async function obtenerNegocio(): Promise<Negocio> {
   // Solo las columnas públicas: la dirección exacta y las coordenadas no se pueden leer sin sesión
   const filas = await seleccionar<Negocio>('businesses', {
-    select: 'id,name,tagline,description,phone_whatsapp,instagram_url,location_label,timezone,'
+    select: 'id,name,tagline,description,hero_image_url,phone_whatsapp,instagram_url,location_label,timezone,'
           + 'default_currency,is_accepting_bookings,closed_message',
     filtros: { id: `eq.${NEGOCIO_ID}` }, limite: 1,
   })

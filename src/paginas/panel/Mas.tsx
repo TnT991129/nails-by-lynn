@@ -15,6 +15,7 @@ const ITEMS: { a: string; titulo: string; desc: string; icono: ReactNode }[] = [
   { a: '/panel/horarios',     titulo: 'Horarios',        desc: 'Semana, vacaciones y bloqueos',      icono: <IconoCalendario /> },
   { a: '/panel/espera',       titulo: 'Lista de espera', desc: 'Clientas esperando un turno libre',  icono: <IconoReloj /> },
   { a: '/panel/opiniones',    titulo: 'Opiniones',       desc: 'Valoraciones y cuáles salen en la web', icono: <IconoCheck /> },
+  { a: '/panel/portada',      titulo: 'Portada de la web', desc: 'La foto grande de arriba de la web', icono: <IconoGaleria /> },
   { a: '/panel/textos',       titulo: 'Textos de la web', desc: 'Cambia lo que leen las clientas', icono: <IconoInicio /> },
   { a: '/panel/politicas',    titulo: 'Políticas',       desc: 'Reglas y textos que ven las clientas', icono: <IconoMas /> },
   { a: '/panel/respaldo',     titulo: 'Respaldo',        desc: 'Descargar copia de tus datos',       icono: <IconoDescarga /> },

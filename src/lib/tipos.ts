@@ -25,6 +25,7 @@ export type Negocio = {
   id: string
   name: string
   tagline: string | null
+  hero_image_url: string | null   // foto de portada que pone Lynn (null = la de siempre)
   description: string | null
   phone_whatsapp: string | null
   instagram_url: string | null

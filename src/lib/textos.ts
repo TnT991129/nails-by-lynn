@@ -11,7 +11,7 @@ type DefTexto = { grupo: string; etiqueta: string; defecto: string; largo?: bool
 export const TEXTOS = {
   // ---------- Inicio ----------
   'inicio.etiqueta':        { grupo: 'Inicio', etiqueta: 'Etiqueta sobre la foto', defecto: 'Estudio de uñas · {ubicacion}', variables: '{ubicacion}' },
-  'inicio.titulo':          { grupo: 'Inicio', etiqueta: 'Frase grande sobre la foto', defecto: 'Uñas que hablan por ti' },
+  'inicio.titulo':          { grupo: 'Inicio', etiqueta: 'Frase grande sobre la foto (vacía = no sale ninguna)', defecto: '' },
   'inicio.boton_reservar':  { grupo: 'Inicio', etiqueta: 'Botón de reservar', defecto: 'Reservar cita' },
   'inicio.cerrado':         { grupo: 'Inicio', etiqueta: 'Aviso cuando no tomas reservas', defecto: 'Ahora mismo no estamos tomando reservas.', largo: true },
   'inicio.horario_titulo':  { grupo: 'Inicio', etiqueta: 'Recuadro de horario (si no hay días)', defecto: 'Horario' },

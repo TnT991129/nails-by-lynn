@@ -95,6 +95,7 @@ en este orden:
 10. `fotos_permisos.sql`
 11. `avisos_lynn.sql` (y la Edge Function de abajo)
 12. `avisos_direccion.sql` (la función quedó en la dirección `super-handler`)
+13. `fotos_diagnostico.sql` (permisos de fotos, registro de errores de subida y `diagnostico_fotos()`)
 
 ### Avisos al móvil de Lynn (Web Push)
 

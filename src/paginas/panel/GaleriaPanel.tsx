@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  listarFotosPanel, subirImagen, crearFoto, actualizarFoto, eliminarFoto,
+  listarFotosPanel, subirImagen, crearFoto, actualizarFoto, eliminarFoto, registrarErrorSubida,
   catalogoServicios, guardarOrden, type FotoPanel,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Aviso, Esqueleto, Etiqueta } from '../../componentes/ui'
-import { mensajeDeError, mensajeDeErrorConDetalle } from '../../lib/errores'
+import { mensajeDeError, mensajeDeErrorConDetalle, mensajeDeErrorSubida } from '../../lib/errores'
 import { Volver } from './comunes'
 import ListaOrdenable from './ListaOrdenable'
 
@@ -69,7 +69,8 @@ export default function GaleriaPanel() {
       setPrevia(null); setCaption(''); setServicioId(''); setTieneConsentimiento(false)
       qc.invalidateQueries({ queryKey: ['fotos-panel'] })
     } catch (e) {
-      setError(mensajeDeErrorConDetalle(e))
+      setError(mensajeDeErrorSubida(e))
+      registrarErrorSubida('galeria', e, archivo)
     } finally {
       setSubiendo(false)
     }

@@ -1,6 +1,7 @@
 import { sb, NEGOCIO_ID } from './supabase-panel'
 import { fechaISO, instanteEnHabana } from '../formato'
 import { reducirImagen } from './imagen'
+import { idAleatorio } from '../almacenamiento'
 
 export type CitaAgenda = {
   id: string; code: string; starts_at: string; ends_at: string; blocked_until: string
@@ -106,7 +107,7 @@ export async function crearCitaManual(args: {
 }) {
   const { data, error } = await sb.rpc('crear_cita', {
     p_business_id: NEGOCIO_ID,
-    p_session_token: 'manual-' + crypto.randomUUID(),
+    p_session_token: 'manual-' + idAleatorio(),
     p_inicio: args.inicio,
     p_items: args.items,
     p_nombre: args.nombre,
@@ -598,33 +599,72 @@ export type FotoPanel = {
   sort_order: number; created_at: string;
 }
 
+/** Error al subir una foto: el código da el mensaje para Lynn; paso y detalle dicen qué falló exactamente */
+export class ErrorSubida extends Error {
+  constructor(codigo: string, public paso: string, public detalle: string) { super(codigo) }
+}
+
+const textoDeError = (e: unknown) =>
+  `${(e as { message?: string })?.message ?? String(e)} ${(e as { statusCode?: string })?.statusCode ?? ''}`.trim()
+
 // Subir un archivo al bucket 'galeria' y devolver su URL pública.
 // Antes se reduce en el móvil (maxLado px, WebP) para ahorrar datos al subir y al ver.
 export async function subirImagen(original: File, maxLado = 1600): Promise<{ url: string; path: string }> {
-  const archivo = await reducirImagen(original, maxLado)
+  let archivo: File
+  try {
+    archivo = await reducirImagen(original, maxLado)
+  } catch (e) {
+    const m = textoDeError(e)
+    throw new ErrorSubida(/fetch|network|import/i.test(m) ? 'SIN_CONEXION_FOTO' : 'IMAGEN_INVALIDA', 'preparar la foto', m)
+  }
   const ext = archivo.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-  const nombre = `${crypto.randomUUID()}.${ext}`
-  const path = `${NEGOCIO_ID}/${nombre}`
+  const path = `${NEGOCIO_ID}/${idAleatorio()}.${ext}`
 
-  const subida = sb.storage.from('galeria').upload(path, archivo, {
-    cacheControl: '31536000',
-    upsert: false,
-    contentType: archivo.type || 'image/jpeg',
-  })
   // Con la conexión de Cuba una subida puede quedarse colgada: se avisa en vez de girar para siempre
-  const limite = new Promise<never>((_, rechazar) => setTimeout(() => rechazar(new Error('SUBIDA_LENTA')), 120_000))
-  const { error } = await Promise.race([subida, limite])
+  let reloj: ReturnType<typeof setTimeout> | undefined
+  const limite = new Promise<never>((_, rechazar) => { reloj = setTimeout(() => rechazar(new Error('SUBIDA_LENTA')), 120_000) })
+  let error: unknown
+  try {
+    ({ error } = await Promise.race([
+      sb.storage.from('galeria').upload(path, archivo, {
+        cacheControl: '31536000', upsert: false, contentType: archivo.type || 'image/jpeg',
+      }),
+      limite,
+    ]))
+  } catch (e) {
+    error = e
+  } finally {
+    clearTimeout(reloj)
+  }
   if (error) {
-    const m = `${(error as { message?: string }).message ?? ''} ${(error as { statusCode?: string }).statusCode ?? ''}`
-    if (/row-level security|unauthorized|403/i.test(m)) throw new Error('SUBIDA_SIN_PERMISO')
-    if (/exceeded|too large|413/i.test(m)) throw new Error('FOTO_DEMASIADO_GRANDE')
-    if (/mime|content.?type/i.test(m)) throw new Error('TIPO_NO_ADMITIDO')
-    if (/bucket not found/i.test(m)) throw new Error('FALTA_BUCKET')
-    throw error
+    const m = textoDeError(error)
+    const codigo = /SUBIDA_LENTA/.test(m) ? 'SUBIDA_LENTA'
+      : /row-level security|unauthorized|403/i.test(m) ? 'SUBIDA_SIN_PERMISO'
+      : /exceeded|too large|413/i.test(m) ? 'FOTO_DEMASIADO_GRANDE'
+      : /mime|content.?type|415/i.test(m) ? 'TIPO_NO_ADMITIDO'
+      : /bucket not found/i.test(m) ? 'FALTA_BUCKET'
+      : /fetch|network/i.test(m) ? 'SIN_CONEXION_FOTO'
+      : 'SUBIDA_FALLIDA'
+    throw new ErrorSubida(codigo, `subir a Supabase (${archivo.type || 'sin tipo'}, ${Math.round(archivo.size / 1024)} KB)`, m)
   }
 
   const { data } = sb.storage.from('galeria').getPublicUrl(path)
   return { url: data.publicUrl, path }
+}
+
+/** Deja constancia en Supabase de un fallo al subir una foto (para poder revisarlo luego); nunca falla */
+export function registrarErrorSubida(origen: string, e: unknown, archivo: File | null) {
+  const detalle = {
+    paso: e instanceof ErrorSubida ? e.paso : 'guardar la foto en la galería',
+    detalle: e instanceof ErrorSubida ? e.detalle : textoDeError(e),
+    tipo: archivo?.type || null,
+    kb: archivo ? Math.round(archivo.size / 1024) : null,
+    extension: archivo?.name.split('.').pop()?.toLowerCase() ?? null,
+    navegador: navigator.userAgent.slice(0, 250),
+  }
+  sb.rpc('registrar_error_panel', {
+    p_origen: origen, p_mensaje: textoDeError(e).slice(0, 500), p_detalle: detalle,
+  }).then(() => {}, () => {})
 }
 
 // Registrar la foto en la tabla
@@ -693,6 +733,24 @@ export async function cambiarFotoServicio(servicio: ServicioEdit, archivo: File 
   if (archivo) url = (await subirImagen(archivo, 900)).url
   await actualizarServicio(servicio.id, { cover_image_url: url })
   if (servicio.cover_image_url) await borrarArchivoGaleria(servicio.cover_image_url).catch(() => {})
+  return url
+}
+
+// ================== FOTO DE PORTADA DE LA WEB ==================
+// businesses.hero_image_url: null = la foto de siempre (la que viene con la web)
+export async function obtenerPortada(): Promise<string | null> {
+  const { data, error } = await sb.from('businesses').select('hero_image_url').eq('id', NEGOCIO_ID).single()
+  if (error) throw error
+  return (data?.hero_image_url as string | null) ?? null
+}
+
+/** Sube la foto nueva (o null para volver a la de siempre) y borra la anterior que puso Lynn */
+export async function cambiarPortada(archivo: File | null): Promise<string | null> {
+  const anterior = await obtenerPortada()
+  const url = archivo ? (await subirImagen(archivo, 1800)).url : null
+  const { error } = await sb.from('businesses').update({ hero_image_url: url }).eq('id', NEGOCIO_ID)
+  if (error) throw error
+  if (anterior) await borrarArchivoGaleria(anterior).catch(() => {})
   return url
 }
 

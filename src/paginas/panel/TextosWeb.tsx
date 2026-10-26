@@ -109,9 +109,9 @@ export default function TextosWeb() {
                         </span>
                         {d.largo
                           ? <textarea value={valor} onChange={e => cambiar(c, e.target.value)} rows={3}
-                              placeholder={d.defecto} className={campo} />
+                              placeholder={d.defecto || 'Vacío: no se muestra nada'} className={campo} />
                           : <input value={valor} onChange={e => cambiar(c, e.target.value)}
-                              placeholder={d.defecto} className={`${campo} min-h-[44px]`} />}
+                              placeholder={d.defecto || 'Vacío: no se muestra nada'} className={`${campo} min-h-[44px]`} />}
                         {d.variables && (
                           <span className="block text-[12px] text-tinta-tenue mt-1">
                             Puedes usar {d.variables}: se cambia solo por el dato real.

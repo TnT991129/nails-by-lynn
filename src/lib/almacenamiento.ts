@@ -39,6 +39,11 @@ export function olvidarToken(token: string) {
   escribir(CLAVE_CITAS, tokensGuardados().filter(t => t !== token))
 }
 
+/** Identificador único (32 caracteres). crypto.randomUUID no existe en iOS < 15.4 ni Chrome < 92 */
+export function idAleatorio(): string {
+  return aleatorio()
+}
+
 function aleatorio(): string {
   const b = new Uint8Array(16)
   crypto.getRandomValues(b)

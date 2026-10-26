@@ -43,14 +43,23 @@ export default function Inicio() {
       {/* HERO */}
       <section className="px-4">
         <div className="relative overflow-hidden rounded-xl shadow-lg aspect-[4/5] sm:aspect-[16/10]">
-          {/* En móvil, recorte vertical ya encuadrado (32 KB); en pantallas anchas, la foto completa */}
-          <picture>
-            <source media="(min-width: 640px)" srcSet={`${BASE}hero-lynn.webp`} type="image/webp" />
-            <source srcSet={`${BASE}hero-lynn-movil.webp`} type="image/webp" />
-            <img src={`${BASE}hero-lynn.jpg`} alt="Lynn en su estudio de uñas"
-                 className="absolute inset-0 w-full h-full object-cover object-[60%_center]"
-                 {...{ fetchpriority: 'high' }} />{/* React 18 solo pasa el atributo en minúsculas */}
-          </picture>
+          {/* La foto que Lynn pone en el panel (Más → Portada de la web) o, si no hay, la de siempre */}
+          {qNegocio.isLoading ? (
+            <div className="absolute inset-0 bg-rosa-100 animate-pulso" />
+          ) : n?.hero_image_url ? (
+            <img src={n.hero_image_url} alt="Lynn en su estudio de uñas" crossOrigin="anonymous"
+                 className="absolute inset-0 w-full h-full object-cover"
+                 {...{ fetchpriority: 'high' }} />
+          ) : (
+            // En móvil, recorte vertical ya encuadrado (32 KB); en pantallas anchas, la foto completa
+            <picture>
+              <source media="(min-width: 640px)" srcSet={`${BASE}hero-lynn.webp`} type="image/webp" />
+              <source srcSet={`${BASE}hero-lynn-movil.webp`} type="image/webp" />
+              <img src={`${BASE}hero-lynn.jpg`} alt="Lynn en su estudio de uñas"
+                   className="absolute inset-0 w-full h-full object-cover object-[60%_center]"
+                   {...{ fetchpriority: 'high' }} />{/* React 18 solo pasa el atributo en minúsculas */}
+            </picture>
+          )}
           <div className="absolute inset-0"
                style={{ background:'linear-gradient(to bottom, rgba(43,23,33,0) 35%, rgba(43,23,33,.85) 100%)' }} />
           <div className="absolute inset-x-0 bottom-0 p-6 text-white">
@@ -58,11 +67,10 @@ export default function Inicio() {
                              bg-white/15 backdrop-blur px-3 py-1 rounded-full border border-white/25">
               {t('inicio.etiqueta', { ubicacion })}
             </span>
-            {qNegocio.isLoading
-              ? <Esqueleto className="h-9 w-56 mt-4 bg-white/30" />
-              : <h1 className="font-display text-[34px] leading-[1.1] mt-3">
-                  {t('inicio.titulo', {}, n?.tagline)}
-                </h1>}
+            {/* Frase sobre la foto solo si Lynn escribe una en «Textos de la web» */}
+            {t('inicio.titulo')
+              ? <h1 className="font-display text-[34px] leading-[1.1] mt-3">{t('inicio.titulo')}</h1>
+              : <h1 className="sr-only">Nails by Lynn</h1>}
             {!cerrado && (
               <Link to="/reservar" className={`${estiloBoton('primario', true)} mt-5`}>
                 {t('inicio.boton_reservar')} <IconoFlecha tam={18} />
