@@ -124,7 +124,7 @@ html[data-animaciones=suaves] .brillo::after { display: none; }
   }
   /* Línea de texto que sube desde una máscara */
   .linea-mascara { display: block; overflow: hidden; padding-bottom: .08em; }
-  .linea-mascara > * { display: block; animation: subir-linea .9s var(--ease-salida) both; animation-delay: var(--retraso, 0ms); }
+  .linea-mascara > * { display: block; animation: subir-linea .9s var(--ease-salida) backwards; animation-delay: var(--retraso, 0ms); }
 }
 
 /* Confeti de la reserva confirmada */
