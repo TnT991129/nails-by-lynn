@@ -99,6 +99,9 @@ también en modo oscuro.
 - `inspiracion_fidelidad_visitas.sql`: foto de inspiración (almacén privado `referencias`), tarjeta de
   fidelidad (sellos y premio automático al completar) y visitas anónimas para Estadísticas.
   Solo añade cosas; sin él, esas tres funciones no se ven y el resto de la web va igual.
+- `fidelidad_niveles.sql`: tarjeta con varios premios (p. ej. 5.ª cita 15 %, 10.ª 20 %) y, en la ficha de
+  cada clienta, sumar o quitar sellos y sacarla de la tarjeta. Añade `clients.loyalty_adjustment` y
+  `clients.loyalty_excluded` y redefine la función y el trigger de la tarjeta (vale con o sin el anterior).
 
 **Ajustes guardados junto a los textos.** `settings.site_texts` guarda, además de los textos, ajustes de la web
 en claves que empiezan por «_» (JSON): `_diseno` (Diseño de la web) y `_fidelidad` (Tarjeta de fidelidad).

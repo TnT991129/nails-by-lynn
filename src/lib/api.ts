@@ -187,6 +187,6 @@ export async function contarInspiracion(token: string): Promise<number | null> {
 }
 
 // ---------- Tarjeta de fidelidad ----------
-export async function tarjetaFidelidad(token: string): Promise<{ completadas: number; descuento_pendiente: number | null } | null> {
+export async function tarjetaFidelidad(token: string): Promise<{ completadas: number; fuera?: boolean; descuento_pendiente: number | null } | null> {
   try { return await rpc('tarjeta_fidelidad', { p_token: token }) } catch { return null }
 }

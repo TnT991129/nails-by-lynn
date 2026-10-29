@@ -23,6 +23,8 @@ export type Cliente = {
   // Descuento para su próxima cita (columnas de supabase/historial/turnos_descuentos_cambios.sql)
   next_discount_percent?: number | null; next_discount_note?: string | null
   allergies?: string | null; birthday?: string | null   // supabase/historial/mejoras.sql
+  // Tarjeta de fidelidad (supabase/fidelidad_niveles.sql): sellos sumados o quitados a mano y si no participa
+  loyalty_adjustment?: number; loyalty_excluded?: boolean
   last_appointment_at: string | null; first_seen_at: string
 }
 
@@ -1001,6 +1003,17 @@ export function quitarDescuento(id: string) {
   }).eq('id', id).select('id').single())
 }
 
+// ================== TARJETA DE FIDELIDAD DE UNA CLIENTA ==================
+/** Sellos de más (o de menos) que Lynn le pone a mano: se suman a sus citas completadas */
+export function ajustarSellos(id: string, ajuste: number) {
+  return ejecutar(sb.from('clients').update({ loyalty_adjustment: Math.round(ajuste) }).eq('id', id).select('id').single())
+}
+
+/** Sacar a una clienta de la tarjeta (o volver a meterla) */
+export function excluirDeFidelidad(id: string, fuera: boolean) {
+  return ejecutar(sb.from('clients').update({ loyalty_excluded: fuera }).eq('id', id).select('id').single())
+}
+
 // ================== ORDEN (arrastrar y soltar) ==================
 // sort_order = 10, 20, 30… según la posición; solo se actualizan las filas que cambian.
 // La web muestra servicios, complementos y fotos ordenados por sort_order.
@@ -1294,4 +1307,10 @@ export async function inspiracionDeCita(citaId: string): Promise<{ id: string; u
   if (error || !data?.length) return []   // sin el SQL o sin fotos
   const { data: firmadas } = await sb.storage.from('referencias').createSignedUrls(data.map(r => r.path), 3600)
   return data.map((r, i) => ({ id: r.id, url: firmadas?.[i]?.signedUrl ?? '' })).filter(r => r.url)
+}
+
+/** ¿Está ejecutado fidelidad_niveles.sql? (columnas nuevas de la tarjeta en las clientas) */
+export async function fidelidadInstalada(): Promise<boolean> {
+  const { error } = await sb.from('clients').select('loyalty_adjustment').limit(1)
+  return !(error && /loyalty_/.test(error.message))
 }

@@ -8,6 +8,7 @@ import { fechaLarga, hora, dinero, importe } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver, ListaServicios } from './comunes'
 import DescuentoClienta from './DescuentoClienta'
+import FidelidadClienta from './FidelidadClienta'
 import AvisoAlergias from './AvisoAlergias'
 import FotosTrabajo from './FotosTrabajo'
 
@@ -141,6 +142,7 @@ export default function FichaClienta() {
       )}
 
       <DescuentoClienta clienta={c} proxima={proxima} />
+      <FidelidadClienta clienta={c} />
 
       <FotosTrabajo clientId={c.id} />
 
