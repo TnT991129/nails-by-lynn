@@ -27,12 +27,20 @@
     <meta name="apple-mobile-web-app-title" content="Nails by Lynn" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="manifest" href="/manifest.json" />
-    <!-- Tema claro/oscuro antes de pintar (evita el destello blanco). Ver src/lib/tema.ts -->
+    <!-- Diseño de Lynn y tema claro/oscuro antes de pintar (sin destellos). Ver src/lib/diseno.ts y tema.ts -->
     <script>
       try {
+        var r = document.documentElement
+        var css = localStorage.getItem('nbl.diseno.css')
+        if (css) { var e = document.createElement('style'); e.id = 'nbl-diseno'; e.textContent = css; document.head.appendChild(e) }
+        var a = JSON.parse(localStorage.getItem('nbl.diseno.attrs') || '{}')
+        if (a.fondo) r.dataset.fondo = a.fondo
+        if (a.animaciones) r.dataset.animaciones = a.animaciones
+        if (a.tema) r.dataset.temaDiseno = a.tema
         var t = localStorage.getItem('nbl.tema')
-        if (t === 'oscuro' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches))
-          document.documentElement.classList.add('oscuro')
+        if (t === 'oscuro' || (!t && (a.tema === 'oscuro'
+            || (a.tema !== 'claro' && window.matchMedia('(prefers-color-scheme: dark)').matches))))
+          r.classList.add('oscuro')
       } catch (e) {}
     </script>
   </head>

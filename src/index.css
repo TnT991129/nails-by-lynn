@@ -18,6 +18,11 @@
   --exito: 15 122 90;  --aviso: 184 117 20;  --error: 196 52 47;
   --exito-fondo: 230 244 239; --aviso-fondo: 253 243 227; --error-fondo: 251 234 234;
   --wa-fondo: 233 251 240; --wa-texto: 18 140 74;
+  /* Tonos fijos (iguales en claro y oscuro), esquinas y tipografías: Lynn los cambia en Diseño de la web */
+  --vino: 168 14 82; --acento-claro: 251 162 208;
+  --radio-sm: 8px; --radio: 12px; --radio-lg: 20px; --radio-xl: 28px; --radio-boton: 9999px;
+  --fuente-titulos: "Playfair Display", Didot, "Bodoni 72", Georgia, "Noto Serif", serif;
+  --fuente-texto: Inter, system-ui, sans-serif;
 }
 html.oscuro {
   color-scheme: dark;
@@ -43,6 +48,21 @@ html.oscuro {
       radial-gradient(34rem 30rem at -12% 34rem, rgb(var(--rosa-50) / .9), transparent 65%);
     background-repeat: no-repeat;
   }
+  /* Fondo que elige Lynn */
+  html[data-fondo=liso] #root { background-image: none; }
+  html[data-fondo=puntos] #root {
+    background-image:
+      radial-gradient(rgb(var(--rosa-300) / .35) 1px, transparent 1.6px),
+      radial-gradient(60rem 26rem at 110% -6rem, rgb(var(--rosa-100) / .75), transparent 62%);
+    background-size: 20px 20px, auto; background-repeat: repeat, no-repeat;
+  }
+  html[data-fondo=brillos] #root {
+    background-image:
+      radial-gradient(30rem 22rem at 105% -4rem, rgb(var(--rosa-200) / .8), transparent 62%),
+      radial-gradient(26rem 24rem at -10% 30rem, rgb(var(--rosa-100) / .95), transparent 65%),
+      radial-gradient(24rem 20rem at 110% 70rem, rgb(var(--rosa-200) / .55), transparent 65%),
+      radial-gradient(28rem 22rem at -8% 110rem, rgb(var(--rosa-100) / .8), transparent 65%);
+  }
   h1,h2 { @apply font-display tracking-[-0.01em]; }
   /* Campos sin fondo propio: el del tema (en oscuro el navegador los pintaría de gris) */
   textarea, select, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]) {
@@ -54,6 +74,15 @@ html.oscuro {
   *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important;
                          transition-duration:.01ms !important; scroll-behavior:auto !important; }
 }
+/* Animaciones que elige Lynn: «ninguna» deja todo quieto; «suaves» quita lo que se mueve sin parar */
+html[data-animaciones=ninguna] *, html[data-animaciones=ninguna] *::before, html[data-animaciones=ninguna] *::after {
+  animation: none !important; transition: none !important;
+}
+html[data-animaciones=suaves] :is(.animate-deriva, .animate-centelleo, .animate-flotar, .cinta-pista, .aurora, .resenas-pista),
+html[data-animaciones=suaves] :is(.brillo, .onda)::before, html[data-animaciones=suaves] :is(.brillo, .onda)::after {
+  animation: none !important;
+}
+html[data-animaciones=suaves] .brillo::after { display: none; }
 
 /* ---------- Movimiento (src/componentes/Movimiento.tsx) ---------- */
 :root { --ease-salida: cubic-bezier(.22, 1, .36, 1); --ease-rebote: cubic-bezier(.34, 1.56, .64, 1); }
@@ -121,3 +150,75 @@ html.oscuro {
   .sin-scrollbar { scrollbar-width: none; }
   .sin-scrollbar::-webkit-scrollbar { display: none; }
 }
+
+
+/* ---------- Efectos del rediseño ---------- */
+
+/* Cinta con los servicios que pasa sin parar (el contenido va dos veces para que no haya salto) */
+.cinta-pista { display: flex; width: max-content; animation: cinta 32s linear infinite; }
+.cinta:hover .cinta-pista, .resenas:hover .resenas-pista { animation-play-state: paused; }
+.resenas-pista { display: flex; width: max-content; animation: cinta 55s linear infinite; }
+@keyframes cinta { to { transform: translate3d(-50%, 0, 0); } }
+
+/* Aurora: luces de color que se mueven despacio sobre la portada */
+.aurora {
+  position: absolute; inset: -35%; pointer-events: none; mix-blend-mode: soft-light;
+  background:
+    radial-gradient(28% 34% at 22% 30%, rgb(var(--rosa-400) / .9), transparent 70%),
+    radial-gradient(24% 30% at 78% 24%, rgb(var(--acento-claro) / .8), transparent 70%),
+    radial-gradient(32% 36% at 62% 78%, rgb(var(--vino) / .9), transparent 70%);
+  animation: aurora 18s ease-in-out infinite alternate;
+}
+@keyframes aurora {
+  0% { transform: translate3d(-4%, -3%, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(5%, 4%, 0) rotate(25deg) scale(1.12); }
+  100% { transform: translate3d(-3%, 6%, 0) rotate(-15deg) scale(1.05); }
+}
+
+/* Onda al tocar (la crea Movimiento.tsx en los elementos con .toque) */
+.toque { position: relative; overflow: hidden; isolation: isolate; }
+.ondita {
+  position: absolute; border-radius: 9999px; pointer-events: none; z-index: 0;
+  background: currentColor; opacity: .22; transform: scale(0); animation: ondita .65s var(--ease-salida) forwards;
+}
+@keyframes ondita { to { transform: scale(1); opacity: 0; } }
+
+/* Tarjeta viva: se inclina hacia el dedo o el ratón y una luz la sigue (useInclinacion) */
+.viva {
+  position: relative; transform-style: preserve-3d;
+  transform: perspective(900px) translate3d(0, var(--levanta, 0px), 0) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .5s var(--ease-salida), box-shadow .3s, border-color .3s;
+}
+.viva::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--rosa-300) / .28), transparent 60%);
+  opacity: var(--luz, 0); transition: opacity .35s;
+}
+@media (hover: hover) { .viva:hover { --levanta: -4px; } }
+
+/* Subrayado a mano que se dibuja al aparecer el título */
+.subrayado path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.visible .subrayado path, .subrayado.visible path { animation: trazo-linea 1.1s .35s var(--ease-salida) forwards; }
+@keyframes trazo-linea { to { stroke-dashoffset: 0; } }
+
+/* Letras que entran una a una */
+.letra { display: inline-block; white-space: pre; animation: letra .8s var(--ease-rebote) both;
+         animation-delay: calc(var(--i) * 32ms + var(--retraso, 250ms)); }
+@keyframes letra { from { opacity: 0; transform: translate3d(0, .55em, 0) rotate(7deg); } }
+
+/* Barra de lectura arriba de la página */
+.progreso-lectura {
+  position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 60; transform-origin: left; transform: scaleX(0);
+  background: linear-gradient(90deg, rgb(var(--rosa-400)), rgb(var(--rosa-600)), rgb(var(--vino)));
+  pointer-events: none;
+}
+
+/* Fotos que se descubren con una cortina. Se recorta el contenido, no el contenedor: Chrome da por
+   invisible un elemento recortado entero y el IntersectionObserver nunca lo descubriría */
+.anima [data-revelar=cortina] > * { transition: clip-path 1.1s var(--ease-salida); transition-delay: var(--retraso, 0ms); }
+.anima [data-revelar=cortina]:not(.visible) > * { clip-path: inset(0 0 100% 0); }
+
+/* Ilustración del esmalte (estados vacíos) */
+.esmalte-gota { animation: gota 2.6s ease-in infinite; transform-origin: center top; }
+@keyframes gota { 0%, 55% { transform: translateY(0) scale(1, 1); opacity: 0; } 60% { opacity: 1; }
+                  85% { transform: translateY(16px) scale(.8, 1.15); opacity: 1; } 100% { transform: translateY(22px); opacity: 0; } }

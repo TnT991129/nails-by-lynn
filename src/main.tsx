@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Inicio from './paginas/Inicio'
 import Navegacion from './componentes/Navegacion'
 import LimiteErrores, { recargarPorVersionNueva } from './componentes/LimiteErrores'
+import { BarraProgreso } from './componentes/Movimiento'
+import { useAplicarDiseno } from './lib/diseno'
 
 // Páginas públicas: se descargan en segundo plano tras abrir la web para que funcionen sin conexión
 const PAGINAS_PUBLICAS = {
@@ -60,8 +62,10 @@ window.addEventListener('vite:preloadError', e => {
 
 function Rutas() {
   const { pathname } = useLocation()
+  useAplicarDiseno()   // colores, letras y formas que eligió Lynn (Panel → Diseño de la web)
   return (
     <LimiteErrores ruta={pathname}>
+      <BarraProgreso />
       <Suspense fallback={<Cargando />}>
         {/* Cada página entra con un fundido; el panel cuenta como una sola para no perder su estado */}
         <div key={pathname.startsWith('/panel') ? '/panel' : pathname} className="animate-pagina">

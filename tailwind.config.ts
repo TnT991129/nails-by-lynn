@@ -17,7 +17,8 @@ export default {
         superficie: { blanco:v('papel'), base:v('fondo'), rosa:v('rosa-50') },
         papel: v('papel'),        // tarjetas y barras (blanco en claro)
         noche: v('noche'),        // bloques oscuros destacados (contacto, avisos)
-        vino: '#A80E52',          // final de los degradados de botón: igual en claro y oscuro (texto blanco legible)
+        vino: v('vino'),          // final de los degradados de botón: igual en claro y oscuro (texto blanco legible)
+        acento: v('acento-claro'), // rosa claro sobre fondos oscuros (contacto, portada)
         estado: {
           exito:v('exito'), aviso:v('aviso'), error:v('error'),
           'exito-fondo':v('exito-fondo'), 'aviso-fondo':v('aviso-fondo'), 'error-fondo':v('error-fondo'),
@@ -26,16 +27,19 @@ export default {
       },
       fontFamily: {
         // Sin fuentes descargadas: se usan las del propio móvil para no gastar datos
-        display: ['"Playfair Display"', 'Didot', '"Bodoni 72"', 'Georgia', '"Noto Serif"', 'serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        // Variables: Lynn elige la tipografía en Diseño de la web (src/lib/diseno.ts)
+        display: ['var(--fuente-titulos)'],
+        sans: ['var(--fuente-texto)'],
       },
-      borderRadius: { sm:'8px', DEFAULT:'12px', lg:'20px', xl:'28px' },
+      // Esquinas y botones según Diseño de la web
+      borderRadius: { sm:'var(--radio-sm)', DEFAULT:'var(--radio)', lg:'var(--radio-lg)', xl:'var(--radio-xl)', boton:'var(--radio-boton)' },
       boxShadow: {
         sm:'0 1px 3px rgba(43,23,33,.06)',
-        md:'0 4px 16px rgba(168,14,82,.08)',
-        lg:'0 12px 32px rgba(168,14,82,.10)',
-        suave:'0 1px 2px rgba(43,23,33,.04), 0 8px 24px -12px rgba(168,14,82,.14)',
-        boton:'0 10px 24px -10px rgba(214,21,111,.55)',
+        md:'0 4px 16px rgb(var(--vino) / .08)',
+        lg:'0 12px 32px rgb(var(--vino) / .10)',
+        suave:'0 1px 2px rgba(43,23,33,.04), 0 8px 24px -12px rgb(var(--vino) / .14)',
+        boton:'0 10px 24px -10px rgb(var(--rosa-600) / .55)',
+        brillo:'0 0 0 1px rgb(var(--rosa-200) / .6), 0 18px 40px -18px rgb(var(--rosa-600) / .45)',
         flota:'0 -8px 30px -12px rgba(43,23,33,.18)',
       },
       keyframes: {
@@ -53,6 +57,7 @@ export default {
         'paso-atras':    { '0%':{opacity:'0',transform:'translateX(-36px)'}, '100%':{opacity:'1',transform:'none'} },
         trazo:   { '0%':{transform:'scaleY(0)'}, '100%':{transform:'scaleY(1)'} },
         ampliar: { '0%':{opacity:'0',transform:'scale(.86)'}, '100%':{opacity:'1',transform:'none'} },
+        girar:   { '0%':{opacity:'0',transform:'perspective(600px) rotateX(-75deg) translateY(12px)'}, '100%':{opacity:'1',transform:'none'} },
       },
       animation: { entrada:'entrada .25s ease-out both', pulso:'pulso 1.6s ease-in-out infinite',
                    latido:'latido 1.8s ease-in-out infinite',
@@ -65,7 +70,8 @@ export default {
                    'paso-adelante':'paso-adelante .4s cubic-bezier(.22,1,.36,1) both',
                    'paso-atras':'paso-atras .4s cubic-bezier(.22,1,.36,1) both',
                    trazo:'trazo 1.2s cubic-bezier(.22,1,.36,1) both',
-                   ampliar:'ampliar .35s cubic-bezier(.22,1,.36,1) both' },
+                   ampliar:'ampliar .35s cubic-bezier(.22,1,.36,1) both',
+                   girar:'girar .6s cubic-bezier(.22,1,.36,1) backwards' },
     },
   },
 } satisfies Config

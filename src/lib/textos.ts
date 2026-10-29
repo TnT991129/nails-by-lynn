@@ -100,25 +100,25 @@ type Variables = Record<string, string | number | null | undefined>
 
 const CLAVE_LOCAL = 'nbl.textos'
 
-function leerLocal(): TextosGuardados | undefined {
+export function leerTextosLocales(): TextosGuardados | undefined {
   try { const v = localStorage.getItem(CLAVE_LOCAL); return v ? JSON.parse(v) : undefined } catch { return undefined }
 }
 
-async function obtenerTextos(): Promise<TextosGuardados> {
+export async function obtenerTextosGuardados(): Promise<TextosGuardados> {
   try {
     const r = await rpc<TextosGuardados | null>('obtener_textos', { p_business_id: NEGOCIO_ID })
     const textos = r && typeof r === 'object' ? r : {}
     try { localStorage.setItem(CLAVE_LOCAL, JSON.stringify(textos)) } catch { /* modo privado */ }
     return textos
   } catch {
-    return leerLocal() ?? {}   // sin conexión o sin el SQL: lo último visto o los textos de siempre
+    return leerTextosLocales() ?? {}   // sin conexión o sin el SQL: lo último visto o los textos de siempre
   }
 }
 
 /** t('inicio.titulo') → el texto de Lynn o el de siempre; t(clave, { turnos }) rellena {turnos} */
 export function useTextos() {
   // Lo último guardado en el móvil se ve al instante, sin parpadeo, mientras llega lo nuevo
-  const q = useQuery({ queryKey: ['textos'], queryFn: obtenerTextos, staleTime: 10 * 60_000, placeholderData: leerLocal })
+  const q = useQuery({ queryKey: ['textos'], queryFn: obtenerTextosGuardados, staleTime: 10 * 60_000, placeholderData: leerTextosLocales })
   const propios = q.data
   return useCallback((clave: ClaveTexto, vars: Variables = {}, defecto?: string | null) => {
     const base = propios?.[clave]?.trim() || defecto?.trim() || TEXTOS[clave].defecto

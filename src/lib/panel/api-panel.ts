@@ -2,6 +2,7 @@ import { sb, NEGOCIO_ID } from './supabase-panel'
 import { fechaISO, instanteEnHabana } from '../formato'
 import { reducirImagen } from './imagen'
 import { idAleatorio } from '../almacenamiento'
+import { CLAVE_DISENO, type Diseno } from '../diseno'
 
 export type CitaAgenda = {
   id: string; code: string; starts_at: string; ends_at: string; blocked_until: string
@@ -752,6 +753,32 @@ export async function cambiarPortada(archivo: File | null): Promise<string | nul
   if (error) throw error
   if (anterior) await borrarArchivoGaleria(anterior).catch(() => {})
   return url
+}
+
+// ================== LOGO DE LA WEB ==================
+// businesses.logo_url: null = el logo de siempre (el que viene con la web)
+export async function obtenerLogo(): Promise<string | null> {
+  const { data, error } = await sb.from('businesses').select('logo_url').eq('id', NEGOCIO_ID).single()
+  if (error) throw error
+  return (data?.logo_url as string | null) ?? null
+}
+
+/** Sube el logo nuevo (WebP conserva la transparencia) o null para volver al de siempre */
+export async function cambiarLogo(archivo: File | null): Promise<string | null> {
+  const anterior = await obtenerLogo()
+  const url = archivo ? (await subirImagen(archivo, 600)).url : null
+  const { error } = await sb.from('businesses').update({ logo_url: url }).eq('id', NEGOCIO_ID)
+  if (error) throw error
+  if (anterior) await borrarArchivoGaleria(anterior).catch(() => {})
+  return url
+}
+
+// ================== DISEÑO DE LA WEB ==================
+// Va dentro de settings.site_texts (clave CLAVE_DISENO de lib/diseno.ts) para no tocar la base de datos.
+// Se lee lo guardado justo antes para no pisar los textos que Lynn haya cambiado.
+export async function guardarDiseno(diseno: Diseno) {
+  const textos = await obtenerTextosPanel()
+  return guardarTextosPanel({ ...textos, [CLAVE_DISENO]: JSON.stringify(diseno) })
 }
 
 // ================== CREAR / ELIMINAR SERVICIOS ==================

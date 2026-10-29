@@ -57,8 +57,13 @@ function Marca({ activo }: { activo: boolean }) {
   )
 }
 
+/** Vibración cortita al elegir algo (solo en los móviles que la permiten) */
+export function vibrar() {
+  try { navigator.vibrate?.(8) } catch { /* sin vibración */ }
+}
+
 const opcion = (activo: boolean) =>
-  `w-full text-left p-4 rounded-xl border bg-papel transition duration-200 ease-out active:scale-[0.98]
+  `toque w-full text-left p-4 rounded-xl border bg-papel transition duration-200 ease-out active:scale-[0.98]
    ${activo ? 'border-rosa-600 ring-4 ring-rosa-100 shadow-md' : 'border-rosa-100 shadow-suave hover:border-rosa-300 hover:-translate-y-0.5'}`
 
 export function PasoServicio({
@@ -87,7 +92,7 @@ export function PasoServicio({
           const fotos = fotosPorServicio[s.id] ?? 0
           return (
             <div key={s.id}>
-            <button onClick={() => alternar(s.id)} aria-pressed={activo} className={opcion(activo)}>
+            <button onClick={() => { vibrar(); alternar(s.id) }} aria-pressed={activo} className={opcion(activo)}>
               <div className="flex items-start gap-3">
                 <Marca activo={activo} />
                 {s.cover_image_url && (
@@ -147,7 +152,7 @@ export function PasoExtras({
           {addons.map(a => {
             const activo = addonsElegidos.includes(a.id)
             return (
-              <button key={a.id} onClick={() => alternarAddon(a.id)} aria-pressed={activo} className={opcion(activo)}>
+              <button key={a.id} onClick={() => { vibrar(); alternarAddon(a.id) }} aria-pressed={activo} className={opcion(activo)}>
                 <div className="flex items-center gap-3">
                   <Marca activo={activo} />
                   <div className="flex-1">
@@ -265,15 +270,19 @@ export function PasoHora({
         </p>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {horas.map(h => {
+        {horas.map((h, i) => {
           const activo = inicio === h
           const manana = franja(h) === 'Mañana'
           return (
-            <button key={h} onClick={() => onElegir(h)} aria-pressed={activo}
-              className={`rounded-xl border p-4 text-left flex flex-col gap-3 min-h-[128px] transition active:scale-[0.98]
-                ${activo ? 'border-rosa-600 bg-rosa-600 text-white shadow-boton' : 'border-rosa-100 bg-papel shadow-suave'}`}>
-              <span className={`w-10 h-10 rounded-full flex items-center justify-center
-                                ${activo ? 'bg-white/20' : 'bg-rosa-50 text-rosa-600'}`}>
+            // Cada turno entra girando, uno detrás de otro
+            <button key={h} onClick={() => { vibrar(); onElegir(h) }} aria-pressed={activo}
+              style={{ animationDelay: `${i * 90}ms` }}
+              className={`toque animate-girar rounded-xl border p-4 text-left flex flex-col gap-3 min-h-[128px]
+                transition duration-300 active:scale-[0.97]
+                ${activo ? 'border-transparent bg-gradient-to-br from-rosa-500 to-vino text-white shadow-boton scale-[1.03]'
+                         : 'border-rosa-100 bg-papel shadow-suave hover:border-rosa-300 hover:-translate-y-0.5'}`}>
+              <span className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-500
+                                ${activo ? 'bg-white/20 rotate-[360deg]' : 'bg-rosa-50 text-rosa-600'}`}>
                 {manana ? <IconoSol tam={21} /> : <IconoTarde tam={21} />}
               </span>
               <span>

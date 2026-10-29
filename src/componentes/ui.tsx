@@ -1,5 +1,5 @@
-import type { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes } from 'react'
-import { IconoDestellos } from './iconos'
+import type { CSSProperties, ReactNode, ButtonHTMLAttributes, InputHTMLAttributes } from 'react'
+import { Revelar, Subrayado } from './Movimiento'
 
 type Variante = 'primario' | 'secundario' | 'fantasma' | 'peligro'
 
@@ -13,7 +13,7 @@ const ESTILOS: Record<Variante, string> = {
 /** Clases de botón, para usarlas también en <Link> y <a> sin anidar un <button> dentro */
 export function estiloBoton(variante: Variante = 'primario', ancho = false) {
   return [
-    'min-h-[52px] px-6 rounded-full font-semibold text-[16px] tracking-[0.01em]',
+    'toque min-h-[52px] px-6 rounded-boton font-semibold text-[16px] tracking-[0.01em]',
     'transition duration-200 ease-out active:scale-[0.97] active:translate-y-0',
     'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
     'disabled:hover:translate-y-0 disabled:hover:brightness-100 disabled:hover:shadow-none',
@@ -104,8 +104,8 @@ export function Campo({
   )
 }
 
-export function Esqueleto({ className = '' }: { className?: string }) {
-  return <div className={`reflejo rounded-lg ${className}`} />
+export function Esqueleto({ className = '', style }: { className?: string; style?: CSSProperties }) {
+  return <div className={`reflejo rounded-lg ${className}`} style={style} />
 }
 
 export function Vacio({
@@ -113,10 +113,7 @@ export function Vacio({
 }: { titulo: string; texto: string; children?: ReactNode }) {
   return (
     <div className="text-center py-12 px-6 animate-entrada">
-      <div className="w-16 h-16 rounded-full bg-rosa-50 border border-rosa-100 text-rosa-600
-                      flex items-center justify-center mx-auto mb-5 animate-flotar">
-        <IconoDestellos tam={28} />
-      </div>
+      <IlustracionEsmalte className="mx-auto mb-4" />
       <h3 className="font-display text-[22px] mb-2">{titulo}</h3>
       <p className="text-tinta-tenue mb-6 max-w-xs mx-auto text-[15px]">{texto}</p>
       {children}
@@ -129,4 +126,41 @@ export function Aviso({ tipo = 'error', children }: { tipo?: 'error' | 'aviso'; 
     ? 'bg-estado-error-fondo text-estado-error border-estado-error/20'
     : 'bg-estado-aviso-fondo text-estado-aviso border-estado-aviso/20'
   return <div role="alert" className={`rounded-lg border p-4 text-[14px] animate-entrada ${c}`}>{children}</div>
+}
+
+/** Frasco de esmalte con una gota que cae y destellos (estados vacíos) */
+export function IlustracionEsmalte({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 96 110" width={96} height={110} aria-hidden className={`animate-flotar ${className}`}>
+      <defs>
+        <linearGradient id="esmalte-cuerpo" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="rgb(var(--rosa-400))" /><stop offset="1" stopColor="rgb(var(--vino))" />
+        </linearGradient>
+      </defs>
+      <ellipse cx="48" cy="104" rx="26" ry="4" fill="rgb(var(--rosa-200) / .7)" />
+      <rect x="38" y="6" width="20" height="30" rx="5" fill="rgb(var(--noche))" />
+      <rect x="42" y="10" width="4" height="22" rx="2" fill="#fff" opacity=".18" />
+      <rect x="22" y="34" width="52" height="64" rx="16" fill="url(#esmalte-cuerpo)" />
+      <rect x="30" y="44" width="8" height="38" rx="4" fill="#fff" opacity=".35" />
+      <circle className="esmalte-gota" cx="84" cy="62" r="4" fill="rgb(var(--rosa-500))" />
+      <path className="animate-centelleo" d="M14 20l2.2 5 5 2.2-5 2.2-2.2 5-2.2-5-5-2.2 5-2.2z" fill="rgb(var(--rosa-400))" />
+      <path className="animate-centelleo" style={{ animationDelay: '1.1s' }} d="M80 12l1.6 3.6 3.6 1.6-3.6 1.6L80 22.4l-1.6-3.6-3.6-1.6 3.6-1.6z" fill="rgb(var(--rosa-300))" />
+    </svg>
+  )
+}
+
+/** Etiqueta + título de sección con un trazo a mano que se dibuja al aparecer */
+export function TituloSeccion({ etiqueta, titulo, extra, className = '' }: {
+  etiqueta: string; titulo?: string; extra?: ReactNode; className?: string
+}) {
+  return (
+    <Revelar className={className}>
+      <Etiqueta>{etiqueta}</Etiqueta>
+      <div className="flex items-end justify-between gap-3 mt-1.5">
+        {titulo ? <h2 className="text-[30px] leading-[1.1]">{titulo}</h2> : <span />}
+        {extra}
+      </div>
+      <Subrayado className="text-rosa-400 mt-1.5" />
+    </Revelar>
+  )
 }

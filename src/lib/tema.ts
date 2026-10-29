@@ -21,7 +21,11 @@ export function useTema() {
   // Si la persona no eligió, acompañar los cambios del móvil (p. ej. modo oscuro automático de noche)
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const alCambiar = () => { if (!guardado()) { aplicar(mq.matches); setOscuro(mq.matches) } }
+    // (solo si Lynn dejó el tema en automático en Diseño de la web)
+    const alCambiar = () => {
+      const tema = document.documentElement.dataset.temaDiseno
+      if (!guardado() && (!tema || tema === 'auto')) { aplicar(mq.matches); setOscuro(mq.matches) }
+    }
     mq.addEventListener('change', alCambiar)
     return () => mq.removeEventListener('change', alCambiar)
   }, [])
