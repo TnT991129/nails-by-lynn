@@ -201,11 +201,13 @@ export function PasoFecha({
 }
 
 export function PasoHora({
-  horas, cargando, error, inicio, onElegir, expiraEn, siNoHay,
+  horas, cargando, error, inicio, onElegir, expiraEn, siNoHay, demasiadoPronto,
 }: {
   horas: string[]; cargando: boolean; error: string | null
   inicio: string | null; onElegir: (h: string) => void; expiraEn: string | null
   siNoHay?: ReactNode   // lo que se ofrece cuando el día está lleno (lista de espera)
+  // El día no está lleno: sus turnos están más cerca que la antelación mínima de la web (horas, si se sabe)
+  demasiadoPronto?: { horas: number | null } | null
 }) {
   const [tick, setTick] = useState(0)
   const horario = useHorarioPublico()
@@ -232,6 +234,16 @@ export function PasoHora({
   }
 
   if (error) return <Aviso>{error}</Aviso>
+
+  if (horas.length === 0 && demasiadoPronto) {
+    const h = demasiadoPronto.horas
+    return <Vacio titulo="Para este día, escríbeme"
+                  texto={h
+                    ? `Por la web se reserva con al menos ${h} ${h === 1 ? 'hora' : 'horas'} de antelación. Escríbeme por WhatsApp y te digo si aún me queda hueco.`
+                    : 'Es muy pronto para reservarlo por la web. Escríbeme por WhatsApp y te digo si aún me queda hueco.'}>
+      {siNoHay}
+    </Vacio>
+  }
 
   if (horas.length === 0) {
     return <Vacio titulo="No hay turnos libres ese día"

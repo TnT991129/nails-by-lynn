@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   citasEnRango, listarHorarios, obtenerTurnosFijos, listarDiasCerrados, turnosDelDia,
+  bloqueosEnRango, obtenerAjustesPoliticas,
   type CitaAgenda, type ReglaHorario, type DiaCerrado,
 } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Pildora, estiloBoton } from '../../componentes/ui'
@@ -17,10 +18,18 @@ const VISTAS: { v: Vista; texto: string }[] = [{ v: 'dia', texto: 'Día' }, { v:
 const LETRAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
 // ---------- Turnos de un día: libres u ocupados ----------
-type Turno = { t: string; inicio: string; cita: CitaAgenda | null }
+// Un turno sin cita no siempre lo ven las clientas: la web no ofrece los que están más cerca que la
+// antelación mínima (Políticas) ni los que chocan con un bloqueo. Aquí se muestran igual que allí.
+type EstadoTurno = 'libre' | 'pronto' | 'bloqueado' | 'pasado'
+type Turno = { t: string; inicio: string; cita: CitaAgenda | null; estado: EstadoTurno; motivo?: string | null }
 type Jornada = { iso: string; cerrado: boolean; turnos: Turno[]; otras: CitaAgenda[] }
+type Bloqueo = { starts_at: string; ends_at: string; reason: string | null }
+type Reglas = { reglas: ReglaHorario[]; fijos: string[]; cerrados: DiaCerrado[]; bloqueos: Bloqueo[]; horasMinimas: number | null }
 
-function jornada(iso: string, reglas: ReglaHorario[], fijos: string[], cerrados: DiaCerrado[], citas: CitaAgenda[]): Jornada {
+// Lo que ocupa una cita estándar (90 min + 15 de margen): la web exige que quepa entera
+const VENTANA_MS = 105 * 60_000
+
+function jornada(iso: string, { reglas, fijos, cerrados, bloqueos, horasMinimas }: Reglas, citas: CitaAgenda[]): Jornada {
   const delDia = citas.filter(c => fechaISO(new Date(c.starts_at)) === iso)
   const cerrado = cerrados.some(r => iso >= r.date_from && iso <= r.date_to)
     || !reglas.some(r => r.weekday === diaSemana(iso) && r.is_active)
@@ -32,7 +41,14 @@ function jornada(iso: string, reglas: ReglaHorario[], fijos: string[], cerrados:
     // Ocupado si alguna cita cubre la hora del turno
     const cita = delDia.find(c => new Date(c.starts_at).getTime() <= ms && ms < new Date(c.blocked_until).getTime()) ?? null
     if (cita) usadas.add(cita.id)
-    return { t, inicio, cita }
+    const ahora = Date.now()
+    const bloqueo = bloqueos.find(b => new Date(b.starts_at).getTime() < ms + VENTANA_MS && new Date(b.ends_at).getTime() > ms)
+    const estado: EstadoTurno = ms <= ahora ? 'pasado'
+      : bloqueo ? 'bloqueado'
+      : horasMinimas && ms < ahora + horasMinimas * 3_600_000 ? 'pronto'
+      : 'libre'
+    // motivo: el del bloqueo, o las horas de antelación que pide la web
+    return { t, inicio, cita, estado, motivo: estado === 'pronto' ? `${horasMinimas} h` : bloqueo?.reason }
   })
   return { iso, cerrado, turnos, otras: delDia.filter(c => !usadas.has(c.id)) }
 }
@@ -64,9 +80,15 @@ export default function Agenda() {
   const qReglas = useQuery({ queryKey: ['horarios'], queryFn: listarHorarios })
   const qTurnos = useQuery({ queryKey: ['turnos-fijos'], queryFn: obtenerTurnosFijos })
   const qCerrados = useQuery({ queryKey: ['dias-cerrados-panel'], queryFn: listarDiasCerrados })
+  const qBloqueos = useQuery({ queryKey: ['bloqueos', desde, hasta], queryFn: () => bloqueosEnRango(desde, hasta) as Promise<Bloqueo[]> })
+  const qAjustes = useQuery({ queryKey: ['ajustes-politicas'], queryFn: obtenerAjustesPoliticas })
 
   const activas = (q.data ?? []).filter(c => c.status !== 'CANCELADA_CLIENTA' && c.status !== 'CANCELADA_NEGOCIO')
-  const jornadas = dias.map(d => jornada(d, qReglas.data ?? [], qTurnos.data ?? [], qCerrados.data ?? [], activas))
+  const reglas: Reglas = {
+    reglas: qReglas.data ?? [], fijos: qTurnos.data ?? [], cerrados: qCerrados.data ?? [],
+    bloqueos: qBloqueos.data ?? [], horasMinimas: qAjustes.data?.min_advance_hours ?? null,
+  }
+  const jornadas = dias.map(d => jornada(d, reglas, activas))
 
   function mover(dir: -1 | 1) {
     if (vista === 'dia') setRef(sumarDias(ref, dir))
@@ -153,10 +175,25 @@ function VistaDia({ j, compacta = false }: { j: Jornada; compacta?: boolean }) {
       {j.turnos.map(tu => tu.cita
         ? <FilaCita key={tu.t} c={tu.cita} />
         : (
-          <div key={tu.t} className="flex items-center gap-3 rounded-lg border border-dashed border-rosa-200 bg-papel/60 px-4 py-3">
+          <div key={tu.t} className={`flex items-center gap-3 rounded-lg border border-dashed bg-papel/60 px-4 py-3
+                                      ${tu.estado === 'pronto' ? 'border-estado-aviso/50' : 'border-rosa-200'}
+                                      ${tu.estado === 'pasado' ? 'opacity-60' : ''}`}>
             <div className="min-w-[64px] font-display text-[17px] text-tinta-suave">{horaDeTurno(tu.t)}</div>
-            <div className="flex-1 text-[14px] text-estado-exito font-medium">Libre</div>
-            {!pasado && (
+            <div className="flex-1 min-w-0 text-[14px]">
+              {tu.estado === 'libre' && <span className="text-estado-exito font-medium">Libre</span>}
+              {tu.estado === 'pasado' && <span className="text-tinta-tenue">Ya pasó</span>}
+              {tu.estado === 'bloqueado' && (
+                <span className="text-tinta-tenue font-medium">Bloqueado{tu.motivo ? ` · ${tu.motivo}` : ''}
+                  <span className="block text-[12px] font-normal">Las clientas no lo ven en la web</span></span>
+              )}
+              {tu.estado === 'pronto' && (
+                <span className="text-estado-aviso font-medium">Libre · solo por WhatsApp
+                  <span className="block text-[12px] font-normal text-tinta-tenue">
+                    La web pide {tu.motivo} de antelación: las clientas no lo ven
+                  </span></span>
+              )}
+            </div>
+            {!pasado && tu.estado !== 'pasado' && (
               <Link to={`/panel/agenda/nueva?fecha=${j.iso}`} className="text-[13px] text-rosa-800 font-semibold min-h-[36px] inline-flex items-center">
                 + Agendar
               </Link>
@@ -197,7 +234,7 @@ function FilaCita({ c }: { c: CitaAgenda }) {
 function VistaMes({ jornadas, hoy, alElegir }: { jornadas: Jornada[]; hoy: string; alElegir: (iso: string) => void }) {
   const desfase = (diaSemana(jornadas[0].iso) + 6) % 7
   const ocupados = jornadas.reduce((t, j) => t + j.turnos.filter(x => x.cita).length, 0)
-  const libres = jornadas.filter(j => j.iso >= hoy).reduce((t, j) => t + j.turnos.filter(x => !x.cita).length, 0)
+  const libres = jornadas.reduce((t, j) => t + j.turnos.filter(x => !x.cita && (x.estado === 'libre' || x.estado === 'pronto')).length, 0)
   const extras = jornadas.reduce((t, j) => t + j.otras.length, 0)
 
   return (
@@ -228,7 +265,10 @@ function VistaMes({ jornadas, hoy, alElegir }: { jornadas: Jornada[]; hoy: strin
                 </span>
                 <span className="flex gap-0.5 h-2">
                   {j.turnos.map(tu => (
-                    <span key={tu.t} className={`w-2 h-2 rounded-full ${tu.cita ? 'bg-rosa-600' : 'border border-rosa-300'}`} />
+                    <span key={tu.t} className={`w-2 h-2 rounded-full ${tu.cita ? 'bg-rosa-600'
+                      : tu.estado === 'bloqueado' ? 'bg-tinta-tenue/40'
+                      : tu.estado === 'pronto' ? 'border border-estado-aviso'
+                      : 'border border-rosa-300'}`} />
                   ))}
                   {j.otras.map(c => <span key={c.id} className="w-2 h-2 rounded-full bg-tinta-suave" />)}
                 </span>
@@ -241,6 +281,8 @@ function VistaMes({ jornadas, hoy, alElegir }: { jornadas: Jornada[]; hoy: strin
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-tinta-tenue px-1">
         <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rosa-600" /> Ocupado</span>
         <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full border border-rosa-300" /> Libre</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full border border-estado-aviso" /> Solo por WhatsApp</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-tinta-tenue/40" /> Bloqueado</span>
         <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-tinta-suave" /> Fuera de turno</span>
         <span>Toca un día para verlo.</span>
       </div>

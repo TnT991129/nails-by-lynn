@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { obtenerServicios, obtenerAddons, obtenerDisponibilidad, obtenerDiasLaborables, obtenerDiasCerrados, descuentoPendiente, obtenerFotosPublicas } from '../lib/api'
+import { obtenerServicios, obtenerAddons, obtenerDisponibilidad, obtenerDiasLaborables, obtenerDiasCerrados, descuentoPendiente, obtenerFotosPublicas,
+  obtenerPoliticas, obtenerTurnos, obtenerNegocio } from '../lib/api'
 import ListaEspera from '../caracteristicas/reserva/ListaEspera'
 import { useReserva } from '../caracteristicas/reserva/useReserva'
 import { Progreso, PasoServicio, PasoExtras, PasoFecha, PasoHora, PasoDatos, PasoResumen }
   from '../caracteristicas/reserva/Pasos'
 import { validarNombre, validarTelefono, validarEmail } from '../caracteristicas/reserva/validacion'
 import { Boton, Esqueleto, Aviso } from '../componentes/ui'
-import { IconoAtras, IconoCerrar } from '../componentes/iconos'
-import { duracion, precioRango } from '../lib/formato'
+import { IconoAtras, IconoCerrar, IconoWhatsApp } from '../componentes/iconos'
+import { duracion, precioRango, instanteEnHabana, fechaISO, fechaLarga, numeroWhatsApp } from '../lib/formato'
 import { mensajeDeError, codigoDeError } from '../lib/errores'
 import EnCup from '../componentes/EnCup'
 import type { Repetir } from '../caracteristicas/reserva/repetir'
@@ -80,6 +81,36 @@ export default function Reserva() {
     queryFn: () => obtenerDisponibilidad(r.fecha!, r.duracionTotal, r.bufferTotal || undefined),
     enabled: r.paso === 4 && !!r.fecha && r.duracionTotal > 0,
   })
+
+  // Un día sin turnos no siempre está lleno: si sus turnos están más cerca que la antelación mínima
+  // de la web (Panel → Políticas), Lynn aún puede darlos por WhatsApp
+  const qPoliticas = useQuery({ queryKey: ['politicas'], queryFn: obtenerPoliticas, staleTime: 10 * 60_000 })
+  const qTurnos = useQuery({ queryKey: ['turnos'], queryFn: obtenerTurnos, staleTime: 10 * 60_000 })
+  const qNegocio = useQuery({ queryKey: ['negocio'], queryFn: obtenerNegocio })
+  const horasMinimas = qPoliticas.data?.reservar_minimo_horas ?? null
+  let demasiadoPronto: { horas: number | null } | null = null
+  if (r.fecha) {
+    const ahora = Date.now()
+    const pronto = horasMinimas !== null
+      ? (qTurnos.data ?? []).some(t => {
+          const ms = new Date(instanteEnHabana(r.fecha!, t)).getTime()
+          return ms > ahora && ms < ahora + horasMinimas * 3_600_000
+        })
+      : r.fecha <= fechaISO(new Date(ahora + 86_400_000))   // sin el dato: hoy y mañana
+    if (pronto) demasiadoPronto = { horas: horasMinimas }
+  }
+  const telefonoLynn = qNegocio.data?.phone_whatsapp
+  const pedirPorWhatsApp = telefonoLynn && r.fecha && (
+    <a href={`https://wa.me/${numeroWhatsApp(telefonoLynn)}?text=${encodeURIComponent(
+         `Hola Lynn! ¿Te queda algún turno el ${fechaLarga(`${r.fecha}T16:00:00Z`)}? `
+         + `Quería reservar: ${r.serviciosElegidos.map(s => s.name).join(' + ')}`)}`}
+       target="_blank" rel="noreferrer"
+       className="brillo inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-whatsapp px-6
+                  font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)] transition duration-200
+                  hover:-translate-y-0.5 hover:bg-whatsapp-oscuro active:scale-[0.98]">
+      <IconoWhatsApp tam={20} /> Pedir turno por WhatsApp
+    </a>
+  )
 
   async function elegirHora(h: string) {
     setError(null)
@@ -154,7 +185,8 @@ export default function Reserva() {
           <PasoHora horas={qHoras.data ?? []} cargando={qHoras.isLoading}
             error={qHoras.isError ? mensajeDeError(qHoras.error) : null}
             inicio={r.inicio} onElegir={elegirHora} expiraEn={r.expiraEn}
-            siNoHay={r.fecha && <ListaEspera key={r.fecha} fecha={r.fecha} servicioId={r.seleccionados[0]}
+            demasiadoPronto={demasiadoPronto}
+            siNoHay={demasiadoPronto ? pedirPorWhatsApp : r.fecha && <ListaEspera key={r.fecha} fecha={r.fecha} servicioId={r.seleccionados[0]}
                                    nombreInicial={r.datos.nombre} telefonoInicial={r.datos.telefono} />} />
         )}
         {r.paso === 5 && <PasoDatos datos={r.datos} setDatos={r.setDatos} intentado={intentado} />}

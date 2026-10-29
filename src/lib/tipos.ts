@@ -91,6 +91,8 @@ export type Politicas = {
   max_cambios: number
   max_citas_activas: number
   max_dias_antelacion: number
+  // Antelación mínima para reservar por la web (supabase/antelacion_en_politicas.sql); sin ese SQL no llega
+  reservar_minimo_horas?: number
   anticipo: boolean
   // Secciones que escribe Lynn en el panel (supabase/historial/panel_editar_y_politicas.sql); null = textos de siempre
   secciones?: SeccionPolitica[] | null
