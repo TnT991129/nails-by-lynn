@@ -115,15 +115,15 @@ lista de espera o deja una opinión. Lo que hace ella desde el panel no le avisa
    y se cambia también la pública en `src/lib/panel/avisos.ts`).
 4. Ya ejecutado: `historial/avisos_lynn.sql`.
 
-**Clave de los avisos** (para que nadie más pueda despertar la función). Hacerlo en este orden;
-en cualquier punto intermedio los avisos siguen llegando:
+**Clave de los avisos** (activa desde el 28/10/2026). La función solo atiende llamadas `POST` que traigan
+la cabecera `x-avisos-secreto` con la clave; las demás reciben 401 (o 405 si no son `POST`).
 
-1. Ya hecho (28/10/2026): `historial/seguridad_avisos_y_diagnostico.sql` (la base de datos manda la clave).
-2. Copia la clave: `select decrypted_secret from vault.decrypted_secrets where name = 'avisos_push_secreto';`
-3. Edge Functions → Secrets: crea `AVISOS_SECRETO` con ese valor.
-4. Vuelve a desplegar `enviar-push` con el código actual de `supabase/functions/enviar-push/index.ts`.
-
-Si algo falla, borra el secreto `AVISOS_SECRETO` y la función vuelve a aceptar las llamadas sin clave.
+- La base de datos la manda sola (`despertar_envio_push`, ver `historial/seguridad_avisos_y_diagnostico.sql`);
+  la clave vive en Vault: `select decrypted_secret from vault.decrypted_secrets where name = 'avisos_push_secreto';`
+- La función la lee del secreto `AVISOS_SECRETO` (Edge Functions → Secrets). Los dos valores deben coincidir.
+- Comprobar: `select public.despertar_envio_push();` y, unos segundos después,
+  `select status_code, content::text from net._http_response order by created desc limit 1;` → 200.
+- Si algo falla, borra el secreto `AVISOS_SECRETO` y la función vuelve a aceptar las llamadas sin clave.
 
 Lynn los activa, y elige cuáles quiere, en Panel → Más → «Avisos en este móvil». En el iPhone solo
 funcionan con el panel añadido a la pantalla de inicio (iOS 16.4 o más).
