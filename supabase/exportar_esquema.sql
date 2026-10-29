@@ -151,7 +151,8 @@ permisos_columnas as (
 cajones as (
   select 14, b.id::text,
          format('insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values (%L, %L, %s, %s, %L) on conflict (id) do nothing;',
-                b.id, b.name, b.public, coalesce(b.file_size_limit::text, 'null'), b.allowed_mime_types)
+                b.id, b.name, case when b.public then 'true' else 'false' end,
+                coalesce(b.file_size_limit::text, 'null'), b.allowed_mime_types)
   from storage.buckets b
 ),
 tareas as (

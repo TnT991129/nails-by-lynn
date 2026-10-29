@@ -30,6 +30,8 @@ create extension if not exists "uuid-ossp" with schema extensions;
 -- Tipos y secuencias
 -- =====================================================================
 
+create sequence if not exists public.audit_log_id_seq;
+
 create type public.canal_notif as enum ('WHATSAPP_ASISTIDO', 'WHATSAPP_AUTO', 'EMAIL', 'PUSH', 'SMS');
 
 create type public.categoria_gasto as enum ('MATERIAL', 'HERRAMIENTAS', 'LOCAL', 'TRANSPORTE', 'MARKETING', 'OTRO');
@@ -2413,3 +2415,190 @@ create policy "PROFESIONAL cambia fotos" on storage.objects as PERMISSIVE for UP
 create policy "PROFESIONAL sube fotos" on storage.objects as PERMISSIVE for INSERT to authenticated with check (((bucket_id = 'galeria'::text) AND (EXISTS ( SELECT 1
    FROM profiles p
   WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['PROFESIONAL'::rol_usuario, 'ADMIN_PLATAFORMA'::rol_usuario])) AND ((p.business_id)::text = (storage.foldername(objects.name))[1]))))));
+
+
+-- =====================================================================
+-- Permisos de las funciones
+-- =====================================================================
+
+revoke all on function public.aplicar_descuento_cita(p_appointment_id uuid, p_porcentaje numeric) from public, anon, authenticated; grant execute on function public.aplicar_descuento_cita(p_appointment_id uuid, p_porcentaje numeric) to authenticated; grant execute on function public.aplicar_descuento_cita(p_appointment_id uuid, p_porcentaje numeric) to service_role;
+
+revoke all on function public.cambios_clienta_mes(p_client_id uuid) from public, anon, authenticated; grant execute on function public.cambios_clienta_mes(p_client_id uuid) to authenticated; grant execute on function public.cambios_clienta_mes(p_client_id uuid) to service_role;
+
+revoke all on function public.cancelar_cita(p_token text, p_motivo text, p_por tipo_actor) from public, anon, authenticated; grant execute on function public.cancelar_cita(p_token text, p_motivo text, p_por tipo_actor) to anon; grant execute on function public.cancelar_cita(p_token text, p_motivo text, p_por tipo_actor) to authenticated; grant execute on function public.cancelar_cita(p_token text, p_motivo text, p_por tipo_actor) to public; grant execute on function public.cancelar_cita(p_token text, p_motivo text, p_por tipo_actor) to service_role;
+
+revoke all on function public.crear_cita(p_business_id uuid, p_session_token text, p_inicio timestamp with time zone, p_items jsonb, p_nombre text, p_telefono text, p_email text, p_instagram text, p_nota text, p_origen origen_cita, p_device_id text) from public, anon, authenticated; grant execute on function public.crear_cita(p_business_id uuid, p_session_token text, p_inicio timestamp with time zone, p_items jsonb, p_nombre text, p_telefono text, p_email text, p_instagram text, p_nota text, p_origen origen_cita, p_device_id text) to anon; grant execute on function public.crear_cita(p_business_id uuid, p_session_token text, p_inicio timestamp with time zone, p_items jsonb, p_nombre text, p_telefono text, p_email text, p_instagram text, p_nota text, p_origen origen_cita, p_device_id text) to authenticated; grant execute on function public.crear_cita(p_business_id uuid, p_session_token text, p_inicio timestamp with time zone, p_items jsonb, p_nombre text, p_telefono text, p_email text, p_instagram text, p_nota text, p_origen origen_cita, p_device_id text) to public; grant execute on function public.crear_cita(p_business_id uuid, p_session_token text, p_inicio timestamp with time zone, p_items jsonb, p_nombre text, p_telefono text, p_email text, p_instagram text, p_nota text, p_origen origen_cita, p_device_id text) to service_role;
+
+revoke all on function public.crear_hold(p_business_id uuid, p_inicio timestamp with time zone, p_duracion_minutos integer, p_session_token text, p_buffer_minutos integer) from public, anon, authenticated; grant execute on function public.crear_hold(p_business_id uuid, p_inicio timestamp with time zone, p_duracion_minutos integer, p_session_token text, p_buffer_minutos integer) to anon; grant execute on function public.crear_hold(p_business_id uuid, p_inicio timestamp with time zone, p_duracion_minutos integer, p_session_token text, p_buffer_minutos integer) to authenticated; grant execute on function public.crear_hold(p_business_id uuid, p_inicio timestamp with time zone, p_duracion_minutos integer, p_session_token text, p_buffer_minutos integer) to public; grant execute on function public.crear_hold(p_business_id uuid, p_inicio timestamp with time zone, p_duracion_minutos integer, p_session_token text, p_buffer_minutos integer) to service_role;
+
+revoke all on function public.dejar_resena(p_token text, p_estrellas integer, p_comentario text) from public, anon, authenticated; grant execute on function public.dejar_resena(p_token text, p_estrellas integer, p_comentario text) to anon; grant execute on function public.dejar_resena(p_token text, p_estrellas integer, p_comentario text) to authenticated; grant execute on function public.dejar_resena(p_token text, p_estrellas integer, p_comentario text) to service_role;
+
+revoke all on function public.descuento_pendiente(p_business_id uuid, p_telefono text) from public, anon, authenticated; grant execute on function public.descuento_pendiente(p_business_id uuid, p_telefono text) to anon; grant execute on function public.descuento_pendiente(p_business_id uuid, p_telefono text) to authenticated; grant execute on function public.descuento_pendiente(p_business_id uuid, p_telefono text) to public; grant execute on function public.descuento_pendiente(p_business_id uuid, p_telefono text) to service_role;
+
+revoke all on function public.despertar_envio_push() from public, anon, authenticated; grant execute on function public.despertar_envio_push() to service_role;
+
+revoke all on function public.diagnostico_fotos() from public, anon, authenticated; grant execute on function public.diagnostico_fotos() to service_role;
+
+revoke all on function public.editar_cita(p_token text, p_items jsonb, p_nota text) from public, anon, authenticated; grant execute on function public.editar_cita(p_token text, p_items jsonb, p_nota text) to anon; grant execute on function public.editar_cita(p_token text, p_items jsonb, p_nota text) to authenticated; grant execute on function public.editar_cita(p_token text, p_items jsonb, p_nota text) to service_role;
+
+revoke all on function public.editar_cita_panel(p_appointment_id uuid, p_items jsonb, p_nota text) from public, anon, authenticated; grant execute on function public.editar_cita_panel(p_appointment_id uuid, p_items jsonb, p_nota text) to authenticated; grant execute on function public.editar_cita_panel(p_appointment_id uuid, p_items jsonb, p_nota text) to service_role;
+
+revoke all on function public.eliminar_clienta_con_historial(p_client_id uuid) from public, anon, authenticated; grant execute on function public.eliminar_clienta_con_historial(p_client_id uuid) to authenticated; grant execute on function public.eliminar_clienta_con_historial(p_client_id uuid) to service_role;
+
+revoke all on function public.encolar_aviso(p_business_id uuid, p_evento text, p_ref uuid) from public, anon, authenticated; grant execute on function public.encolar_aviso(p_business_id uuid, p_evento text, p_ref uuid) to service_role;
+
+revoke all on function public.es_profesional(p_business_id uuid) from public, anon, authenticated; grant execute on function public.es_profesional(p_business_id uuid) to anon; grant execute on function public.es_profesional(p_business_id uuid) to authenticated; grant execute on function public.es_profesional(p_business_id uuid) to public; grant execute on function public.es_profesional(p_business_id uuid) to service_role;
+
+revoke all on function public.es_turno_valido(p_business_id uuid, p_inicio timestamp with time zone) from public, anon, authenticated; grant execute on function public.es_turno_valido(p_business_id uuid, p_inicio timestamp with time zone) to anon; grant execute on function public.es_turno_valido(p_business_id uuid, p_inicio timestamp with time zone) to authenticated; grant execute on function public.es_turno_valido(p_business_id uuid, p_inicio timestamp with time zone) to public; grant execute on function public.es_turno_valido(p_business_id uuid, p_inicio timestamp with time zone) to service_role;
+
+revoke all on function public.exportar_respaldo(p_business_id uuid) from public, anon, authenticated; grant execute on function public.exportar_respaldo(p_business_id uuid) to authenticated; grant execute on function public.exportar_respaldo(p_business_id uuid) to service_role;
+
+revoke all on function public.generar_codigo_cita(p_prefijo text) from public, anon, authenticated; grant execute on function public.generar_codigo_cita(p_prefijo text) to anon; grant execute on function public.generar_codigo_cita(p_prefijo text) to authenticated; grant execute on function public.generar_codigo_cita(p_prefijo text) to public; grant execute on function public.generar_codigo_cita(p_prefijo text) to service_role;
+
+revoke all on function public.guardar_aviso_movil(p_endpoint text, p_p256dh text, p_auth text, p_eventos text[]) from public, anon, authenticated; grant execute on function public.guardar_aviso_movil(p_endpoint text, p_p256dh text, p_auth text, p_eventos text[]) to authenticated; grant execute on function public.guardar_aviso_movil(p_endpoint text, p_p256dh text, p_auth text, p_eventos text[]) to service_role;
+
+revoke all on function public.intervalos_trabajo(p_business_id uuid, p_fecha date) from public, anon, authenticated; grant execute on function public.intervalos_trabajo(p_business_id uuid, p_fecha date) to anon; grant execute on function public.intervalos_trabajo(p_business_id uuid, p_fecha date) to authenticated; grant execute on function public.intervalos_trabajo(p_business_id uuid, p_fecha date) to public; grant execute on function public.intervalos_trabajo(p_business_id uuid, p_fecha date) to service_role;
+
+revoke all on function public.ip_peticion() from public, anon, authenticated; grant execute on function public.ip_peticion() to service_role;
+
+revoke all on function public.mi_client_id(p_business_id uuid) from public, anon, authenticated; grant execute on function public.mi_client_id(p_business_id uuid) to anon; grant execute on function public.mi_client_id(p_business_id uuid) to authenticated; grant execute on function public.mi_client_id(p_business_id uuid) to public; grant execute on function public.mi_client_id(p_business_id uuid) to service_role;
+
+revoke all on function public.mi_negocio_profesional() from public, anon, authenticated; grant execute on function public.mi_negocio_profesional() to authenticated; grant execute on function public.mi_negocio_profesional() to service_role;
+
+revoke all on function public.mis_avisos_movil(p_endpoint text) from public, anon, authenticated; grant execute on function public.mis_avisos_movil(p_endpoint text) to authenticated; grant execute on function public.mis_avisos_movil(p_endpoint text) to service_role;
+
+revoke all on function public.normalizar_telefono(p text, p_pais text) from public, anon, authenticated; grant execute on function public.normalizar_telefono(p text, p_pais text) to anon; grant execute on function public.normalizar_telefono(p text, p_pais text) to authenticated; grant execute on function public.normalizar_telefono(p text, p_pais text) to public; grant execute on function public.normalizar_telefono(p text, p_pais text) to service_role;
+
+revoke all on function public.obtener_cita_por_token(p_token text) from public, anon, authenticated; grant execute on function public.obtener_cita_por_token(p_token text) to anon; grant execute on function public.obtener_cita_por_token(p_token text) to authenticated; grant execute on function public.obtener_cita_por_token(p_token text) to public; grant execute on function public.obtener_cita_por_token(p_token text) to service_role;
+
+revoke all on function public.obtener_disponibilidad(p_business_id uuid, p_fecha date, p_duracion_minutos integer, p_buffer_minutos integer) from public, anon, authenticated; grant execute on function public.obtener_disponibilidad(p_business_id uuid, p_fecha date, p_duracion_minutos integer, p_buffer_minutos integer) to anon; grant execute on function public.obtener_disponibilidad(p_business_id uuid, p_fecha date, p_duracion_minutos integer, p_buffer_minutos integer) to authenticated; grant execute on function public.obtener_disponibilidad(p_business_id uuid, p_fecha date, p_duracion_minutos integer, p_buffer_minutos integer) to public; grant execute on function public.obtener_disponibilidad(p_business_id uuid, p_fecha date, p_duracion_minutos integer, p_buffer_minutos integer) to service_role;
+
+revoke all on function public.obtener_politicas(p_business_id uuid) from public, anon, authenticated; grant execute on function public.obtener_politicas(p_business_id uuid) to anon; grant execute on function public.obtener_politicas(p_business_id uuid) to authenticated; grant execute on function public.obtener_politicas(p_business_id uuid) to public; grant execute on function public.obtener_politicas(p_business_id uuid) to service_role;
+
+revoke all on function public.obtener_resenas(p_business_id uuid) from public, anon, authenticated; grant execute on function public.obtener_resenas(p_business_id uuid) to anon; grant execute on function public.obtener_resenas(p_business_id uuid) to authenticated; grant execute on function public.obtener_resenas(p_business_id uuid) to service_role;
+
+revoke all on function public.obtener_tasa(p_business_id uuid) from public, anon, authenticated; grant execute on function public.obtener_tasa(p_business_id uuid) to anon; grant execute on function public.obtener_tasa(p_business_id uuid) to authenticated; grant execute on function public.obtener_tasa(p_business_id uuid) to service_role;
+
+revoke all on function public.obtener_textos(p_business_id uuid) from public, anon, authenticated; grant execute on function public.obtener_textos(p_business_id uuid) to anon; grant execute on function public.obtener_textos(p_business_id uuid) to authenticated; grant execute on function public.obtener_textos(p_business_id uuid) to service_role;
+
+revoke all on function public.obtener_turnos(p_business_id uuid) from public, anon, authenticated; grant execute on function public.obtener_turnos(p_business_id uuid) to anon; grant execute on function public.obtener_turnos(p_business_id uuid) to authenticated; grant execute on function public.obtener_turnos(p_business_id uuid) to public; grant execute on function public.obtener_turnos(p_business_id uuid) to service_role;
+
+revoke all on function public.quitar_aviso_movil(p_endpoint text) from public, anon, authenticated; grant execute on function public.quitar_aviso_movil(p_endpoint text) to authenticated; grant execute on function public.quitar_aviso_movil(p_endpoint text) to service_role;
+
+revoke all on function public.recalcular_total_maximo(p_appointment_id uuid) from public, anon, authenticated; grant execute on function public.recalcular_total_maximo(p_appointment_id uuid) to service_role;
+
+revoke all on function public.registrar_error_panel(p_origen text, p_mensaje text, p_detalle jsonb) from public, anon, authenticated; grant execute on function public.registrar_error_panel(p_origen text, p_mensaje text, p_detalle jsonb) to authenticated; grant execute on function public.registrar_error_panel(p_origen text, p_mensaje text, p_detalle jsonb) to service_role;
+
+revoke all on function public.reintentar_avisos_push() from public, anon, authenticated; grant execute on function public.reintentar_avisos_push() to service_role;
+
+revoke all on function public.reprogramar_cita(p_token text, p_nuevo_inicio timestamp with time zone, p_session_token text) from public, anon, authenticated; grant execute on function public.reprogramar_cita(p_token text, p_nuevo_inicio timestamp with time zone, p_session_token text) to anon; grant execute on function public.reprogramar_cita(p_token text, p_nuevo_inicio timestamp with time zone, p_session_token text) to authenticated; grant execute on function public.reprogramar_cita(p_token text, p_nuevo_inicio timestamp with time zone, p_session_token text) to public; grant execute on function public.reprogramar_cita(p_token text, p_nuevo_inicio timestamp with time zone, p_session_token text) to service_role;
+
+revoke all on function public.tg_addon_maximo() from public, anon, authenticated; grant execute on function public.tg_addon_maximo() to anon; grant execute on function public.tg_addon_maximo() to authenticated; grant execute on function public.tg_addon_maximo() to public; grant execute on function public.tg_addon_maximo() to service_role;
+
+revoke all on function public.tg_cita_aviso() from public, anon, authenticated; grant execute on function public.tg_cita_aviso() to anon; grant execute on function public.tg_cita_aviso() to authenticated; grant execute on function public.tg_cita_aviso() to public; grant execute on function public.tg_cita_aviso() to service_role;
+
+revoke all on function public.tg_cita_descuento_maximo() from public, anon, authenticated; grant execute on function public.tg_cita_descuento_maximo() to anon; grant execute on function public.tg_cita_descuento_maximo() to authenticated; grant execute on function public.tg_cita_descuento_maximo() to public; grant execute on function public.tg_cita_descuento_maximo() to service_role;
+
+revoke all on function public.tg_contadores_clienta() from public, anon, authenticated; grant execute on function public.tg_contadores_clienta() to anon; grant execute on function public.tg_contadores_clienta() to authenticated; grant execute on function public.tg_contadores_clienta() to public; grant execute on function public.tg_contadores_clienta() to service_role;
+
+revoke all on function public.tg_descartar_recordatorios_auto() from public, anon, authenticated; grant execute on function public.tg_descartar_recordatorios_auto() to anon; grant execute on function public.tg_descartar_recordatorios_auto() to authenticated; grant execute on function public.tg_descartar_recordatorios_auto() to public; grant execute on function public.tg_descartar_recordatorios_auto() to service_role;
+
+revoke all on function public.tg_espera_aviso() from public, anon, authenticated; grant execute on function public.tg_espera_aviso() to anon; grant execute on function public.tg_espera_aviso() to authenticated; grant execute on function public.tg_espera_aviso() to public; grant execute on function public.tg_espera_aviso() to service_role;
+
+revoke all on function public.tg_resena_aviso() from public, anon, authenticated; grant execute on function public.tg_resena_aviso() to anon; grant execute on function public.tg_resena_aviso() to authenticated; grant execute on function public.tg_resena_aviso() to public; grant execute on function public.tg_resena_aviso() to service_role;
+
+revoke all on function public.tg_touch_updated() from public, anon, authenticated; grant execute on function public.tg_touch_updated() to anon; grant execute on function public.tg_touch_updated() to authenticated; grant execute on function public.tg_touch_updated() to public; grant execute on function public.tg_touch_updated() to service_role;
+
+revoke all on function public.tomar_cola_push(p_limite integer) from public, anon, authenticated; grant execute on function public.tomar_cola_push(p_limite integer) to service_role;
+
+revoke all on function public.unirse_lista_espera(p_business_id uuid, p_fecha date, p_nombre text, p_telefono text, p_service_id uuid) from public, anon, authenticated; grant execute on function public.unirse_lista_espera(p_business_id uuid, p_fecha date, p_nombre text, p_telefono text, p_service_id uuid) to anon; grant execute on function public.unirse_lista_espera(p_business_id uuid, p_fecha date, p_nombre text, p_telefono text, p_service_id uuid) to authenticated; grant execute on function public.unirse_lista_espera(p_business_id uuid, p_fecha date, p_nombre text, p_telefono text, p_service_id uuid) to public; grant execute on function public.unirse_lista_espera(p_business_id uuid, p_fecha date, p_nombre text, p_telefono text, p_service_id uuid) to service_role;
+
+revoke all on function public.validar_turno() from public, anon, authenticated; grant execute on function public.validar_turno() to anon; grant execute on function public.validar_turno() to authenticated; grant execute on function public.validar_turno() to public; grant execute on function public.validar_turno() to service_role;
+
+
+-- =====================================================================
+-- Permisos de las tablas
+-- =====================================================================
+
+revoke all on table public.appointment_item_addons from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.appointment_item_addons to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.appointment_item_addons to authenticated;
+
+revoke all on table public.appointment_items from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.appointment_items to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.appointment_items to authenticated;
+
+revoke all on table public.appointments from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.appointments to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.appointments to authenticated;
+
+revoke all on table public.audit_log from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.audit_log to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.audit_log to authenticated;
+
+revoke all on table public.blocks from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.blocks to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.blocks to authenticated;
+
+revoke all on table public.businesses from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, TRIGGER, TRUNCATE, UPDATE on table public.businesses to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.businesses to authenticated;
+
+revoke all on table public.clients from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.clients to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.clients to authenticated;
+
+revoke all on table public.exchange_rates from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.exchange_rates to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.exchange_rates to authenticated;
+
+revoke all on table public.expenses from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.expenses to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.expenses to authenticated;
+
+revoke all on table public.favorites from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.favorites to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.favorites to authenticated;
+
+revoke all on table public.gallery_photos from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.gallery_photos to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.gallery_photos to authenticated;
+
+revoke all on table public.holds from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.holds to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.holds to authenticated;
+
+revoke all on table public.notifications from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.notifications to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.notifications to authenticated;
+
+revoke all on table public.payments from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.payments to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.payments to authenticated;
+
+revoke all on table public.photo_tags from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.photo_tags to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.photo_tags to authenticated;
+
+revoke all on table public.profiles from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.profiles to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.profiles to authenticated;
+
+revoke all on table public.push_cola from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.push_cola to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.push_cola to authenticated;
+
+revoke all on table public.push_suscripciones from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.push_suscripciones to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.push_suscripciones to authenticated;
+
+revoke all on table public.registro_errores from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.registro_errores to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.registro_errores to authenticated;
+
+revoke all on table public.reviews from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.reviews to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.reviews to authenticated;
+
+revoke all on table public.schedule_exceptions from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, TRIGGER, TRUNCATE, UPDATE on table public.schedule_exceptions to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.schedule_exceptions to authenticated;
+
+revoke all on table public.schedule_rules from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.schedule_rules to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.schedule_rules to authenticated;
+
+revoke all on table public.service_addons from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.service_addons to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.service_addons to authenticated;
+
+revoke all on table public.services from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.services to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.services to authenticated;
+
+revoke all on table public.settings from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.settings to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.settings to authenticated;
+
+revoke all on table public.tags from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.tags to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.tags to authenticated;
+
+revoke all on table public.v_agenda from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.v_agenda to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.v_agenda to authenticated;
+
+revoke all on table public.v_clientas_publica from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.v_clientas_publica to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.v_clientas_publica to authenticated;
+
+revoke all on table public.v_estadisticas_mes from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.v_estadisticas_mes to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.v_estadisticas_mes to authenticated;
+
+revoke all on table public.waitlist from anon, authenticated; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.waitlist to anon; grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on table public.waitlist to authenticated;
+
+
+-- =====================================================================
+-- Permisos por columnas
+-- =====================================================================
+
+grant SELECT (id, slug, name, tagline, description, logo_url, hero_image_url, phone_whatsapp, instagram_url, location_label, timezone, default_currency, is_accepting_bookings, closed_message) on table public.businesses to anon;
+
+grant SELECT (id, business_id, date_from, date_to, type, start_time, end_time) on table public.schedule_exceptions to anon;
+
+
+-- =====================================================================
+-- Almacén de fotos (buckets)
+-- =====================================================================
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values ('galeria', 'galeria', true, 5242880, '{image/jpeg,image/png,image/webp}') on conflict (id) do nothing;
+
+
+-- =====================================================================
+-- Tareas programadas (pg_cron)
+-- =====================================================================
+
+select cron.schedule('nbl-avisos-reintento', '*/15 * * * *', 'select public.reintentar_avisos_push()');
