@@ -14,6 +14,7 @@ import EditarCita from '../caracteristicas/reserva/EditarCita'
 import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
 import { useTextos, conNegritas } from '../lib/textos'
+import { Confeti, Revelar } from '../componentes/Movimiento'
 
 // Complementos de todos los servicios, sin repetir (citas antiguas los tenían por servicio)
 type ComplementoCita = { nombre: string; precio: number; precio_max?: number | null }
@@ -135,24 +136,26 @@ export default function Cita() {
     <div className="pb-28">
       {esNueva ? (
         <section className="px-5 pt-14 pb-12 text-center bg-gradient-to-b from-rosa-100 via-rosa-50 to-superficie-base">
-          <div className="w-20 h-20 rounded-full bg-rosa-600 text-white shadow-boton ring-8 ring-white/70
-                          flex items-center justify-center mx-auto mb-6 animate-entrada">
+          <Confeti />
+          <div className="onda w-20 h-20 rounded-full bg-gradient-to-br from-rosa-600 to-vino text-white shadow-boton ring-8 ring-white/70
+                          flex items-center justify-center mx-auto mb-6 animate-pop">
             <IconoCheck tam={36} strokeWidth={2.6} />
           </div>
-          <h1 className="text-[32px] leading-tight">{t('cita.nueva_titulo')}</h1>
-          <p className="text-[15px] text-tinta-suave mt-3 max-w-xs mx-auto">
+          <h1 className="text-[32px] leading-tight linea-mascara"><span style={{ animationDelay: '250ms' }}>{t('cita.nueva_titulo')}</span></h1>
+          <p className="text-[15px] text-tinta-suave mt-3 max-w-xs mx-auto animate-pagina" style={{ animationDelay: '450ms' }}>
             {t('cita.nueva_texto')}
           </p>
         </section>
       ) : (
         <section className="px-4 pt-8 pb-2">
-          <h1 className="text-[34px] leading-tight">{t('cita.titulo')}</h1>
+          <h1 className="text-[34px] leading-tight linea-mascara"><span>{t('cita.titulo')}</span></h1>
         </section>
       )}
 
       <div className="px-4 pt-4 space-y-4">
         {esNueva && bloqueAviso}
 
+        <Revelar efecto="escala">
         <Tarjeta className="p-0 overflow-hidden">
           <div className="px-5 pt-5 pb-4 flex items-center justify-between">
             <span className="font-mono text-[13px] tracking-wider text-tinta-tenue">{c.code}</span>
@@ -205,6 +208,7 @@ export default function Cita() {
             </>
           )}
         </Tarjeta>
+        </Revelar>
 
         {!esNueva && bloqueAviso}
 

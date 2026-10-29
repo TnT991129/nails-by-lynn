@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSesion } from '../../lib/panel/useSesion'
-import { usarIdentidadPanel } from '../../lib/panel/instalar'
+import { useIdentidadPanel } from '../../lib/panel/instalar'
 import AvisoInstalar from './AvisoInstalar'
 import { Esqueleto } from '../../componentes/ui'
 
@@ -33,7 +33,7 @@ function Cargando() {
 
 export default function Panel() {
   const { estado } = useSesion()
-  usarIdentidadPanel()   // manifiesto e icono propios: el panel se instala como su propia app
+  useIdentidadPanel()   // manifiesto e icono propios: el panel se instala como su propia app
 
   if (estado === 'cargando') return <Cargando />
 

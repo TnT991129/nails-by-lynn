@@ -22,13 +22,16 @@ export function Progreso({ paso }: { paso: number }) {
       <div className="flex gap-1.5 mb-2" role="progressbar"
            aria-valuenow={paso} aria-valuemin={1} aria-valuemax={6}
            aria-label={`Paso ${paso} de 6`}>
+        {/* Cada tramo se llena de izquierda a derecha al avanzar */}
         {NOMBRES_PASOS.map((_, i) => (
-          <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-300
-                                   ${i < paso ? 'bg-rosa-600' : 'bg-rosa-100'}`} />
+          <div key={i} className="h-1.5 flex-1 rounded-full bg-rosa-100 overflow-hidden">
+            <div className={`h-full rounded-full bg-gradient-to-r from-rosa-500 to-rosa-600 origin-left
+                             transition-transform duration-500 ease-out ${i < paso ? 'scale-x-100' : 'scale-x-0'}`} />
+          </div>
         ))}
       </div>
       <div className="flex justify-between text-[12px]">
-        <span className="font-semibold text-rosa-700">{NOMBRES_PASOS[paso-1]}</span>
+        <span key={paso} className="font-semibold text-rosa-700 animate-pagina">{NOMBRES_PASOS[paso-1]}</span>
         <span className="text-tinta-tenue">Paso {paso} de 6</span>
       </div>
     </div>
@@ -47,16 +50,16 @@ function Titulo({ titulo, texto }: { titulo: string; texto?: string }) {
 /** Círculo de selección: vacío o relleno con check */
 function Marca({ activo }: { activo: boolean }) {
   return (
-    <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition
-                      ${activo ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200 bg-papel'}`}>
-      {activo && <IconoCheck tam={14} strokeWidth={3} />}
+    <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition duration-300
+                      ${activo ? 'bg-rosa-600 border-rosa-600 text-white scale-110' : 'border-rosa-200 bg-papel'}`}>
+      {activo && <IconoCheck tam={14} strokeWidth={3} className="animate-pop" />}
     </span>
   )
 }
 
 const opcion = (activo: boolean) =>
-  `w-full text-left p-4 rounded-xl border bg-papel transition duration-150 active:scale-[0.99]
-   ${activo ? 'border-rosa-600 ring-4 ring-rosa-100' : 'border-rosa-100 shadow-suave'}`
+  `w-full text-left p-4 rounded-xl border bg-papel transition duration-200 ease-out active:scale-[0.98]
+   ${activo ? 'border-rosa-600 ring-4 ring-rosa-100 shadow-md' : 'border-rosa-100 shadow-suave hover:border-rosa-300 hover:-translate-y-0.5'}`
 
 export function PasoServicio({
   servicios, seleccionados, alternar, fotosPorServicio = {},

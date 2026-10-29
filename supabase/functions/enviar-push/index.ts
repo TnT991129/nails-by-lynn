@@ -23,6 +23,14 @@ function prepararClaves(): string | null {
   return null
 }
 
+// Compara sin cortar al primer carácter distinto (no da pistas por el tiempo de respuesta)
+function mismaClave(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let dif = 0
+  for (let i = 0; i < a.length; i++) dif |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return dif === 0
+}
+
 type Item = { id: number; business_id: string; evento: string; ref_id: string }
 type Aviso = { title: string; body: string; url: string; tag: string }
 
@@ -99,7 +107,15 @@ async function enviar(sb: SupabaseClient, item: Item): Promise<string> {
   return `enviado a ${ok} de ${moviles.length}`
 }
 
-Deno.serve(async () => {
+Deno.serve(async (peticion) => {
+  // La base de datos siempre llama con POST; un GET (navegador, rastreadores) no despierta el envío
+  if (peticion.method !== 'POST') return new Response(null, { status: 405, headers: { Allow: 'POST' } })
+  // Con el secreto AVISOS_SECRETO puesto, solo atiende a quien traiga la clave (la base de datos, ver
+  // supabase/seguridad_avisos_y_diagnostico.sql). Sin ese secreto funciona como antes.
+  const secreto = Deno.env.get('AVISOS_SECRETO')?.trim()
+  if (secreto && !mismaClave(peticion.headers.get('x-avisos-secreto') ?? '', secreto)) {
+    return new Response(null, { status: 401 })
+  }
   const fallo = prepararClaves()
   if (fallo) return Response.json({ error: fallo }, { status: 500 })
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,

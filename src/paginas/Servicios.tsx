@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { obtenerServicios } from '../lib/api'
-import { Boton, Tarjeta, Esqueleto, Aviso } from '../componentes/ui'
+import { Tarjeta, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
 import { dinero, duracion } from '../lib/formato'
 import { mensajeDeError } from '../lib/errores'
 import EnCup from '../componentes/EnCup'
 import { useTextos } from '../lib/textos'
+import { Revelar } from '../componentes/Movimiento'
 
 export default function Servicios() {
   const q = useQuery({ queryKey:['servicios'], queryFn: obtenerServicios })
@@ -13,13 +14,14 @@ export default function Servicios() {
 
   return (
     <div className="p-5 pb-24">
-      <h1 className="text-[30px] mb-5">{t('servicios.titulo')}</h1>
+      <h1 className="text-[30px] mb-5 linea-mascara"><span>{t('servicios.titulo')}</span></h1>
       {q.isLoading && <div className="space-y-3">
         {Array.from({length:5}).map((_,i) => <Esqueleto key={i} className="h-28" />)}</div>}
       {q.isError && <Aviso>{mensajeDeError(q.error)}</Aviso>}
       <div className="space-y-4">
-        {q.data?.map(s => (
-          <Tarjeta key={s.id} className="space-y-3">
+        {q.data?.map((s, i) => (
+          <Revelar key={s.id} retraso={Math.min(i, 4) * 90}>
+          <Tarjeta className="space-y-3 transition duration-300 hover:shadow-lg hover:border-rosa-200">
             <div className="flex justify-between items-start gap-3">
               <div>
                 <h2 className="text-[19px] font-semibold font-sans">{s.name}</h2>
@@ -33,8 +35,9 @@ export default function Servicios() {
             {s.short_description && (
               <p className="text-[14px] text-tinta-suave">{s.short_description}</p>
             )}
-            <Link to={`/reservar?servicio=${s.slug}`}><Boton ancho>{t('servicios.boton')}</Boton></Link>
+            <Link to={`/reservar?servicio=${s.slug}`} className={estiloBoton('primario', true)}>{t('servicios.boton')}</Link>
           </Tarjeta>
+          </Revelar>
         ))}
       </div>
     </div>

@@ -35,6 +35,14 @@ html.oscuro {
 @layer base {
   html { -webkit-text-size-adjust:100%; }
   body { @apply bg-superficie-base text-tinta font-sans antialiased; }
+  /* Luz rosada de fondo (gradientes, sin desenfoques: no cuesta batería) */
+  #root {
+    min-height: 100dvh;
+    background-image:
+      radial-gradient(60rem 26rem at 110% -6rem, rgb(var(--rosa-100) / .75), transparent 62%),
+      radial-gradient(34rem 30rem at -12% 34rem, rgb(var(--rosa-50) / .9), transparent 65%);
+    background-repeat: no-repeat;
+  }
   h1,h2 { @apply font-display tracking-[-0.01em]; }
   /* Campos sin fondo propio: el del tema (en oscuro el navegador los pintaría de gris) */
   textarea, select, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]) {
@@ -43,7 +51,69 @@ html.oscuro {
   :focus-visible { @apply outline-none ring-2 ring-rosa-600 ring-offset-2 ring-offset-papel rounded-sm; }
 }
 @media (prefers-reduced-motion: reduce) {
-  *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important;
+                         transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
+
+/* ---------- Movimiento (src/componentes/Movimiento.tsx) ---------- */
+:root { --ease-salida: cubic-bezier(.22, 1, .36, 1); --ease-rebote: cubic-bezier(.34, 1.56, .64, 1); }
+
+/* Aparecer al hacer scroll: solo se oculta si hay JS y movimiento (html.anima) */
+[data-revelar] {
+  transition: opacity .75s var(--ease-salida), transform .75s var(--ease-salida);
+  transition-delay: var(--retraso, 0ms);
+}
+.anima [data-revelar]:not(.visible) { opacity: 0; }
+.anima [data-revelar=subir]:not(.visible)     { transform: translate3d(0, 28px, 0); }
+.anima [data-revelar=escala]:not(.visible)    { transform: scale(.92); }
+.anima [data-revelar=izquierda]:not(.visible) { transform: translate3d(-32px, 0, 0); }
+.anima [data-revelar=derecha]:not(.visible)   { transform: translate3d(32px, 0, 0); }
+
+@layer components {
+  /* Destello que cruza un botón cada pocos segundos */
+  .brillo { position: relative; overflow: hidden; isolation: isolate; }
+  .brillo::after {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / .38) 48%, transparent 66%);
+    transform: translateX(-120%); animation: brillo 4.2s var(--ease-salida) 1.2s infinite;
+  }
+  /* Onda que sale de un botón para llamar la atención */
+  .onda { position: relative; }
+  .onda::before {
+    content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    box-shadow: 0 0 0 0 rgb(var(--rosa-500) / .45); animation: onda 2.6s ease-out infinite;
+  }
+  /* Esqueleto de carga con reflejo que pasa */
+  .reflejo {
+    background: linear-gradient(100deg, rgb(var(--rosa-100) / .7) 30%, rgb(var(--rosa-50)) 50%, rgb(var(--rosa-100) / .7) 70%);
+    background-size: 220% 100%; animation: reflejo 1.4s ease-in-out infinite;
+  }
+  /* Texto con degradado rosa */
+  .texto-degradado {
+    background: linear-gradient(100deg, rgb(var(--rosa-700)), rgb(var(--rosa-500)) 55%, rgb(var(--rosa-400)));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  /* Línea de texto que sube desde una máscara */
+  .linea-mascara { display: block; overflow: hidden; padding-bottom: .08em; }
+  .linea-mascara > * { display: block; animation: subir-linea .9s var(--ease-salida) both; animation-delay: var(--retraso, 0ms); }
+}
+
+/* Confeti de la reserva confirmada */
+.confeti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 40; }
+.confeti i {
+  position: absolute; top: -16px; width: 8px; height: 13px; border-radius: 2px; opacity: 0;
+  animation-name: confeti; animation-timing-function: cubic-bezier(.25, .46, .45, .94); animation-fill-mode: forwards;
+}
+.confeti i:nth-child(3n) { width: 6px; height: 6px; border-radius: 50%; }
+
+@keyframes brillo   { 0% { transform: translateX(-120%); } 38%, 100% { transform: translateX(120%); } }
+@keyframes onda     { 0% { box-shadow: 0 0 0 0 rgb(var(--rosa-500) / .45); } 70%, 100% { box-shadow: 0 0 0 14px rgb(var(--rosa-500) / 0); } }
+@keyframes reflejo  { 0% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+@keyframes subir-linea { from { transform: translateY(105%); } to { transform: none; } }
+@keyframes confeti {
+  0%   { opacity: 1; transform: translate3d(0, 0, 0) rotate(0); }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--deriva), 105vh, 0) rotate(var(--giro)); }
 }
 
 @layer utilities {

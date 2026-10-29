@@ -25,7 +25,7 @@ export default function EditarServiciosCita({ cita, onCerrar }: { cita: CitaAgen
   }
 
   const sel = elegidos ?? []
-  const servicios = useMemo(() => (qServ.data ?? []).filter(s => sel.includes(s.id)), [qServ.data, sel])
+  const servicios = useMemo(() => (qServ.data ?? []).filter(s => (elegidos ?? []).includes(s.id)), [qServ.data, elegidos])
   const aplicables = (qAddons.data ?? []).filter(a => a.service_id === null || sel.includes(a.service_id))
   const activos = aplicables.filter(a => (extras ?? []).includes(a.id))
   const minutos = servicios.reduce((t, s) => t + s.duration_minutes, 0) + activos.reduce((t, a) => t + a.extra_minutes, 0)

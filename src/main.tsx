@@ -63,6 +63,8 @@ function Rutas() {
   return (
     <LimiteErrores ruta={pathname}>
       <Suspense fallback={<Cargando />}>
+        {/* Cada página entra con un fundido; el panel cuenta como una sola para no perder su estado */}
+        <div key={pathname.startsWith('/panel') ? '/panel' : pathname} className="animate-pagina">
         <Routes>
           <Route path="/" element={<Inicio />} />
           <Route path="/servicios" element={<Servicios />} />
@@ -74,6 +76,7 @@ function Rutas() {
           <Route path="/panel/*" element={<Panel />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </div>
       </Suspense>
     </LimiteErrores>
   )
@@ -94,8 +97,7 @@ const qc = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={qc}>
-      <BrowserRouter basename={import.meta.env.BASE_URL}
-                     future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Rutas />
         <Navegacion />
       </BrowserRouter>

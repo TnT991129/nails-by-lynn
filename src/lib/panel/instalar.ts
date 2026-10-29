@@ -56,7 +56,7 @@ export function useInstalar() {
 }
 
 /** Mientras se está en el panel, el navegador ve el manifiesto y el icono del panel */
-export function usarIdentidadPanel() {
+export function useIdentidadPanel() {
   useEffect(() => {
     const BASE = import.meta.env.BASE_URL
     const cambios: [Element | null, string, string][] = [

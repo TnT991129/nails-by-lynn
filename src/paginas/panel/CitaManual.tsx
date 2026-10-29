@@ -43,7 +43,7 @@ export default function CitaManual() {
   // Servicios elegidos, en el orden del catálogo
   const servicios = useMemo(() => (qServ.data ?? []).filter(s => serviciosSel.includes(s.id)), [qServ.data, serviciosSel])
   const hayServicios = servicios.length > 0
-  const addonsElegidos = qAddons.data?.filter(a => addonsSel.includes(a.id)) ?? []
+  const addonsElegidos = useMemo(() => qAddons.data?.filter(a => addonsSel.includes(a.id)) ?? [], [qAddons.data, addonsSel])
 
   // Duración = suma de servicios + complementos; margen = el mayor de los servicios
   const duracionTotal = useMemo(() => {

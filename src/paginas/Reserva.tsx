@@ -30,6 +30,11 @@ export default function Reserva() {
 
   const r = useReserva(qServicios.data ?? [], qAddons.data ?? [])
 
+  // Hacia dónde se movió la clienta: el paso nuevo entra por la derecha o por la izquierda
+  const [pasoVisto, setPasoVisto] = useState(r.paso)
+  const [haciaAtras, setHaciaAtras] = useState(false)
+  if (r.paso !== pasoVisto) { setHaciaAtras(r.paso < pasoVisto); setPasoVisto(r.paso) }
+
   // Cuántas fotos de la galería tiene cada servicio (para el enlace «Ver trabajos»; no descarga imágenes)
   const qFotos = useQuery({ queryKey: ['fotos'], queryFn: obtenerFotosPublicas, staleTime: 30 * 60_000 })
   const fotosPorServicio: Record<string, number> = {}
@@ -42,6 +47,7 @@ export default function Reserva() {
       const s = qServicios.data.find(x => x.slug === pre || x.id === pre)
       if (s) r.alternarServicio(s.id)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar: con `r` volvería a marcar el servicio si la clienta lo quita
   }, [params, qServicios.data])
 
   // "Reservar lo mismo otra vez": mismos servicios, complementos y datos de contacto
@@ -56,6 +62,7 @@ export default function Reserva() {
     if (rep.nombre || rep.telefono) {
       r.setDatos(d => ({ ...d, nombre: d.nombre || rep.nombre || '', telefono: d.telefono || rep.telefono || '' }))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- se aplica una sola vez (lo controla `repetido`)
   }, [ubicacion.state, qServicios.data, qAddons.data, repetido])
 
   // ¿Lynn le dejó un descuento a este teléfono? Se muestra en el resumen; el servidor lo aplica al confirmar
@@ -131,7 +138,7 @@ export default function Reserva() {
         <Progreso paso={r.paso} />
       </header>
 
-      <main className="flex-1 px-5 py-6">
+      <main key={r.paso} className={`flex-1 px-5 py-6 ${haciaAtras ? 'animate-paso-atras' : 'animate-paso-adelante'}`}>
         {error && <div className="mb-4"><Aviso>{error}</Aviso></div>}
 
         {r.paso === 1 && (
@@ -167,7 +174,7 @@ export default function Reserva() {
               {r.serviciosElegidos.map(s => s.name).join(' + ')} · {duracion(r.duracionTotal)}
             </p>
             {r.precioTotal > 0 && (
-              <span className="font-display text-[18px] text-rosa-700 shrink-0 text-right">
+              <span key={precioMostrado} className="font-display text-[18px] text-rosa-700 shrink-0 text-right animate-entrada">
                 {precioRango(precioMostrado, r.precioMaximo > r.precioTotal ? precioMostrado + (r.precioMaximo - r.precioTotal) : null)}
                 <EnCup min={precioMostrado} max={r.precioMaximo > r.precioTotal ? precioMostrado + (r.precioMaximo - r.precioTotal) : null} />
               </span>

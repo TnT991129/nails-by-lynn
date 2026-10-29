@@ -4,8 +4,8 @@ import { IconoDestellos } from './iconos'
 type Variante = 'primario' | 'secundario' | 'fantasma' | 'peligro'
 
 const ESTILOS: Record<Variante, string> = {
-  primario:   'bg-rosa-600 text-white hover:brightness-110 active:brightness-95 shadow-boton',
-  secundario: 'bg-papel text-rosa-800 border border-rosa-200 hover:bg-rosa-50',
+  primario:   'bg-gradient-to-br from-rosa-600 to-vino text-white hover:brightness-110 hover:-translate-y-0.5 hover:shadow-lg active:brightness-95 shadow-boton',
+  secundario: 'bg-papel text-rosa-800 border border-rosa-200 hover:bg-rosa-50 hover:border-rosa-300',
   fantasma:   'bg-transparent text-tinta-suave hover:bg-rosa-50',
   peligro:    'bg-papel text-estado-error border border-estado-error/60 hover:bg-estado-error-fondo',
 }
@@ -14,8 +14,9 @@ const ESTILOS: Record<Variante, string> = {
 export function estiloBoton(variante: Variante = 'primario', ancho = false) {
   return [
     'min-h-[52px] px-6 rounded-full font-semibold text-[16px] tracking-[0.01em]',
-    'transition duration-150 active:scale-[0.98]',
+    'transition duration-200 ease-out active:scale-[0.97] active:translate-y-0',
     'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
+    'disabled:hover:translate-y-0 disabled:hover:brightness-100 disabled:hover:shadow-none',
     'inline-flex items-center justify-center gap-2',
     ESTILOS[variante], ancho ? 'w-full' : '',
   ].join(' ')
@@ -104,7 +105,7 @@ export function Campo({
 }
 
 export function Esqueleto({ className = '' }: { className?: string }) {
-  return <div className={`bg-rosa-100/70 rounded-lg animate-pulso ${className}`} />
+  return <div className={`reflejo rounded-lg ${className}`} />
 }
 
 export function Vacio({
@@ -113,7 +114,7 @@ export function Vacio({
   return (
     <div className="text-center py-12 px-6 animate-entrada">
       <div className="w-16 h-16 rounded-full bg-rosa-50 border border-rosa-100 text-rosa-600
-                      flex items-center justify-center mx-auto mb-5">
+                      flex items-center justify-center mx-auto mb-5 animate-flotar">
         <IconoDestellos tam={28} />
       </div>
       <h3 className="font-display text-[22px] mb-2">{titulo}</h3>

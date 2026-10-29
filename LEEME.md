@@ -13,6 +13,9 @@ npm run dev
 
 Abre http://localhost:5173
 
+Antes de publicar: `npm run lint` (revisión automática del código; el despliegue también la pasa y se
+detiene si hay errores).
+
 ## Variables de entorno
 
 `.env.local` (NUNCA se sube al repositorio, ya está en .gitignore):
@@ -50,6 +53,7 @@ src/
     errores.ts        Traduce errores de PostgreSQL a lenguaje de marca
   componentes/
     ui.tsx            Boton, Tarjeta, Campo, Pildora, Esqueleto, Vacio, Aviso
+    Movimiento.tsx    Animaciones: Revelar (aparece al hacer scroll), paralaje, contador, confeti
     Navegacion.tsx    Barra inferior
   caracteristicas/reserva/
     useReserva.ts     Estado del flujo de 5 pasos
@@ -77,6 +81,11 @@ manipula el JavaScript, el precio real no cambia.
 
 **El panel (`/panel`) sí usa `@supabase/supabase-js`**, cargado aparte solo en esa ruta.
 
+**Animaciones sin librerías.** Todo el movimiento es CSS + `IntersectionObserver` (unos 2 KB).
+Si el móvil tiene activado «reducir movimiento» o es muy antiguo, la web se ve quieta y completa.
+Los botones con degradado terminan en `vino` (#A80E52), un tono fijo para que el texto blanco se lea
+también en modo oscuro.
+
 ## Base de datos (carpeta `supabase/`)
 
 Cada archivo `.sql` es una migración que se ejecuta **una vez** en Supabase → SQL Editor,
@@ -96,6 +105,7 @@ en este orden:
 11. `avisos_lynn.sql` (y la Edge Function de abajo)
 12. `avisos_direccion.sql` (la función quedó en la dirección `super-handler`)
 13. `fotos_diagnostico.sql` (permisos de fotos, registro de errores de subida y `diagnostico_fotos()`)
+14. `seguridad_avisos_y_diagnostico.sql` (cierra `diagnostico_fotos()` a la web y crea la clave de los avisos)
 
 ### Avisos al móvil de Lynn (Web Push)
 
@@ -110,6 +120,16 @@ lista de espera o deja una opinión. Lo que hace ella desde el panel no le avisa
    `supabase/.env.push.local` (ese archivo no se sube a GitHub; si se pierde, se generan claves nuevas
    y se cambia también la pública en `src/lib/panel/avisos.ts`).
 4. Ejecuta `avisos_lynn.sql`.
+
+**Clave de los avisos** (para que nadie más pueda despertar la función). Hacerlo en este orden;
+en cualquier punto intermedio los avisos siguen llegando:
+
+1. Ejecuta `seguridad_avisos_y_diagnostico.sql` (la base de datos empieza a mandar la clave).
+2. Copia la clave: `select decrypted_secret from vault.decrypted_secrets where name = 'avisos_push_secreto';`
+3. Edge Functions → Secrets: crea `AVISOS_SECRETO` con ese valor.
+4. Vuelve a desplegar `enviar-push` con el código actual de `supabase/functions/enviar-push/index.ts`.
+
+Si algo falla, borra el secreto `AVISOS_SECRETO` y la función vuelve a aceptar las llamadas sin clave.
 
 Lynn los activa, y elige cuáles quiere, en Panel → Más → «Avisos en este móvil». En el iPhone solo
 funcionan con el panel añadido a la pantalla de inicio (iOS 16.4 o más).

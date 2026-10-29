@@ -7,6 +7,7 @@ import { IconoReloj } from '../componentes/iconos'
 import { hora, ZONA } from '../lib/formato'
 import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import { useTextos } from '../lib/textos'
+import { Revelar } from '../componentes/Movimiento'
 
 export default function MisCitas() {
   const tokens = tokensGuardados()
@@ -34,7 +35,7 @@ export default function MisCitas() {
   const Encabezado = (
     <section className="px-4 pt-8 pb-5">
       <Etiqueta>{t('mis_citas.etiqueta')}</Etiqueta>
-      <h1 className="text-[34px] leading-tight mt-1">{t('mis_citas.titulo')}</h1>
+      <h1 className="text-[34px] leading-tight mt-1 linea-mascara"><span>{t('mis_citas.titulo')}</span></h1>
     </section>
   )
 
@@ -60,18 +61,21 @@ export default function MisCitas() {
     )
   }
 
-  const Fila = ({ c, pasada }: { c: typeof citas[number]; pasada?: boolean }) => {
+  // Función normal (no componente): así React no vuelve a montar las filas en cada render
+  const fila = (c: typeof citas[number], i: number, pasada?: boolean) => {
     const d = new Date(c.inicio)
     const dia = new Intl.DateTimeFormat('es', { timeZone: ZONA, day: 'numeric' }).format(d)
     const mes = new Intl.DateTimeFormat('es', { timeZone: ZONA, month: 'short' }).format(d).replace('.', '')
     const semana = new Intl.DateTimeFormat('es', { timeZone: ZONA, weekday: 'long' }).format(d)
     return (
+      <Revelar retraso={Math.min(i, 4) * 90}>
       <Link to={`/cita/${c.token}`}
-        className={`block bg-papel rounded-xl border border-rosa-100/80 shadow-suave p-3.5
-                    active:scale-[0.99] transition ${pasada ? 'opacity-75' : ''}`}>
+        className={`group block bg-papel rounded-xl border border-rosa-100/80 shadow-suave p-3.5
+                    transition duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:border-rosa-200
+                    active:scale-[0.99] ${pasada ? 'opacity-75' : ''}`}>
         <div className="flex items-center gap-4">
           <div className={`w-16 h-16 rounded-lg flex flex-col items-center justify-center shrink-0
-                           ${pasada ? 'bg-superficie-base text-tinta-suave' : 'bg-rosa-600 text-white'}`}>
+                           ${pasada ? 'bg-superficie-base text-tinta-suave' : 'bg-gradient-to-br from-rosa-600 to-vino text-white shadow-boton'}`}>
             <span className="text-[22px] font-semibold leading-none">{dia}</span>
             <span className="text-[11px] uppercase tracking-wider mt-1 opacity-90">{mes}</span>
           </div>
@@ -92,6 +96,7 @@ export default function MisCitas() {
           </div>
         </div>
       </Link>
+      </Revelar>
     )
   }
 
@@ -104,15 +109,15 @@ export default function MisCitas() {
             ? <Vacio titulo={t('mis_citas.sin_proximas_titulo')} texto={t('mis_citas.sin_proximas_texto')}>
                 <Link to="/reservar" className={estiloBoton()}>{t('inicio.boton_reservar')}</Link>
               </Vacio>
-            : <div className="space-y-3">{proximas.map(c => <Fila key={c.token} c={c} />)}</div>}
+            : <div className="space-y-3">{proximas.map((c, i) => <div key={c.token}>{fila(c, i)}</div>)}</div>}
         </section>
         {pasadas.length > 0 && (
           <section>
             <h2 className="text-[22px] mb-3">{t('mis_citas.historial')}</h2>
             <div className="space-y-3">
-              {pasadas.map(c => (
+              {pasadas.map((c, i) => (
                 <div key={c.token}>
-                  <Fila c={c} pasada />
+                  {fila(c, i, true)}
                   <div className="flex justify-end -mt-1"><BotonRepetir cita={c} compacto /></div>
                 </div>
               ))}
