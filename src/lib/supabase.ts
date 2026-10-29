@@ -50,3 +50,18 @@ export async function rpc<T>(nombre: string, params: Record<string, unknown>): P
   })
   return (await procesar(res)) as T
 }
+
+/** Sube un archivo al almacén (Storage) con la clave pública. Devuelve la ruta guardada. */
+export async function subirArchivo(almacen: string, ruta: string, archivo: Blob): Promise<string> {
+  const res = await fetch(`${URL_BASE}/storage/v1/object/${almacen}/${ruta}`, {
+    method: 'POST',
+    headers: { apikey: CLAVE, Authorization: `Bearer ${CLAVE}`, 'Content-Type': archivo.type || 'image/jpeg', 'x-upsert': 'false' },
+    body: archivo,
+  })
+  if (!res.ok) {
+    let cuerpo: { message?: string; error?: string } = {}
+    try { cuerpo = await res.json() } catch { /* sin cuerpo */ }
+    throw new Error(cuerpo.message || cuerpo.error || `HTTP ${res.status}`)
+  }
+  return ruta
+}

@@ -14,6 +14,7 @@ import { useTextos } from '../lib/textos'
 import { useDiseno, type SeccionInicio } from '../lib/diseno'
 import { Revelar, useParalaje, useVisto, useInclinacion, TextoLetras } from '../componentes/Movimiento'
 import type { Negocio, Servicio } from '../lib/tipos'
+import { registrarEvento } from '../lib/visitas'
 
 // Retraso de una animación de entrada
 const espera = (ms: number) => ({ animationDelay: `${ms}ms` }) as CSSProperties
@@ -406,6 +407,7 @@ function Contacto({ n, cerrado, ubicacion }: { n: Negocio; cerrado: boolean; ubi
         <div className="mt-5 space-y-2.5 relative">
           {n.phone_whatsapp && (
             <a href={`https://wa.me/${numeroWhatsApp(n.phone_whatsapp)}`} target="_blank" rel="noreferrer"
+               onClick={() => registrarEvento('whatsapp')}
                className="brillo toque min-h-[52px] w-full rounded-boton bg-whatsapp text-white font-semibold
                           inline-flex items-center justify-center gap-2 transition duration-200
                           shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)] hover:-translate-y-0.5 hover:bg-whatsapp-oscuro active:scale-[0.98]">

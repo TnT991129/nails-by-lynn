@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerTextosPanel, guardarTextosPanel } from '../../lib/panel/api-panel'
-import { CLAVE_DISENO } from '../../lib/diseno'
 import { TEXTOS, type ClaveTexto } from '../../lib/textos'
 import { urlPublica } from '../../lib/panel/whatsapp'
 import { Boton, Aviso, Esqueleto } from '../../componentes/ui'
@@ -45,9 +44,8 @@ export default function TextosWeb() {
       const t = (valores[c] ?? '').trim().slice(0, 1000)
       if (t && t !== TEXTOS[c].defecto) limpios[c] = t
     }
-    // El diseño de la web va guardado junto a los textos (Diseño de la web): se conserva tal cual
-    const diseno = q.data?.[CLAVE_DISENO]
-    if (diseno) limpios[CLAVE_DISENO] = diseno
+    // Junto a los textos van otros ajustes de la web (claves con «_»: diseño, tarjeta de fidelidad…): se conservan
+    for (const [clave, valor] of Object.entries(q.data ?? {})) if (clave.startsWith('_')) limpios[clave] = valor
     setGuardando(true); setError(null); setGuardado(false)
     try {
       await guardarTextosPanel(limpios)

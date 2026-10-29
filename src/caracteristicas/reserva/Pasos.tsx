@@ -13,6 +13,7 @@ import { useHorarioPublico } from '../../lib/useHorarioPublico'
 import CalendarioMes from '../../componentes/CalendarioMes'
 import EnCup from '../../componentes/EnCup'
 import { useTextos, conNegritas } from '../../lib/textos'
+import { SelectorInspiracion } from './Inspiracion'
 
 const NOMBRES_PASOS = ['Servicio','Extras','Fecha','Hora','Datos','Listo']
 
@@ -300,8 +301,11 @@ export function PasoHora({
 }
 
 export function PasoDatos({
-  datos, setDatos, intentado,
-}: { datos: Datos; setDatos: (d: Datos) => void; intentado: boolean }) {
+  datos, setDatos, intentado, inspiracion, setInspiracion,
+}: {
+  datos: Datos; setDatos: (d: Datos) => void; intentado: boolean
+  inspiracion: File | null; setInspiracion: (f: File | null) => void
+}) {
   const t = useTextos()
   const set = (k: keyof Datos) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setDatos({ ...datos, [k]: e.target.value })
@@ -332,6 +336,7 @@ export function PasoDatos({
                      focus:outline-none focus:ring-4 focus:ring-rosa-100 focus:border-rosa-500
                      placeholder:text-tinta-tenue/60" />
       </label>
+      <SelectorInspiracion foto={inspiracion} setFoto={setInspiracion} />
     </div>
   )
 }

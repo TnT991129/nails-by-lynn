@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   citasEnRango, listarHorarios, obtenerTurnosFijos, listarDiasCerrados, turnosDelDia,
-  bloqueosEnRango, obtenerAjustesPoliticas,
+  bloqueosEnRango, obtenerAjustesPoliticas, crearBloqueo, eliminarBloqueo,
   type CitaAgenda, type ReglaHorario, type DiaCerrado,
 } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Pildora, estiloBoton } from '../../componentes/ui'
@@ -21,9 +21,9 @@ const LETRAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 // Un turno sin cita no siempre lo ven las clientas: la web no ofrece los que están más cerca que la
 // antelación mínima (Políticas) ni los que chocan con un bloqueo. Aquí se muestran igual que allí.
 type EstadoTurno = 'libre' | 'pronto' | 'bloqueado' | 'pasado'
-type Turno = { t: string; inicio: string; cita: CitaAgenda | null; estado: EstadoTurno; motivo?: string | null }
+type Turno = { t: string; inicio: string; cita: CitaAgenda | null; estado: EstadoTurno; motivo?: string | null; bloqueo?: Bloqueo }
 type Jornada = { iso: string; cerrado: boolean; turnos: Turno[]; otras: CitaAgenda[] }
-type Bloqueo = { starts_at: string; ends_at: string; reason: string | null }
+type Bloqueo = { id: string; starts_at: string; ends_at: string; reason: string | null }
 type Reglas = { reglas: ReglaHorario[]; fijos: string[]; cerrados: DiaCerrado[]; bloqueos: Bloqueo[]; horasMinimas: number | null }
 
 // Lo que ocupa una cita estándar (90 min + 15 de margen): la web exige que quepa entera
@@ -48,7 +48,7 @@ function jornada(iso: string, { reglas, fijos, cerrados, bloqueos, horasMinimas 
       : horasMinimas && ms < ahora + horasMinimas * 3_600_000 ? 'pronto'
       : 'libre'
     // motivo: el del bloqueo, o las horas de antelación que pide la web
-    return { t, inicio, cita, estado, motivo: estado === 'pronto' ? `${horasMinimas} h` : bloqueo?.reason }
+    return { t, inicio, cita, estado, motivo: estado === 'pronto' ? `${horasMinimas} h` : bloqueo?.reason, bloqueo }
   })
   return { iso, cerrado, turnos, otras: delDia.filter(c => !usadas.has(c.id)) }
 }
@@ -162,13 +162,57 @@ export default function Agenda() {
 }
 
 // ---------- Día (y cada día de la semana) ----------
+// Bloquear desde la agenda: un turno (una hora desde su inicio: basta para que la web no lo ofrezca)
+// o el día entero. Es lo mismo que Más → Horarios → Bloqueos, sin salir de aquí.
+const MOTIVO_TURNO = 'Bloqueado desde la agenda'
+const MOTIVO_DIA = 'Día bloqueado desde la agenda'
+
+function useBloqueos() {
+  const qc = useQueryClient()
+  const [ocupado, setOcupado] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  async function hacer(clave: string, accion: () => Promise<unknown>) {
+    setOcupado(clave); setError(null)
+    try {
+      await accion()
+      await qc.invalidateQueries({ queryKey: ['bloqueos'] })
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setOcupado(null) }
+  }
+  return {
+    ocupado, error,
+    bloquearTurno: (tu: Turno) => hacer(tu.inicio, () =>
+      crearBloqueo(tu.inicio, new Date(new Date(tu.inicio).getTime() + 60 * 60_000).toISOString(), MOTIVO_TURNO)),
+    bloquearDia: (iso: string) => hacer(iso, () =>
+      crearBloqueo(instanteEnHabana(iso, '00:00'), instanteEnHabana(sumarDias(iso, 1), '00:00'), MOTIVO_DIA)),
+    desbloquear: (b: Bloqueo) => {
+      const varios = new Date(b.ends_at).getTime() - new Date(b.starts_at).getTime() > 26 * 3_600_000
+      const rango = `${fechaLarga(b.starts_at)} ${hora(b.starts_at)} – ${varios ? fechaLarga(b.ends_at) + ' ' : ''}${hora(b.ends_at)}`
+      if (!confirm(`¿Quitar el bloqueo del ${rango}${b.reason ? ` («${b.reason}»)` : ''}?
+Las clientas podrán volver a reservar esas horas.`)) return
+      return hacer(b.id, () => eliminarBloqueo(b.id))
+    },
+  }
+}
+
 function VistaDia({ j, compacta = false }: { j: Jornada; compacta?: boolean }) {
   const pasado = j.iso < fechaISO(new Date())
+  const b = useBloqueos()
+  const bloqueables = j.turnos.filter(tu => !tu.cita && (tu.estado === 'libre' || tu.estado === 'pronto'))
   return (
     <section className="space-y-2">
-      {compacta && (
-        <h3 className="text-[14px] font-semibold first-letter:uppercase pt-1">{fechaLarga(`${j.iso}T16:00:00Z`)}</h3>
+      {(compacta || (!pasado && bloqueables.length > 1)) && (
+        <div className="flex items-center justify-between gap-2 pt-1">
+          {compacta ? <h3 className="text-[14px] font-semibold first-letter:uppercase">{fechaLarga(`${j.iso}T16:00:00Z`)}</h3> : <span />}
+          {!pasado && bloqueables.length > 1 && (
+            <button onClick={() => b.bloquearDia(j.iso)} disabled={b.ocupado !== null}
+              className="text-[13px] text-tinta-tenue underline min-h-[36px] disabled:opacity-50">
+              {b.ocupado === j.iso ? 'Bloqueando…' : '🔒 Bloquear el día'}
+            </button>
+          )}
+        </div>
       )}
+      {b.error && <Aviso>{b.error}</Aviso>}
       {j.cerrado && j.otras.length === 0 && (
         <div className="rounded-lg border border-dashed border-rosa-200 px-4 py-3 text-[14px] text-tinta-tenue">Cerrado</div>
       )}
@@ -193,10 +237,23 @@ function VistaDia({ j, compacta = false }: { j: Jornada; compacta?: boolean }) {
                   </span></span>
               )}
             </div>
-            {!pasado && tu.estado !== 'pasado' && (
-              <Link to={`/panel/agenda/nueva?fecha=${j.iso}`} className="text-[13px] text-rosa-800 font-semibold min-h-[36px] inline-flex items-center">
-                + Agendar
-              </Link>
+            {!pasado && tu.estado !== 'pasado' && tu.estado !== 'bloqueado' && (
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => b.bloquearTurno(tu)} disabled={b.ocupado !== null} aria-label={`Bloquear el turno de las ${horaDeTurno(tu.t)}`}
+                  title="Bloquear: las clientas no podrán reservarlo"
+                  className="w-9 h-9 rounded-full text-tinta-tenue hover:bg-rosa-50 flex items-center justify-center disabled:opacity-40">
+                  {b.ocupado === tu.inicio ? <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : '🔒'}
+                </button>
+                <Link to={`/panel/agenda/nueva?fecha=${j.iso}`} className="text-[13px] text-rosa-800 font-semibold min-h-[36px] inline-flex items-center px-1">
+                  + Agendar
+                </Link>
+              </div>
+            )}
+            {!pasado && tu.estado === 'bloqueado' && tu.bloqueo && (
+              <button onClick={() => b.desbloquear(tu.bloqueo!)} disabled={b.ocupado !== null}
+                className="text-[13px] text-rosa-800 font-semibold min-h-[36px] shrink-0 disabled:opacity-40">
+                {b.ocupado === tu.bloqueo.id ? 'Quitando…' : '🔓 Desbloquear'}
+              </button>
             )}
           </div>
         ))}

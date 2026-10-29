@@ -8,6 +8,7 @@ import { hora, ZONA } from '../lib/formato'
 import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import { useTextos } from '../lib/textos'
 import { Revelar } from '../componentes/Movimiento'
+import TarjetaSellos from '../caracteristicas/fidelidad/TarjetaSellos'
 
 export default function MisCitas() {
   const tokens = tokensGuardados()
@@ -103,6 +104,8 @@ export default function MisCitas() {
   return (
     <div className="pb-28">
       {Encabezado}
+      {/* Los sellos son de la clienta: sirve el token de cualquiera de sus citas */}
+      <div className="px-4"><TarjetaSellos token={tokens[0]} className="mb-6" /></div>
       <div className="px-4 space-y-8">
         <section>
           {proximas.length === 0

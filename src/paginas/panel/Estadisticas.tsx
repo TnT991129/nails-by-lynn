@@ -5,6 +5,7 @@ import ResumenSemanal from './ResumenSemanal'
 import { Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
 import { importe, fechaISO } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
+import EmbudoWeb from './EmbudoWeb'
 import { Volver } from './comunes'
 
 const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -48,6 +49,7 @@ export default function Estadisticas() {
       <h1 className="text-[30px] leading-tight">Estadísticas</h1>
 
       <ResumenSemanal />
+      <EmbudoWeb />
 
       <div className="flex items-center justify-between">
         <button onClick={() => mover(-1)} className="min-h-[44px] px-4 text-tinta-suave">←</button>

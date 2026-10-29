@@ -1,4 +1,4 @@
-import { seleccionar, rpc, NEGOCIO_ID } from './supabase'
+import { seleccionar, rpc, subirArchivo, NEGOCIO_ID } from './supabase'
 import type { Servicio, Addon, Negocio, CitaCreada, CitaDetalle, ItemReserva, Politicas, Resenas } from './tipos'
 
 export async function obtenerNegocio(): Promise<Negocio> {
@@ -168,4 +168,25 @@ export function editarCita(token: string, items: ItemReserva[], nota: string | n
   return rpc<{ ok: boolean; total: number; duracion: number }>('editar_cita', {
     p_token: token, p_items: items, p_nota: nota,
   })
+}
+
+// ---------- Foto de inspiración (supabase/inspiracion_fidelidad_visitas.sql) ----------
+/** Reduce la foto en el móvil, la sube al almacén privado y la une a la cita. Devuelve cuántas tiene ya. */
+export async function enviarInspiracion(token: string, original: File): Promise<number> {
+  const { reducirImagen } = await import('./panel/imagen')   // solo se descarga si la clienta adjunta una foto
+  const foto = await reducirImagen(original, 1400)
+  const ext = foto.type === 'image/webp' ? 'webp' : foto.type === 'image/png' ? 'png' : 'jpg'
+  const ruta = `${NEGOCIO_ID}/${crypto.getRandomValues(new Uint32Array(4)).join('')}.${ext}`
+  await subirArchivo('referencias', ruta, foto)
+  const r = await rpc<{ ok: boolean; total: number }>('adjuntar_referencia', { p_token: token, p_path: ruta })
+  return r.total
+}
+
+export async function contarInspiracion(token: string): Promise<number | null> {
+  try { return await rpc<number>('contar_referencias', { p_token: token }) } catch { return null }   // sin el SQL: no se muestra
+}
+
+// ---------- Tarjeta de fidelidad ----------
+export async function tarjetaFidelidad(token: string): Promise<{ completadas: number; descuento_pendiente: number | null } | null> {
+  try { return await rpc('tarjeta_fidelidad', { p_token: token }) } catch { return null }
 }

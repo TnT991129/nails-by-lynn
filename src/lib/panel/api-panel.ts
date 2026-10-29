@@ -777,8 +777,13 @@ export async function cambiarLogo(archivo: File | null): Promise<string | null> 
 // Va dentro de settings.site_texts (clave CLAVE_DISENO de lib/diseno.ts) para no tocar la base de datos.
 // Se lee lo guardado justo antes para no pisar los textos que Lynn haya cambiado.
 export async function guardarDiseno(diseno: Diseno) {
+  return guardarAjusteWeb(CLAVE_DISENO, diseno)
+}
+
+/** Guarda un ajuste de la web (diseño, tarjeta de fidelidad…) junto a los textos, sin tocar lo demás */
+export async function guardarAjusteWeb(clave: `_${string}`, valor: unknown) {
   const textos = await obtenerTextosPanel()
-  return guardarTextosPanel({ ...textos, [CLAVE_DISENO]: JSON.stringify(diseno) })
+  return guardarTextosPanel({ ...textos, [clave]: JSON.stringify(valor) })
 }
 
 // ================== CREAR / ELIMINAR SERVICIOS ==================
@@ -1264,4 +1269,29 @@ export function publicarResena(id: string, publicar: boolean) {
 
 export function eliminarResena(id: string) {
   return ejecutar(sb.from('reviews').delete().eq('id', id))
+}
+
+// ================== INSPIRACIÓN, FIDELIDAD Y VISITAS (supabase/inspiracion_fidelidad_visitas.sql) ==================
+/** ¿Está ejecutado el SQL nuevo? (false = falta; las pantallas lo avisan) */
+export async function funcionesNuevasInstaladas(): Promise<boolean> {
+  const { error } = await sb.rpc('embudo_web', { p_dias: 1 })
+  return !(error && (error.code === 'PGRST202' || /could not find the function/i.test(error.message)))
+}
+
+export type Embudo = { eventos: Partial<Record<string, number>>; por_dia: { dia: string; visitas: number }[] }
+export async function embudoWeb(dias: number): Promise<Embudo | null> {
+  const { data, error } = await sb.rpc('embudo_web', { p_dias: dias })
+  if (error) {
+    if (error.code === 'PGRST202' || /could not find the function/i.test(error.message)) return null
+    throw error
+  }
+  return data as Embudo
+}
+
+/** Fotos de inspiración de una cita, con enlaces que caducan en una hora (el almacén es privado) */
+export async function inspiracionDeCita(citaId: string): Promise<{ id: string; url: string }[]> {
+  const { data, error } = await sb.from('appointment_references').select('id, path').eq('appointment_id', citaId).order('created_at')
+  if (error || !data?.length) return []   // sin el SQL o sin fotos
+  const { data: firmadas } = await sb.storage.from('referencias').createSignedUrls(data.map(r => r.path), 3600)
+  return data.map((r, i) => ({ id: r.id, url: firmadas?.[i]?.signedUrl ?? '' })).filter(r => r.url)
 }

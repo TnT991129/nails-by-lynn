@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -7,6 +7,7 @@ import Navegacion from './componentes/Navegacion'
 import LimiteErrores, { recargarPorVersionNueva } from './componentes/LimiteErrores'
 import { BarraProgreso } from './componentes/Movimiento'
 import { useAplicarDiseno } from './lib/diseno'
+import { registrarEvento } from './lib/visitas'
 
 // Páginas públicas: se descargan en segundo plano tras abrir la web para que funcionen sin conexión
 const PAGINAS_PUBLICAS = {
@@ -63,6 +64,7 @@ window.addEventListener('vite:preloadError', e => {
 function Rutas() {
   const { pathname } = useLocation()
   useAplicarDiseno()   // colores, letras y formas que eligió Lynn (Panel → Diseño de la web)
+  useEffect(() => { if (!pathname.startsWith('/panel')) registrarEvento('visita') }, [pathname])
   return (
     <LimiteErrores ruta={pathname}>
       <BarraProgreso />

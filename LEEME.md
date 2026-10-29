@@ -93,6 +93,17 @@ también en modo oscuro.
 - **`historial/`**: las migraciones que la fueron construyendo. Ya están aplicadas; no se repiten.
 - **`restaurar_servicios.sql`**: solo si se borran los servicios por error.
 
+**Pendientes de ejecutar** (cada uno una vez, en Supabase → SQL Editor; después se mueven a `historial/`):
+
+- `antelacion_en_politicas.sql`: la web sabe cuántas horas de antelación pide Lynn (opcional).
+- `inspiracion_fidelidad_visitas.sql`: foto de inspiración (almacén privado `referencias`), tarjeta de
+  fidelidad (sellos y premio automático al completar) y visitas anónimas para Estadísticas.
+  Solo añade cosas; sin él, esas tres funciones no se ven y el resto de la web va igual.
+
+**Ajustes guardados junto a los textos.** `settings.site_texts` guarda, además de los textos, ajustes de la web
+en claves que empiezan por «_» (JSON): `_diseno` (Diseño de la web) y `_fidelidad` (Tarjeta de fidelidad).
+Textos de la web las conserva al guardar.
+
 **Para cambiar algo en la base de datos:**
 
 1. Escribe un archivo nuevo en `supabase/` con el cambio (entre `begin;` y `commit;`, para que si

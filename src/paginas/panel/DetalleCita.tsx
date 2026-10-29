@@ -20,6 +20,7 @@ import EsperaDelDia from './EsperaDelDia'
 import MensajeGracias from './MensajeGracias'
 import FotosTrabajo from './FotosTrabajo'
 import EditarServiciosCita from './EditarServiciosCita'
+import InspiracionPanel from './InspiracionPanel'
 
 export default function DetalleCita() {
   const { id = '' } = useParams()
@@ -124,6 +125,7 @@ export default function DetalleCita() {
         </div>
       </Tarjeta>
 
+      <InspiracionPanel citaId={c.id} />
       {['CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO'].includes(c.status) && <EsperaDelDia inicio={c.starts_at} />}
 
       {!['CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO'].includes(c.status) && <DescuentoCita cita={c} />}

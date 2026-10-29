@@ -15,6 +15,7 @@ import { mensajeDeError, codigoDeError } from '../lib/errores'
 import EnCup from '../componentes/EnCup'
 import type { Repetir } from '../caracteristicas/reserva/repetir'
 import { useTextos } from '../lib/textos'
+import { registrarEvento, type EventoWeb } from '../lib/visitas'
 
 export default function Reserva() {
   const navegar = useNavigate()
@@ -22,6 +23,7 @@ export default function Reserva() {
   const [intentado, setIntentado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const [inspiracion, setInspiracion] = useState<File | null>(null)   // foto del diseño que quiere (opcional)
   const t = useTextos()
 
   const qServicios = useQuery({ queryKey:['servicios'], queryFn: obtenerServicios })
@@ -30,6 +32,14 @@ export default function Reserva() {
   const qCerrados = useQuery({ queryKey:['dias-cerrados'], queryFn: obtenerDiasCerrados })
 
   const r = useReserva(qServicios.data ?? [], qAddons.data ?? [])
+
+  // Hasta qué paso llega la gente (Estadísticas → Visitas y reservas)
+  useEffect(() => {
+    const EVENTOS: Partial<Record<number, EventoWeb>> = {
+      1: 'reserva_inicio', 3: 'reserva_fecha', 4: 'reserva_hora', 5: 'reserva_datos', 6: 'reserva_resumen' }
+    const e = EVENTOS[r.paso]
+    if (e) registrarEvento(e)
+  }, [r.paso])
 
   // Hacia dónde se movió la clienta: el paso nuevo entra por la derecha o por la izquierda
   const [pasoVisto, setPasoVisto] = useState(r.paso)
@@ -104,7 +114,7 @@ export default function Reserva() {
     <a href={`https://wa.me/${numeroWhatsApp(telefonoLynn)}?text=${encodeURIComponent(
          `Hola Lynn! ¿Te queda algún turno el ${fechaLarga(`${r.fecha}T16:00:00Z`)}? `
          + `Quería reservar: ${r.serviciosElegidos.map(s => s.name).join(' + ')}`)}`}
-       target="_blank" rel="noreferrer"
+       target="_blank" rel="noreferrer" onClick={() => registrarEvento('whatsapp')}
        className="brillo inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-whatsapp px-6
                   font-semibold text-white shadow-[0_10px_24px_-10px_rgba(37,211,102,.7)] transition duration-200
                   hover:-translate-y-0.5 hover:bg-whatsapp-oscuro active:scale-[0.98]">
@@ -128,7 +138,9 @@ export default function Reserva() {
     setEnviando(true)
     try {
       const cita = await r.confirmar()
-      navegar(`/cita/${cita.access_token}?nueva=1`)
+      registrarEvento('reserva_hecha')
+      // La foto de inspiración se envía ya en la página de la cita (allí se ve cómo va)
+      navegar(`/cita/${cita.access_token}?nueva=1`, { state: inspiracion ? { inspiracion } : undefined })
     } catch (e) {
       const codigo = codigoDeError(e)
       setError(mensajeDeError(e))
@@ -189,7 +201,8 @@ export default function Reserva() {
             siNoHay={demasiadoPronto ? pedirPorWhatsApp : r.fecha && <ListaEspera key={r.fecha} fecha={r.fecha} servicioId={r.seleccionados[0]}
                                    nombreInicial={r.datos.nombre} telefonoInicial={r.datos.telefono} />} />
         )}
-        {r.paso === 5 && <PasoDatos datos={r.datos} setDatos={r.setDatos} intentado={intentado} />}
+        {r.paso === 5 && <PasoDatos datos={r.datos} setDatos={r.setDatos} intentado={intentado}
+                                    inspiracion={inspiracion} setInspiracion={setInspiracion} />}
         {r.paso === 6 && r.inicio && (
           <PasoResumen servicios={r.serviciosElegidos}
             addons={r.addonsAplicables.filter(a => r.addonsElegidos.includes(a.id))}

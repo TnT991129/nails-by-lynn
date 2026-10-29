@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useSearchParams, Link } from 'react-router-dom'
+import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerCita, cancelarCita } from '../lib/api'
 import { Boton, Tarjeta, Pildora, Esqueleto, Aviso, estiloBoton } from '../componentes/ui'
@@ -15,6 +15,9 @@ import { BotonRepetir } from '../caracteristicas/reserva/repetir'
 import ReprogramarCita from '../caracteristicas/reserva/ReprogramarCita'
 import { useTextos, conNegritas } from '../lib/textos'
 import { Confeti, Revelar } from '../componentes/Movimiento'
+import { InspiracionCita } from '../caracteristicas/reserva/Inspiracion'
+import TarjetaSellos from '../caracteristicas/fidelidad/TarjetaSellos'
+import { descargarIcs, enlaceGoogleCalendar } from '../lib/calendario'
 
 // Complementos de todos los servicios, sin repetir (citas antiguas los tenían por servicio)
 type ComplementoCita = { nombre: string; precio: number; precio_max?: number | null }
@@ -75,6 +78,8 @@ export default function Cita() {
   const [editando, setEditando] = useState(false)
   const [avisadaAhora, setAvisadaAhora] = useState(false)
   const t = useTextos()
+  // Foto de inspiración elegida al reservar: llega con la navegación y se envía aquí
+  const inspiracionPendiente = (useLocation().state as { inspiracion?: File } | null)?.inspiracion ?? null
 
   const q = useQuery({ queryKey:['cita', token], queryFn: () => obtenerCita(token) })
 
@@ -210,6 +215,11 @@ export default function Cita() {
         </Tarjeta>
         </Revelar>
 
+        {activa && <AnadirCalendario c={c} token={token} />}
+        <InspiracionCita token={token} activa={activa} pendiente={inspiracionPendiente}
+          enlaceWhatsApp={c.negocio.whatsapp ? `https://wa.me/${numeroWhatsApp(c.negocio.whatsapp)}?text=${encodeURIComponent(`Hola Lynn! Te mando la foto del diseño para mi cita ${c.code}`)}` : null} />
+        <TarjetaSellos token={token} />
+
         {!esNueva && bloqueAviso}
 
         {c.estado === 'COMPLETADA' && <ValorarCita token={token} resena={c.resena} />}
@@ -292,6 +302,38 @@ export default function Cita() {
         <Link to="/" className="block text-center text-rosa-800 font-medium min-h-[44px] leading-[44px]">
           Volver al inicio
         </Link>
+      </div>
+    </div>
+  )
+}
+
+// Guardar la cita en el calendario del móvil: el propio móvil le avisa el día antes y 2 horas antes
+function AnadirCalendario({ c, token }: { c: Awaited<ReturnType<typeof obtenerCita>>; token: string }) {
+  const datos = {
+    code: c.code, inicio: c.inicio, fin: c.fin,
+    servicios: (c.servicios ?? []).map(s => s.nombre),
+    negocio: c.negocio.nombre, ubicacion: c.negocio.ubicacion,
+    enlace: `${location.origin}${import.meta.env.BASE_URL}cita/${token}`,
+  }
+  return (
+    <div className="rounded-xl border border-rosa-100 bg-papel p-4 shadow-suave">
+      <div className="flex items-center gap-3">
+        <span aria-hidden className="w-11 h-11 rounded-full bg-rosa-50 text-rosa-600 flex items-center justify-center shrink-0">
+          <IconoCalendario tam={20} />
+        </span>
+        <div className="flex-1 text-[14px]">
+          <div className="font-semibold">Que no se te olvide</div>
+          <div className="text-tinta-tenue text-[13px]">Tu móvil te avisará el día antes y 2 horas antes.</div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <button onClick={() => descargarIcs(datos)} className={`${estiloBoton('primario')} !min-h-[46px] !px-3 !text-[14px]`}>
+          Añadir al calendario
+        </button>
+        <a href={enlaceGoogleCalendar(datos)} target="_blank" rel="noreferrer"
+           className={`${estiloBoton('secundario')} !min-h-[46px] !px-3 !text-[14px]`}>
+          Google Calendar
+        </a>
       </div>
     </div>
   )
