@@ -1,7 +1,7 @@
 import { sb } from './supabase-panel'
 
 // Avisos en el móvil de Lynn (Web Push) cuando una clienta reserva, cancela, cambia su cita, etc.
-// Los manda la Edge Function «enviar-push» (supabase/avisos_lynn.sql). Esta es la clave PÚBLICA;
+// Los manda la Edge Function «enviar-push» (supabase/historial/avisos_lynn.sql). Esta es la clave PÚBLICA;
 // la privada solo está en los secretos de Supabase.
 const CLAVE_PUBLICA = 'BMyeUzzFMnPe18NIHJNCb2Wk6UBfFgX_U1mUXjvmEeZjDZuxnratQjJNLVqKjyZZEeiu7VI6HFcf8VH6FoiN98s'
 

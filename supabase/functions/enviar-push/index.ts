@@ -1,5 +1,5 @@
 // Edge Function «enviar-push»: manda al móvil de Lynn los avisos pendientes de push_cola
-// (supabase/avisos_lynn.sql): reservas nuevas, cancelaciones, cambios de fecha o de servicios,
+// (supabase/historial/avisos_lynn.sql): reservas nuevas, cancelaciones, cambios de fecha o de servicios,
 // lista de espera y opiniones. La llaman la base de datos al momento y el cron cada 15 min.
 // Solo vacía la cola, así que no hace falta protegerla con JWT (desactivar «Enforce JWT verification»).
 //
@@ -111,7 +111,7 @@ Deno.serve(async (peticion) => {
   // La base de datos siempre llama con POST; un GET (navegador, rastreadores) no despierta el envío
   if (peticion.method !== 'POST') return new Response(null, { status: 405, headers: { Allow: 'POST' } })
   // Con el secreto AVISOS_SECRETO puesto, solo atiende a quien traiga la clave (la base de datos, ver
-  // supabase/seguridad_avisos_y_diagnostico.sql). Sin ese secreto funciona como antes.
+  // supabase/historial/seguridad_avisos_y_diagnostico.sql). Sin ese secreto funciona como antes.
   const secreto = Deno.env.get('AVISOS_SECRETO')?.trim()
   if (secreto && !mismaClave(peticion.headers.get('x-avisos-secreto') ?? '', secreto)) {
     return new Response(null, { status: 401 })

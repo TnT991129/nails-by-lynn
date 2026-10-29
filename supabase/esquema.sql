@@ -1,19 +1,21 @@
--- ⚠️ NO EJECUTAR. Copia de referencia DESACTUALIZADA (25/09/2026).
--- No incluye las migraciones posteriores y contiene versiones antiguas e inseguras de
--- exportar_respaldo, cancelar_cita, crear_cita, crear_hold y validar_turno.
--- Para ver la estructura real, ejecuta supabase/exportar_esquema.sql en Supabase y pega aquí el resultado.
+-- Estructura actual de la base de datos de Nails by Lynn (sin datos).
+-- Generado el 28/10/2026 con supabase/exportar_esquema.sql + supabase/csv_a_esquema.py.
 --
--- Estructura de la base de datos de Nails by Lynn (sin datos).
--- Generado con supabase/exportar_esquema.sql. Es una copia de referencia:
--- la fuente de verdad sigue siendo Supabase. Actualízala tras cada cambio de SQL.
--- Nota: no incluye permisos (grant/revoke) de funciones.
+-- Es la referencia de cómo está la base de datos AHORA. Las migraciones que la fueron construyendo
+-- están en supabase/historial/ (ya aplicadas; no se vuelven a ejecutar).
+-- NO ejecutar sobre la base de datos en uso. Sirve para consultar o para montar una copia nueva.
+-- No incluye: datos, usuarios (Authentication), secretos de Vault ni las Edge Functions.
 
 
--- ======================================================================
--- 0. Extensiones
--- ======================================================================
+-- =====================================================================
+-- Extensiones
+-- =====================================================================
 
 create extension if not exists btree_gist with schema public;
+
+create extension if not exists pg_cron with schema pg_catalog;
+
+create extension if not exists pg_net with schema extensions;
 
 create extension if not exists pg_stat_statements with schema extensions;
 
@@ -24,9 +26,9 @@ create extension if not exists supabase_vault with schema vault;
 create extension if not exists "uuid-ossp" with schema extensions;
 
 
--- ======================================================================
--- 1. Tipos (enums)
--- ======================================================================
+-- =====================================================================
+-- Tipos y secuencias
+-- =====================================================================
 
 create type public.canal_notif as enum ('WHATSAPP_ASISTIDO', 'WHATSAPP_AUTO', 'EMAIL', 'PUSH', 'SMS');
 
@@ -61,9 +63,9 @@ create type public.tipo_pago as enum ('ANTICIPO', 'SALDO', 'PAGO_TOTAL', 'REEMBO
 create type public.visibilidad_ubicacion as enum ('PUBLICA', 'SOLO_CLIENTAS', 'OCULTA');
 
 
--- ======================================================================
--- 2. Tablas
--- ======================================================================
+-- =====================================================================
+-- Tablas
+-- =====================================================================
 
 create table public.appointment_item_addons (
   id uuid default gen_random_uuid() not null,
@@ -71,7 +73,8 @@ create table public.appointment_item_addons (
   addon_id uuid,
   name_snapshot text not null,
   extra_minutes_snapshot integer default 0 not null,
-  extra_price_snapshot numeric(12,2) default 0 not null
+  extra_price_snapshot numeric(12,2) default 0 not null,
+  extra_price_max_snapshot numeric(12,2)
 );
 
 create table public.appointment_items (
@@ -112,7 +115,10 @@ create table public.appointments (
   completed_at timestamp with time zone,
   policies_accepted_at timestamp with time zone not null,
   created_at timestamp with time zone default now() not null,
-  updated_at timestamp with time zone default now() not null
+  updated_at timestamp with time zone default now() not null,
+  discount_percent numeric(5,2) default 0 not null,
+  discount_amount numeric(12,2) default 0 not null,
+  total_amount_max numeric(12,2)
 );
 
 create table public.audit_log (
@@ -180,7 +186,12 @@ create table public.clients (
   first_seen_at timestamp with time zone default now() not null,
   last_appointment_at timestamp with time zone,
   created_at timestamp with time zone default now() not null,
-  updated_at timestamp with time zone default now() not null
+  updated_at timestamp with time zone default now() not null,
+  next_discount_percent numeric(5,2),
+  next_discount_note text,
+  next_discount_at timestamp with time zone,
+  allergies text,
+  birthday date
 );
 
 create table public.exchange_rates (
@@ -238,7 +249,8 @@ create table public.holds (
   starts_at timestamp with time zone not null,
   ends_at timestamp with time zone not null,
   expires_at timestamp with time zone not null,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  ip text
 );
 
 create table public.notifications (
@@ -290,6 +302,37 @@ create table public.profiles (
   last_seen_at timestamp with time zone
 );
 
+create table public.push_cola (
+  id bigint generated always as identity not null,
+  business_id uuid not null,
+  evento text not null,
+  ref_id uuid not null,
+  created_at timestamp with time zone default now() not null,
+  tomado_at timestamp with time zone,
+  enviado_at timestamp with time zone,
+  resultado text
+);
+
+create table public.push_suscripciones (
+  id uuid default gen_random_uuid() not null,
+  business_id uuid not null,
+  profile_id uuid not null,
+  endpoint text not null,
+  p256dh text not null,
+  auth text not null,
+  eventos text[] default ARRAY['nueva'::text, 'cancelada'::text, 'reagendada'::text, 'editada'::text, 'espera'::text, 'opinion'::text] not null,
+  created_at timestamp with time zone default now() not null,
+  last_ok_at timestamp with time zone
+);
+
+create table public.registro_errores (
+  id bigint generated always as identity not null,
+  created_at timestamp with time zone default now() not null,
+  origen text not null,
+  mensaje text,
+  detalle jsonb
+);
+
 create table public.reviews (
   id uuid default gen_random_uuid() not null,
   business_id uuid not null,
@@ -332,7 +375,8 @@ create table public.service_addons (
   extra_price numeric(12,2) default 0 not null,
   is_active boolean default true not null,
   sort_order integer default 0 not null,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  extra_price_max numeric(12,2)
 );
 
 create table public.services (
@@ -383,7 +427,10 @@ create table public.settings (
   max_bookings_per_device_24h integer default 3 not null,
   reminder_offsets_hours integer[] default '{24,2}'::integer[] not null,
   updated_at timestamp with time zone default now() not null,
-  fixed_slot_times time without time zone[]
+  fixed_slot_times time without time zone[],
+  max_reschedules_per_month integer default 1 not null,
+  policy_sections jsonb,
+  site_texts jsonb default '{}'::jsonb not null
 );
 
 create table public.tags (
@@ -409,9 +456,9 @@ create table public.waitlist (
 );
 
 
--- ======================================================================
--- 3. Claves primarias, únicas, checks y EXCLUDE
--- ======================================================================
+-- =====================================================================
+-- Restricciones
+-- =====================================================================
 
 alter table public.appointment_item_addons add constraint aia_minutos CHECK ((extra_minutes_snapshot >= 0));
 
@@ -457,6 +504,8 @@ alter table public.businesses add constraint businesses_slug_key UNIQUE (slug);
 
 alter table public.clients add constraint clients_consent_fecha CHECK (((photo_consent = false) OR (photo_consent_at IS NOT NULL)));
 
+alter table public.clients add constraint clients_descuento_valido CHECK (((next_discount_percent IS NULL) OR ((next_discount_percent > (0)::numeric) AND (next_discount_percent <= (100)::numeric))));
+
 alter table public.clients add constraint clients_phone_unico UNIQUE (business_id, phone);
 
 alter table public.clients add constraint clients_pkey PRIMARY KEY (id);
@@ -495,6 +544,14 @@ alter table public.photo_tags add constraint photo_tags_pkey PRIMARY KEY (photo_
 
 alter table public.profiles add constraint profiles_pkey PRIMARY KEY (id);
 
+alter table public.push_cola add constraint push_cola_pkey PRIMARY KEY (id);
+
+alter table public.push_suscripciones add constraint push_suscripciones_endpoint_key UNIQUE (endpoint);
+
+alter table public.push_suscripciones add constraint push_suscripciones_pkey PRIMARY KEY (id);
+
+alter table public.registro_errores add constraint registro_errores_pkey PRIMARY KEY (id);
+
 alter table public.reviews add constraint reviews_pkey PRIMARY KEY (id);
 
 alter table public.reviews add constraint rv_rating CHECK (((rating >= 1) AND (rating <= 5)));
@@ -517,6 +574,8 @@ alter table public.service_addons add constraint addons_minutos_no_negativos CHE
 
 alter table public.service_addons add constraint addons_precio_no_negativo CHECK ((extra_price >= (0)::numeric));
 
+alter table public.service_addons add constraint addons_rango_valido CHECK (((extra_price_max IS NULL) OR (extra_price_max >= extra_price)));
+
 alter table public.service_addons add constraint service_addons_pkey PRIMARY KEY (id);
 
 alter table public.services add constraint services_anticipo_coherente CHECK (((deposit_mode = ANY (ARRAY['HEREDAR'::modo_anticipo, 'NINGUNO'::modo_anticipo])) OR (deposit_value IS NOT NULL)));
@@ -535,6 +594,10 @@ alter table public.settings add constraint settings_granularidad CHECK ((slot_gr
 
 alter table public.settings add constraint settings_pkey PRIMARY KEY (business_id);
 
+alter table public.settings add constraint settings_secciones_lista CHECK (((policy_sections IS NULL) OR (jsonb_typeof(policy_sections) = 'array'::text)));
+
+alter table public.settings add constraint settings_textos_objeto CHECK ((jsonb_typeof(site_texts) = 'object'::text));
+
 alter table public.settings add constraint settings_ventanas CHECK ((cancel_blocked_hours <= cancel_free_hours));
 
 alter table public.tags add constraint tags_pkey PRIMARY KEY (id);
@@ -544,9 +607,9 @@ alter table public.tags add constraint tags_slug_unico UNIQUE (business_id, slug
 alter table public.waitlist add constraint waitlist_pkey PRIMARY KEY (id);
 
 
--- ======================================================================
--- 4. Claves foráneas
--- ======================================================================
+-- =====================================================================
+-- Claves foráneas
+-- =====================================================================
 
 alter table public.appointment_item_addons add constraint appointment_item_addons_addon_id_fkey FOREIGN KEY (addon_id) REFERENCES service_addons(id) ON DELETE RESTRICT;
 
@@ -610,6 +673,12 @@ alter table public.profiles add constraint profiles_business_id_fkey FOREIGN KEY
 
 alter table public.profiles add constraint profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
+alter table public.push_cola add constraint push_cola_business_id_fkey FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE;
+
+alter table public.push_suscripciones add constraint push_suscripciones_business_id_fkey FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE;
+
+alter table public.push_suscripciones add constraint push_suscripciones_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE;
+
 alter table public.reviews add constraint reviews_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE;
 
 alter table public.reviews add constraint reviews_business_id_fkey FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE;
@@ -637,9 +706,9 @@ alter table public.waitlist add constraint waitlist_client_id_fkey FOREIGN KEY (
 alter table public.waitlist add constraint waitlist_service_id_fkey FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE SET NULL;
 
 
--- ======================================================================
--- 5. Índices
--- ======================================================================
+-- =====================================================================
+-- Índices
+-- =====================================================================
 
 CREATE INDEX appointment_item_addons_appointment_item_id_idx ON public.appointment_item_addons USING btree (appointment_item_id);
 
@@ -673,6 +742,8 @@ CREATE INDEX holds_business_id_expires_at_idx ON public.holds USING btree (busin
 
 CREATE INDEX holds_business_id_starts_at_ends_at_idx ON public.holds USING btree (business_id, starts_at, ends_at);
 
+CREATE INDEX holds_ip_idx ON public.holds USING btree (business_id, ip, expires_at);
+
 CREATE INDEX holds_session_token_idx ON public.holds USING btree (session_token);
 
 CREATE INDEX notifications_appointment_id_idx ON public.notifications USING btree (appointment_id);
@@ -687,6 +758,10 @@ CREATE INDEX photo_tags_tag_id_idx ON public.photo_tags USING btree (tag_id);
 
 CREATE INDEX profiles_business_id_role_idx ON public.profiles USING btree (business_id, role);
 
+CREATE INDEX push_cola_pendientes_idx ON public.push_cola USING btree (created_at) WHERE (enviado_at IS NULL);
+
+CREATE INDEX push_suscripciones_negocio_idx ON public.push_suscripciones USING btree (business_id);
+
 CREATE INDEX schedule_exceptions_business_id_date_from_date_to_idx ON public.schedule_exceptions USING btree (business_id, date_from, date_to);
 
 CREATE INDEX schedule_rules_business_id_weekday_is_active_idx ON public.schedule_rules USING btree (business_id, weekday, is_active);
@@ -698,9 +773,56 @@ CREATE INDEX services_business_id_is_active_sort_order_idx ON public.services US
 CREATE INDEX waitlist_business_id_status_idx ON public.waitlist USING btree (business_id, status);
 
 
--- ======================================================================
--- 6. Funciones
--- ======================================================================
+-- =====================================================================
+-- Funciones
+-- =====================================================================
+
+CREATE OR REPLACE FUNCTION public.aplicar_descuento_cita(p_appointment_id uuid, p_porcentaje numeric)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  a appointments%rowtype;
+  v_base numeric(12,2); v_desc numeric(12,2); v_total numeric(12,2);
+begin
+  select * into a from appointments where id = p_appointment_id;
+  if not found then raise exception 'CITA_NO_ENCONTRADA'; end if;
+  if not es_profesional(a.business_id) then raise exception 'NO_AUTORIZADA'; end if;
+  if p_porcentaje is null or p_porcentaje < 0 or p_porcentaje > 100 then raise exception 'DESCUENTO_INVALIDO'; end if;
+
+  v_base := coalesce((select sum(i.price_snapshot) from appointment_items i where i.appointment_id = a.id), 0)
+          + coalesce((select sum(ad.extra_price_snapshot) from appointment_item_addons ad
+                        join appointment_items i on i.id = ad.appointment_item_id
+                       where i.appointment_id = a.id), 0);
+  v_desc  := round(v_base * p_porcentaje / 100, 2);
+  v_total := v_base - v_desc;
+
+  update appointments
+     set discount_percent = p_porcentaje, discount_amount = v_desc, total_amount = v_total,
+         balance_due = greatest(v_total - deposit_amount, 0)
+   where id = a.id;
+
+  return jsonb_build_object('total', v_total, 'descuento', v_desc);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.cambios_clienta_mes(p_client_id uuid)
+ RETURNS integer
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select count(*)::int
+  from audit_log l
+  join appointments x on x.id = l.entity_id
+  join businesses b on b.id = x.business_id
+  where l.action = 'cita.reprogramada' and l.actor_type = 'CLIENTA'
+    and x.client_id = p_client_id
+    and l.created_at >= (date_trunc('month', now() at time zone b.timezone) at time zone b.timezone)
+$function$
+;
 
 CREATE OR REPLACE FUNCTION public.cancelar_cita(p_token text, p_motivo text DEFAULT NULL::text, p_por tipo_actor DEFAULT 'CLIENTA'::tipo_actor)
  RETURNS jsonb
@@ -712,6 +834,7 @@ declare a appointments%rowtype; s settings%rowtype; b businesses%rowtype; v_hora
 begin
   select * into a from appointments where access_token = p_token;
   if not found then raise exception 'CITA_NO_ENCONTRADA'; end if;
+  if p_por <> 'CLIENTA' and not es_profesional(a.business_id) then raise exception 'NO_AUTORIZADA'; end if;
   if a.status not in ('PENDIENTE','CONFIRMADA') then raise exception 'CITA_NO_CANCELABLE'; end if;
   select * into s from settings where business_id = a.business_id;
   select * into b from businesses where id = a.business_id;
@@ -760,20 +883,29 @@ declare
   v_fin timestamptz; v_bloq timestamptz;
   v_tasa numeric(12,4); v_tasa_fecha date; v_anticipo numeric(12,2) := 0;
   v_activas int; v_recientes int; v_intentos int := 0; v_ok boolean := false;
-  v_off int; v_moneda moneda;
+  v_moneda moneda; v_orden int := 0;
+  v_desc_pct numeric(5,2) := 0; v_desc numeric(12,2) := 0;
+  v_web boolean := p_origen = 'WEB';
+  v_nombre text := left(trim(coalesce(p_nombre, '')), 80);
 begin
   select * into b from businesses where id = p_business_id;
   if not found then raise exception 'NEGOCIO_NO_EXISTE'; end if;
-  if not b.is_accepting_bookings then raise exception 'RESERVAS_CERRADAS'; end if;
+  -- Solo Lynn crea citas manuales (sin retención, sin antelación y sin límites)
+  if not v_web and not es_profesional(p_business_id) then raise exception 'NO_AUTORIZADA'; end if;
+  if v_web and not b.is_accepting_bookings then raise exception 'RESERVAS_CERRADAS'; end if;
   select * into s from settings where business_id = p_business_id;
 
-  -- E5: hold vivo de esta sesion
-  select * into v_hold from holds
-   where business_id = p_business_id and session_token = p_session_token and expires_at > now();
-  if not found and p_origen = 'WEB' then raise exception 'RETENCION_VENCIDA'; end if;
+  if length(v_nombre) < 2 then raise exception 'NOMBRE_INVALIDO'; end if;
+
+  -- Hold vivo de esta sesion, a la misma hora
+  if v_web then
+    select * into v_hold from holds
+     where business_id = p_business_id and session_token = p_session_token and expires_at > now();
+    if not found or v_hold.starts_at <> p_inicio then raise exception 'RETENCION_VENCIDA'; end if;
+  end if;
 
   -- Sumar duracion y precio desde los servicios reales (nunca desde el cliente)
-  if jsonb_array_length(p_items) = 0 then raise exception 'SIN_SERVICIOS'; end if;
+  if p_items is null or jsonb_array_length(p_items) = 0 then raise exception 'SIN_SERVICIOS'; end if;
   for v_item in select * from jsonb_array_elements(p_items) loop
     select * into v_srv from services
      where id = (v_item->>'service_id')::uuid and business_id = p_business_id and is_active;
@@ -797,8 +929,9 @@ begin
   v_fin  := p_inicio + make_interval(mins => v_dur);
   v_bloq := v_fin + make_interval(mins => v_buffer);
 
-  -- E1/E2: ventanas de antelacion
-  if p_origen = 'WEB' then
+  if v_web then
+    -- La retención tiene que cubrir la cita entera (la duración del hold la manda el móvil)
+    if v_hold.ends_at < v_bloq then raise exception 'RETENCION_VENCIDA'; end if;
     if p_inicio < now() + make_interval(hours => s.min_advance_hours) then
       raise exception 'DEMASIADO_PRONTO'; end if;
     if p_inicio::date > (now() + make_interval(days => s.max_advance_days))::date then
@@ -807,18 +940,26 @@ begin
 
   -- Clienta: crear o reutilizar por telefono normalizado
   v_tel := normalizar_telefono(p_telefono);
-  if v_tel is null then raise exception 'TELEFONO_INVALIDO'; end if;
+  if v_tel is null or length(regexp_replace(v_tel, '\D', '', 'g')) < 10 then raise exception 'TELEFONO_INVALIDO'; end if;
   select * into v_client from clients where business_id = p_business_id and phone = v_tel;
   if not found then
     insert into clients (business_id, full_name, phone, email, instagram)
-    values (p_business_id, p_nombre, v_tel, p_email, p_instagram)
+    values (p_business_id, v_nombre, v_tel, nullif(left(trim(coalesce(p_email, '')), 120), ''),
+            nullif(left(trim(coalesce(p_instagram, '')), 60), ''))
     returning * into v_client;
-  else
-    if v_client.is_blocked then raise exception 'CLIENTA_BLOQUEADA'; end if;
+  elsif v_client.is_blocked and v_web then
+    raise exception 'CLIENTA_BLOQUEADA';
   end if;
 
-  -- E6/E7: limites antifraude
-  if p_origen = 'WEB' then
+  -- Descuento pendiente de la clienta (lo da Lynn desde el panel)
+  if coalesce(v_client.next_discount_percent, 0) > 0 then
+    v_desc_pct := v_client.next_discount_percent;
+    v_desc := round(v_total * v_desc_pct / 100, 2);
+    v_total := v_total - v_desc;
+  end if;
+
+  -- Limites antifraude
+  if v_web then
     select count(*) into v_activas from appointments
      where client_id = v_client.id and status in ('PENDIENTE','CONFIRMADA') and starts_at > now();
     if v_activas >= s.max_active_appointments_per_phone then raise exception 'LIMITE_CITAS_ACTIVAS'; end if;
@@ -835,7 +976,7 @@ begin
    where business_id = p_business_id and effective_date <= (now() at time zone b.timezone)::date
    order by effective_date desc limit 1;
 
-  -- Anticipo
+  -- Anticipo (sobre el total ya con descuento)
   if s.deposit_enabled then
     if s.deposit_mode = 'FIJO' then v_anticipo := least(coalesce(s.deposit_value,0), v_total);
     elsif s.deposit_mode = 'PORCENTAJE' then v_anticipo := round(v_total * coalesce(s.deposit_value,0)/100, 2);
@@ -851,12 +992,13 @@ begin
       insert into appointments (business_id, client_id, code, access_token, starts_at, ends_at,
         blocked_until, total_duration_minutes, status, source, total_amount, currency,
         exchange_rate_used, exchange_rate_date, deposit_amount, balance_due, client_note,
-        policies_accepted_at)
+        policies_accepted_at, discount_percent, discount_amount)
       values (p_business_id, v_client.id, v_code, v_token, p_inicio, v_fin, v_bloq, v_dur,
         case when s.deposit_enabled and v_anticipo > 0 then 'PENDIENTE'::estado_cita
              else 'CONFIRMADA'::estado_cita end,
         p_origen, v_total, coalesce(v_moneda, b.default_currency), v_tasa, v_tasa_fecha,
-        v_anticipo, v_total - v_anticipo, p_nota, now())
+        v_anticipo, v_total - v_anticipo, nullif(left(trim(coalesce(p_nota, '')), 500), ''),
+        now(), v_desc_pct, v_desc)
       returning id into v_ap_id;
       v_ok := true;
     exception
@@ -866,12 +1008,19 @@ begin
   end loop;
   if not v_ok then raise exception 'NO_SE_PUDO_GENERAR_CODIGO'; end if;
 
-  -- Lineas de servicio con precios congelados
+  -- El descuento ya se usó
+  if v_desc_pct > 0 then
+    update clients set next_discount_percent = null, next_discount_note = null, next_discount_at = null
+     where id = v_client.id;
+  end if;
+
+  -- Lineas de servicio con precios congelados, en el orden elegido
   for v_item in select * from jsonb_array_elements(p_items) loop
+    v_orden := v_orden + 1;
     select * into v_srv from services where id = (v_item->>'service_id')::uuid;
     insert into appointment_items (appointment_id, service_id, service_name_snapshot,
-      duration_minutes_snapshot, price_snapshot, currency_snapshot)
-    values (v_ap_id, v_srv.id, v_srv.name, v_srv.duration_minutes, v_srv.price, v_srv.currency)
+      duration_minutes_snapshot, price_snapshot, currency_snapshot, sort_order)
+    values (v_ap_id, v_srv.id, v_srv.name, v_srv.duration_minutes, v_srv.price, v_srv.currency, v_orden)
     returning id into v_item_id;
     if v_item ? 'addons' then
       for v_addon_id in select (jsonb_array_elements_text(v_item->'addons'))::uuid loop
@@ -891,9 +1040,9 @@ begin
           coalesce(v_moneda, b.default_currency), v_tasa, 'PENDIENTE');
 
   -- Liberar hold
-  delete from holds where session_token = p_session_token;
+  if v_web then delete from holds where session_token = p_session_token; end if;
 
-  -- Notificaciones
+  -- Avisos (los recordatorios los manda Lynn desde el panel)
   insert into notifications (business_id, appointment_id, recipient_type, recipient_phone,
     template_key, rendered_message, scheduled_for)
   values (p_business_id, v_ap_id, 'CLIENTA', v_tel, 'confirmacion',
@@ -901,29 +1050,19 @@ begin
       b.name, to_char(p_inicio at time zone b.timezone, 'DD/MM'),
       to_char(p_inicio at time zone b.timezone, 'HH12:MI AM'), v_token), now()),
    (p_business_id, v_ap_id, 'PROFESIONAL', b.phone_whatsapp, 'aviso_nueva',
-    format('Nueva reserva: %s - %s %s', p_nombre,
+    format('Nueva reserva: %s - %s %s', v_nombre,
       to_char(p_inicio at time zone b.timezone, 'DD/MM'),
       to_char(p_inicio at time zone b.timezone, 'HH12:MI AM')), now());
 
-  foreach v_off in array s.reminder_offsets_hours loop
-    if p_inicio - make_interval(hours => v_off) > now() then
-      insert into notifications (business_id, appointment_id, recipient_type, recipient_phone,
-        template_key, rendered_message, scheduled_for)
-      values (p_business_id, v_ap_id, 'CLIENTA', v_tel, 'recordatorio_' || v_off || 'h',
-        format('Recordatorio: tu cita con %s es el %s a las %s', b.name,
-          to_char(p_inicio at time zone b.timezone, 'DD/MM'),
-          to_char(p_inicio at time zone b.timezone, 'HH12:MI AM')),
-        p_inicio - make_interval(hours => v_off));
-    end if;
-  end loop;
-
   insert into audit_log (business_id, actor_type, action, entity_type, entity_id, after)
-  values (p_business_id, 'CLIENTA', 'cita.creada', 'appointment', v_ap_id,
+  values (p_business_id, case when v_web then 'CLIENTA'::tipo_actor else 'PROFESIONAL'::tipo_actor end,
+          'cita.creada', 'appointment', v_ap_id,
           jsonb_build_object('code', v_code, 'inicio', p_inicio, 'device_id', p_device_id));
 
   return jsonb_build_object('id', v_ap_id, 'code', v_code, 'access_token', v_token,
     'inicio', p_inicio, 'fin', v_fin, 'duracion_minutos', v_dur,
-    'total', v_total, 'anticipo', v_anticipo, 'saldo', v_total - v_anticipo);
+    'total', v_total, 'anticipo', v_anticipo, 'saldo', v_total - v_anticipo,
+    'descuento_porcentaje', v_desc_pct, 'descuento_monto', v_desc);
 end $function$
 ;
 
@@ -933,15 +1072,39 @@ CREATE OR REPLACE FUNCTION public.crear_hold(p_business_id uuid, p_inicio timest
  SECURITY DEFINER
  SET search_path TO 'public', 'extensions'
 AS $function$
-declare s settings%rowtype; v_buffer int; v_fin timestamptz; v_exp timestamptz; v_id uuid;
+declare s settings%rowtype; v_tz text; v_buffer int; v_fin timestamptz; v_exp timestamptz; v_id uuid; v_ip text;
 begin
+  if p_duracion_minutos is null or p_duracion_minutos <= 0 or p_duracion_minutos > 720 then
+    raise exception 'HORARIO_NO_DISPONIBLE';
+  end if;
+  if p_session_token is null or length(p_session_token) < 16 then raise exception 'RETENCION_VENCIDA'; end if;
+
   delete from holds where business_id = p_business_id and expires_at < now();
   delete from holds where session_token = p_session_token;
 
   select * into s from settings where business_id = p_business_id;
-  v_buffer := coalesce(p_buffer_minutos, s.default_buffer_minutes);
+  if not found then raise exception 'NEGOCIO_NO_EXISTE'; end if;
+  select timezone into v_tz from businesses where id = p_business_id;
+
+  v_buffer := greatest(coalesce(p_buffer_minutos, s.default_buffer_minutes), 0);
   v_fin := p_inicio + make_interval(mins => p_duracion_minutos + v_buffer);
   v_exp := now() + make_interval(mins => s.hold_minutes);
+  v_ip  := ip_peticion();
+
+  if not es_profesional(p_business_id) then
+    -- Mismas reglas que la web: solo turnos que obtener_disponibilidad ofrece
+    if not exists (
+      select 1 from obtener_disponibilidad(p_business_id, (p_inicio at time zone v_tz)::date,
+                                           p_duracion_minutos, v_buffer) d
+      where d.hora = p_inicio) then
+      raise exception 'HORARIO_NO_DISPONIBLE';
+    end if;
+    -- Nadie puede retener media agenda a la vez
+    if v_ip is not null and (select count(*) from holds
+        where business_id = p_business_id and ip = v_ip and expires_at > now()) >= 3 then
+      raise exception 'DEMASIADAS_RETENCIONES';
+    end if;
+  end if;
 
   if exists (select 1 from appointments a
       where a.business_id = p_business_id and a.status in ('PENDIENTE','CONFIRMADA','EN_CURSO')
@@ -953,11 +1116,274 @@ begin
     raise exception 'HORARIO_NO_DISPONIBLE';
   end if;
 
-  insert into holds (business_id, session_token, starts_at, ends_at, expires_at)
-  values (p_business_id, p_session_token, p_inicio, v_fin, v_exp)
+  insert into holds (business_id, session_token, starts_at, ends_at, expires_at, ip)
+  values (p_business_id, p_session_token, p_inicio, v_fin, v_exp, v_ip)
   returning id into v_id;
 
   return query select v_id, v_exp;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.dejar_resena(p_token text, p_estrellas integer, p_comentario text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare a appointments%rowtype; v_publicada boolean;
+begin
+  select * into a from appointments where access_token = p_token;
+  if not found then raise exception 'CITA_NO_ENCONTRADA'; end if;
+  if a.status <> 'COMPLETADA' then raise exception 'RESENA_NO_DISPONIBLE'; end if;
+  if p_estrellas is null or p_estrellas < 1 or p_estrellas > 5 then raise exception 'RESENA_INVALIDA'; end if;
+
+  select is_published into v_publicada from reviews where appointment_id = a.id;
+  if coalesce(v_publicada, false) then raise exception 'RESENA_YA_PUBLICADA'; end if;
+
+  insert into reviews (business_id, appointment_id, client_id, rating, comment)
+  values (a.business_id, a.id, a.client_id, p_estrellas, nullif(left(trim(coalesce(p_comentario, '')), 600), ''))
+  on conflict (appointment_id) do update set rating = excluded.rating, comment = excluded.comment;
+
+  return jsonb_build_object('ok', true);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.descuento_pendiente(p_business_id uuid, p_telefono text)
+ RETURNS numeric
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select c.next_discount_percent from clients c
+   where c.business_id = p_business_id and c.phone = normalizar_telefono(p_telefono)
+     and not c.is_blocked
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.despertar_envio_push()
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+declare v_secreto text;
+begin
+  select decrypted_secret into v_secreto from vault.decrypted_secrets where name = 'avisos_push_secreto';
+  perform net.http_post(
+    url := 'https://wxkywplcbfrldnoajirn.supabase.co/functions/v1/super-handler',
+    body := '{}'::jsonb,
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-avisos-secreto', coalesce(v_secreto, '')),
+    timeout_milliseconds := 20000);
+exception when others then
+  raise warning 'despertar_envio_push: %', sqlerrm;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.diagnostico_fotos()
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select jsonb_build_object(
+    'bucket', (select jsonb_build_object('publico', public, 'limite_bytes', file_size_limit, 'tipos', allowed_mime_types)
+                 from storage.buckets where id = 'galeria'),
+    'permisos', (select jsonb_agg(jsonb_build_object('nombre', policyname, 'accion', cmd, 'roles', roles))
+                   from pg_policies where schemaname = 'storage' and tablename = 'objects'),
+    'perfiles', (select jsonb_agg(jsonb_build_object('rol', role,
+                    'negocio_ok', business_id::text = '1a115b41-0000-4000-8000-000000000001')) from profiles),
+    'errores', (select jsonb_agg(jsonb_build_object('cuando', created_at, 'origen', origen, 'mensaje', mensaje,
+                    'detalle', detalle) order by created_at desc)
+                  from (select * from registro_errores order by created_at desc limit 20) e));
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.editar_cita(p_token text, p_items jsonb, p_nota text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  a appointments%rowtype; s settings%rowtype;
+  v_item jsonb; v_srv services%rowtype; v_addon service_addons%rowtype; v_addon_id uuid; v_item_id uuid;
+  v_dur int := 0; v_buffer int := 0; v_total numeric(12,2) := 0; v_desc numeric(12,2);
+  v_fin timestamptz; v_bloq timestamptz; v_orden int := 0;
+  v_antes jsonb;
+begin
+  select * into a from appointments where access_token = p_token for update;
+  if not found then raise exception 'CITA_NO_ENCONTRADA'; end if;
+  if a.status not in ('PENDIENTE', 'CONFIRMADA') then raise exception 'CITA_NO_EDITABLE'; end if;
+  select * into s from settings where business_id = a.business_id;
+  if a.starts_at < now() + make_interval(hours => s.reschedule_min_hours) then raise exception 'EDICION_FUERA_DE_PLAZO'; end if;
+
+  if p_items is null or jsonb_array_length(p_items) = 0 then raise exception 'SIN_SERVICIOS'; end if;
+
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    select * into v_srv from services
+     where id = (v_item->>'service_id')::uuid and business_id = a.business_id and is_active;
+    if not found then raise exception 'SERVICIO_NO_DISPONIBLE'; end if;
+    v_dur := v_dur + v_srv.duration_minutes;
+    v_total := v_total + v_srv.price;
+    v_buffer := greatest(v_buffer, v_srv.buffer_after_minutes);
+    if v_item ? 'addons' then
+      for v_addon_id in select (jsonb_array_elements_text(v_item->'addons'))::uuid loop
+        select * into v_addon from service_addons
+         where id = v_addon_id and business_id = a.business_id and is_active;
+        if not found then raise exception 'ADDON_NO_DISPONIBLE'; end if;
+        v_dur := v_dur + v_addon.extra_minutes;
+        v_total := v_total + v_addon.extra_price;
+      end loop;
+    end if;
+  end loop;
+  if v_buffer = 0 then v_buffer := s.default_buffer_minutes; end if;
+
+  v_fin  := a.starts_at + make_interval(mins => v_dur);
+  v_bloq := v_fin + make_interval(mins => v_buffer);
+  v_desc := round(v_total * coalesce(a.discount_percent, 0) / 100, 2);
+
+  -- Si se alarga, no puede pisar un rato bloqueado por Lynn
+  if exists (select 1 from blocks bl where bl.business_id = a.business_id
+              and tstzrange(bl.starts_at, bl.ends_at) && tstzrange(a.starts_at, v_bloq)) then
+    raise exception 'NO_CABE_EN_EL_TURNO';
+  end if;
+
+  v_antes := jsonb_build_object('servicios',
+    (select string_agg(service_name_snapshot, ' + ' order by sort_order) from appointment_items where appointment_id = a.id),
+    'total', a.total_amount, 'nota', a.client_note);
+
+  begin
+    update appointments
+       set ends_at = v_fin, blocked_until = v_bloq, total_duration_minutes = v_dur,
+           total_amount = v_total - v_desc, discount_amount = v_desc,
+           balance_due = greatest(v_total - v_desc - deposit_amount, 0),
+           client_note = nullif(left(trim(coalesce(p_nota, '')), 500), '')
+     where id = a.id;
+  exception when exclusion_violation then
+    raise exception 'NO_CABE_EN_EL_TURNO';
+  end;
+
+  -- El pago pendiente refleja el nuevo total
+  update payments set amount = v_total - v_desc
+   where appointment_id = a.id and status = 'PENDIENTE' and type = 'PAGO_TOTAL';
+
+  delete from appointment_items where appointment_id = a.id;
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    v_orden := v_orden + 1;
+    select * into v_srv from services where id = (v_item->>'service_id')::uuid;
+    insert into appointment_items (appointment_id, service_id, service_name_snapshot,
+      duration_minutes_snapshot, price_snapshot, currency_snapshot, sort_order)
+    values (a.id, v_srv.id, v_srv.name, v_srv.duration_minutes, v_srv.price, v_srv.currency, v_orden)
+    returning id into v_item_id;
+    if v_item ? 'addons' then
+      for v_addon_id in select (jsonb_array_elements_text(v_item->'addons'))::uuid loop
+        select * into v_addon from service_addons where id = v_addon_id;
+        insert into appointment_item_addons (appointment_item_id, addon_id, name_snapshot,
+          extra_minutes_snapshot, extra_price_snapshot)
+        values (v_item_id, v_addon.id, v_addon.name, v_addon.extra_minutes, v_addon.extra_price);
+      end loop;
+    end if;
+  end loop;
+
+  if to_regprocedure('public.recalcular_total_maximo(uuid)') is not null then
+    execute 'select public.recalcular_total_maximo($1)' using a.id;
+  end if;
+
+  insert into audit_log (business_id, actor_type, action, entity_type, entity_id, before, after)
+  values (a.business_id, 'CLIENTA', 'cita.editada', 'appointment', a.id, v_antes,
+          jsonb_build_object('total', v_total - v_desc, 'duracion', v_dur, 'nota', p_nota));
+
+  return jsonb_build_object('ok', true, 'total', v_total - v_desc, 'duracion', v_dur);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.editar_cita_panel(p_appointment_id uuid, p_items jsonb, p_nota text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  a appointments%rowtype; s settings%rowtype;
+  v_item jsonb; v_srv services%rowtype; v_addon service_addons%rowtype; v_addon_id uuid; v_item_id uuid;
+  v_dur int := 0; v_buffer int := 0; v_total numeric(12,2) := 0; v_desc numeric(12,2);
+  v_fin timestamptz; v_bloq timestamptz; v_orden int := 0;
+  v_antes jsonb;
+begin
+  select * into a from appointments where id = p_appointment_id for update;
+  if not found then raise exception 'CITA_NO_ENCONTRADA'; end if;
+  if not es_profesional(a.business_id) then raise exception 'NO_AUTORIZADA'; end if;
+  if a.status not in ('PENDIENTE', 'CONFIRMADA', 'EN_CURSO') then raise exception 'CITA_NO_EDITABLE'; end if;
+  select * into s from settings where business_id = a.business_id;
+
+  if p_items is null or jsonb_array_length(p_items) = 0 then raise exception 'SIN_SERVICIOS'; end if;
+
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    select * into v_srv from services
+     where id = (v_item->>'service_id')::uuid and business_id = a.business_id and is_active;
+    if not found then raise exception 'SERVICIO_NO_DISPONIBLE'; end if;
+    v_dur := v_dur + v_srv.duration_minutes;
+    v_total := v_total + v_srv.price;
+    v_buffer := greatest(v_buffer, v_srv.buffer_after_minutes);
+    if v_item ? 'addons' then
+      for v_addon_id in select (jsonb_array_elements_text(v_item->'addons'))::uuid loop
+        select * into v_addon from service_addons
+         where id = v_addon_id and business_id = a.business_id and is_active;
+        if not found then raise exception 'ADDON_NO_DISPONIBLE'; end if;
+        v_dur := v_dur + v_addon.extra_minutes;
+        v_total := v_total + v_addon.extra_price;
+      end loop;
+    end if;
+  end loop;
+  if v_buffer = 0 then v_buffer := s.default_buffer_minutes; end if;
+
+  v_fin  := a.starts_at + make_interval(mins => v_dur);
+  v_bloq := v_fin + make_interval(mins => v_buffer);
+  v_desc := round(v_total * coalesce(a.discount_percent, 0) / 100, 2);
+
+  v_antes := jsonb_build_object('servicios',
+    (select string_agg(service_name_snapshot, ' + ' order by sort_order) from appointment_items where appointment_id = a.id),
+    'total', a.total_amount, 'nota', a.client_note);
+
+  begin
+    update appointments
+       set ends_at = v_fin, blocked_until = v_bloq, total_duration_minutes = v_dur,
+           total_amount = v_total - v_desc, discount_amount = v_desc,
+           balance_due = greatest(v_total - v_desc - deposit_amount, 0),
+           client_note = nullif(left(trim(coalesce(p_nota, '')), 500), '')
+     where id = a.id;
+  exception when exclusion_violation then
+    raise exception 'NO_CABE_EN_EL_TURNO';
+  end;
+
+  update payments set amount = v_total - v_desc
+   where appointment_id = a.id and status = 'PENDIENTE' and type = 'PAGO_TOTAL';
+
+  delete from appointment_items where appointment_id = a.id;
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    v_orden := v_orden + 1;
+    select * into v_srv from services where id = (v_item->>'service_id')::uuid;
+    insert into appointment_items (appointment_id, service_id, service_name_snapshot,
+      duration_minutes_snapshot, price_snapshot, currency_snapshot, sort_order)
+    values (a.id, v_srv.id, v_srv.name, v_srv.duration_minutes, v_srv.price, v_srv.currency, v_orden)
+    returning id into v_item_id;
+    if v_item ? 'addons' then
+      for v_addon_id in select (jsonb_array_elements_text(v_item->'addons'))::uuid loop
+        select * into v_addon from service_addons where id = v_addon_id;
+        insert into appointment_item_addons (appointment_item_id, addon_id, name_snapshot,
+          extra_minutes_snapshot, extra_price_snapshot)
+        values (v_item_id, v_addon.id, v_addon.name, v_addon.extra_minutes, v_addon.extra_price);
+      end loop;
+    end if;
+  end loop;
+
+  perform recalcular_total_maximo(a.id);
+
+  insert into audit_log (business_id, actor_id, actor_type, action, entity_type, entity_id, before, after)
+  values (a.business_id, auth.uid(), 'PROFESIONAL', 'cita.editada', 'appointment', a.id, v_antes,
+          jsonb_build_object('total', v_total - v_desc, 'duracion', v_dur, 'nota', p_nota));
+
+  return jsonb_build_object('ok', true, 'total', v_total - v_desc, 'duracion', v_dur);
 end $function$
 ;
 
@@ -995,10 +1421,28 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.encolar_aviso(p_business_id uuid, p_evento text, p_ref uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  if es_profesional(p_business_id) then return; end if;
+  if not exists (select 1 from push_suscripciones where business_id = p_business_id and p_evento = any(eventos)) then return; end if;
+  -- El mismo aviso repetido en menos de un minuto (p. ej. al editar) se manda una sola vez
+  if exists (select 1 from push_cola where ref_id = p_ref and evento = p_evento and enviado_at is null
+              and created_at > now() - interval '1 minute') then return; end if;
+  insert into push_cola (business_id, evento, ref_id) values (p_business_id, p_evento, p_ref);
+  perform despertar_envio_push();
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.es_profesional(p_business_id uuid)
  RETURNS boolean
  LANGUAGE sql
  STABLE SECURITY DEFINER
+ SET search_path TO 'public'
 AS $function$
   select exists (select 1 from profiles
     where id = auth.uid() and business_id = p_business_id
@@ -1028,6 +1472,7 @@ CREATE OR REPLACE FUNCTION public.exportar_respaldo(p_business_id uuid)
  SET search_path TO 'public'
 AS $function$
 begin
+  if not es_profesional(p_business_id) then raise exception 'NO_AUTORIZADA'; end if;
   return jsonb_build_object(
     'generado', now(), 'business_id', p_business_id,
     'businesses',   (select jsonb_agg(to_jsonb(t)) from businesses t where id = p_business_id),
@@ -1036,7 +1481,8 @@ begin
     'addons',       (select jsonb_agg(to_jsonb(t)) from service_addons t where business_id = p_business_id),
     'clients',      (select jsonb_agg(to_jsonb(t)) from clients t where business_id = p_business_id),
     'appointments', (select jsonb_agg(to_jsonb(t)) from appointments t where business_id = p_business_id),
-    'items',        (select jsonb_agg(to_jsonb(t)) from appointment_items t),
+    'items',        (select jsonb_agg(to_jsonb(t)) from appointment_items t
+                      join appointments a on a.id = t.appointment_id where a.business_id = p_business_id),
     'payments',     (select jsonb_agg(to_jsonb(t)) from payments t where business_id = p_business_id),
     'expenses',     (select jsonb_agg(to_jsonb(t)) from expenses t where business_id = p_business_id),
     'rates',        (select jsonb_agg(to_jsonb(t)) from exchange_rates t where business_id = p_business_id),
@@ -1055,6 +1501,29 @@ begin
     s := s || substr(alfabeto, 1 + floor(random()*length(alfabeto))::int, 1);
   end loop;
   return p_prefijo || '-' || s;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.guardar_aviso_movil(p_endpoint text, p_p256dh text, p_auth text, p_eventos text[])
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare v_negocio uuid := mi_negocio_profesional();
+begin
+  if v_negocio is null then raise exception 'NO_AUTORIZADA'; end if;
+  if p_endpoint is null or p_endpoint !~ '^https://' or length(p_endpoint) > 1000
+     or length(coalesce(p_p256dh, '')) not between 20 and 200 or length(coalesce(p_auth, '')) not between 8 and 100 then
+    raise exception 'SUSCRIPCION_INVALIDA';
+  end if;
+
+  insert into push_suscripciones (business_id, profile_id, endpoint, p256dh, auth, eventos)
+  values (v_negocio, auth.uid(), p_endpoint, p_p256dh, p_auth, coalesce(p_eventos, '{}'))
+  on conflict (endpoint) do update
+    set business_id = excluded.business_id, profile_id = excluded.profile_id,
+        p256dh = excluded.p256dh, auth = excluded.auth, eventos = excluded.eventos;
+  return jsonb_build_object('ok', true);
 end $function$
 ;
 
@@ -1096,12 +1565,45 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.ip_peticion()
+ RETURNS text
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+  select nullif(trim(split_part(coalesce(
+    nullif(current_setting('request.headers', true), '')::json ->> 'x-forwarded-for', ''), ',', 1)), '')
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.mi_client_id(p_business_id uuid)
  RETURNS uuid
  LANGUAGE sql
  STABLE SECURITY DEFINER
+ SET search_path TO 'public'
 AS $function$
   select id from clients where business_id = p_business_id and profile_id = auth.uid() limit 1;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.mi_negocio_profesional()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select business_id from profiles
+   where id = auth.uid() and role in ('PROFESIONAL', 'ADMIN_PLATAFORMA') limit 1
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.mis_avisos_movil(p_endpoint text)
+ RETURNS text[]
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select eventos from push_suscripciones where endpoint = p_endpoint and profile_id = auth.uid()
 $function$
 ;
 
@@ -1131,17 +1633,32 @@ declare v jsonb;
 begin
   select jsonb_build_object('code', a.code, 'inicio', a.starts_at, 'fin', a.ends_at,
     'estado', a.status, 'duracion_minutos', a.total_duration_minutes,
-    'total', a.total_amount, 'moneda', a.currency, 'anticipo', a.deposit_amount,
+    'margen_minutos', round(extract(epoch from (a.blocked_until - a.ends_at)) / 60)::int,
+    'total', a.total_amount, 'total_maximo', a.total_amount_max, 'moneda', a.currency, 'anticipo', a.deposit_amount,
     'saldo', a.balance_due, 'nota', a.client_note,
+    'descuento_porcentaje', a.discount_percent, 'descuento_monto', a.discount_amount,
     'cliente', jsonb_build_object('nombre', c.full_name, 'telefono', c.phone),
     'negocio', jsonb_build_object('nombre', b.name, 'ubicacion', b.location_label,
                                   'whatsapp', b.phone_whatsapp, 'zona', b.timezone),
     'servicios', (select jsonb_agg(jsonb_build_object('nombre', i.service_name_snapshot,
-                    'precio', i.price_snapshot) order by i.sort_order)
+                    'precio', i.price_snapshot,
+                    'complementos', coalesce((select jsonb_agg(jsonb_build_object('nombre', ad.name_snapshot,
+                                        'precio', ad.extra_price_snapshot, 'precio_max', ad.extra_price_max_snapshot)
+                                        order by ad.name_snapshot)
+                                      from appointment_item_addons ad where ad.appointment_item_id = i.id), '[]'::jsonb))
+                    order by i.sort_order)
                   from appointment_items i where i.appointment_id = a.id),
-    'reprogramaciones', a.reschedule_count)
+    'reprogramaciones', a.reschedule_count,
+    'max_reprogramaciones', s.max_reschedules,
+    'horas_minimas_reprogramar', s.reschedule_min_hours,
+    'cambio_mes_disponible', cambios_clienta_mes(a.client_id) < s.max_reschedules_per_month,
+    'resena', (select jsonb_build_object('estrellas', r.rating, 'comentario', r.comment)
+               from reviews r where r.appointment_id = a.id))
   into v
-  from appointments a join clients c on c.id = a.client_id join businesses b on b.id = a.business_id
+  from appointments a
+  join clients c on c.id = a.client_id
+  join businesses b on b.id = a.business_id
+  join settings s on s.business_id = a.business_id
   where a.access_token = p_token;
   if v is null then raise exception 'CITA_NO_ENCONTRADA'; end if;
   return v;
@@ -1208,14 +1725,153 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.obtener_politicas(p_business_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select jsonb_build_object(
+    'cancelar_minimo_horas', s.cancel_blocked_hours,
+    'cancelar_gratis_horas', s.cancel_free_hours,
+    'cambiar_minimo_horas',  s.reschedule_min_hours,
+    'max_cambios',           s.max_reschedules,
+    'max_citas_activas',     s.max_active_appointments_per_phone,
+    'max_dias_antelacion',   s.max_advance_days,
+    'anticipo',              s.deposit_enabled,
+    'secciones',             s.policy_sections,
+    'textos', jsonb_build_object(
+      'cancelacion', s.policy_cancellation, 'cambios',    s.policy_reschedule,
+      'anticipo',    s.policy_deposit,      'no_show',    s.policy_no_show,
+      'retrasos',    s.policy_late,         'reembolsos', s.policy_refund,
+      'espera',      s.policy_waiting,      'privacidad', s.privacy_notice))
+  from settings s where s.business_id = p_business_id
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.obtener_resenas(p_business_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select jsonb_build_object(
+    'media',  (select round(avg(rating)::numeric, 1) from reviews where business_id = p_business_id and is_published),
+    'total',  (select count(*) from reviews where business_id = p_business_id and is_published),
+    'lista',  coalesce((select jsonb_agg(x order by x->>'fecha' desc) from (
+                select jsonb_build_object('estrellas', r.rating, 'comentario', r.comment,
+                         'nombre', split_part(trim(c.full_name), ' ', 1), 'fecha', r.published_at) as x
+                from reviews r join clients c on c.id = r.client_id
+                where r.business_id = p_business_id and r.is_published
+                order by r.published_at desc limit 12) t), '[]'::jsonb))
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.obtener_tasa(p_business_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select jsonb_build_object('tasa', cup_per_usd, 'fecha', effective_date)
+  from exchange_rates
+  where business_id = p_business_id
+  order by effective_date desc
+  limit 1
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.obtener_textos(p_business_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select coalesce((select site_texts from settings where business_id = p_business_id), '{}'::jsonb)
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.obtener_turnos(p_business_id uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select jsonb_build_object(
+    'turnos', coalesce((select jsonb_agg(to_char(t, 'HH24:MI') order by t)
+                        from unnest(s.fixed_slot_times) as t), '[]'::jsonb))
+  from settings s where s.business_id = p_business_id
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.quitar_aviso_movil(p_endpoint text)
+ RETURNS void
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$ delete from push_suscripciones where endpoint = p_endpoint and profile_id = auth.uid() $function$
+;
+
+CREATE OR REPLACE FUNCTION public.recalcular_total_maximo(p_appointment_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare v_min numeric(12,2); v_max numeric(12,2); v_pct numeric(5,2);
+begin
+  select coalesce(sum(i.price_snapshot), 0) into v_min from appointment_items i where i.appointment_id = p_appointment_id;
+  v_max := v_min;
+  select v_min + coalesce(sum(ad.extra_price_snapshot), 0),
+         v_max + coalesce(sum(greatest(coalesce(ad.extra_price_max_snapshot, ad.extra_price_snapshot), ad.extra_price_snapshot)), 0)
+    into v_min, v_max
+    from appointment_item_addons ad join appointment_items i on i.id = ad.appointment_item_id
+   where i.appointment_id = p_appointment_id;
+  select coalesce(discount_percent, 0) into v_pct from appointments where id = p_appointment_id;
+  update appointments
+     set total_amount_max = case when v_max > v_min then v_max - round(v_max * v_pct / 100, 2) end
+   where id = p_appointment_id;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.registrar_error_panel(p_origen text, p_mensaje text, p_detalle jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  insert into registro_errores (origen, mensaje, detalle)
+  values (left(coalesce(p_origen, ''), 50), left(p_mensaje, 500),
+          coalesce(p_detalle, '{}'::jsonb) || jsonb_build_object(
+            -- Con qué rol estaba la sesión (para saber si el permiso de subida podía fallar)
+            'rol', (select role from profiles where id = auth.uid()),
+            'negocio_ok', (select business_id::text = '1a115b41-0000-4000-8000-000000000001' from profiles where id = auth.uid())));
+  delete from registro_errores where created_at < now() - interval '30 days';
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.reintentar_avisos_push()
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  if exists (select 1 from push_cola where enviado_at is null and created_at > now() - interval '2 days') then
+    perform despertar_envio_push();
+  end if;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.reprogramar_cita(p_token text, p_nuevo_inicio timestamp with time zone, p_session_token text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-declare a appointments%rowtype; s settings%rowtype; b businesses%rowtype;
-        v_horas numeric; v_fin timestamptz; v_bloq timestamptz; v_buffer int;
+declare a appointments%rowtype; s settings%rowtype; b businesses%rowtype; v_tel text;
+        v_horas numeric; v_fin timestamptz; v_bloq timestamptz; v_buffer int; v_off int;
 begin
   select * into a from appointments where access_token = p_token;
   if not found then raise exception 'CITA_NO_ENCONTRADA'; end if;
@@ -1226,10 +1882,23 @@ begin
   v_horas := extract(epoch from (a.starts_at - now())) / 3600.0;
   if v_horas < s.reschedule_min_hours then raise exception 'FUERA_DE_PLAZO'; end if;
   if a.reschedule_count >= s.max_reschedules then raise exception 'LIMITE_REPROGRAMACIONES'; end if;
+  -- Un cambio al mes por clienta (se cuentan todas sus citas)
+  if cambios_clienta_mes(a.client_id) >= s.max_reschedules_per_month then
+    raise exception 'LIMITE_REPROGRAMACIONES_MES';
+  end if;
 
-  v_buffer := extract(epoch from (a.blocked_until - a.ends_at))/60;
+  v_buffer := round(extract(epoch from (a.blocked_until - a.ends_at)) / 60)::int;
+
+  -- Mismas reglas que al reservar: solo turnos que la web ofrecería como libres
+  if not exists (
+    select 1 from obtener_disponibilidad(a.business_id, (p_nuevo_inicio at time zone b.timezone)::date,
+                                         a.total_duration_minutes, v_buffer) d
+    where d.hora = p_nuevo_inicio) then
+    raise exception 'HORARIO_NO_DISPONIBLE';
+  end if;
+
   v_fin  := p_nuevo_inicio + make_interval(mins => a.total_duration_minutes);
-  v_bloq := v_fin + make_interval(mins => v_buffer::int);
+  v_bloq := v_fin + make_interval(mins => v_buffer);
 
   begin
     update appointments set starts_at = p_nuevo_inicio, ends_at = v_fin, blocked_until = v_bloq,
@@ -1240,8 +1909,29 @@ begin
 
   if p_session_token is not null then delete from holds where session_token = p_session_token; end if;
 
+  -- Recordatorios: se anulan los viejos y se programan los de la nueva fecha
   update notifications set status = 'OMITIDA'
    where appointment_id = a.id and status = 'PENDIENTE' and template_key like 'recordatorio%';
+  select phone into v_tel from clients where id = a.client_id;
+  foreach v_off in array s.reminder_offsets_hours loop
+    if p_nuevo_inicio - make_interval(hours => v_off) > now() then
+      insert into notifications (business_id, appointment_id, recipient_type, recipient_phone,
+        template_key, rendered_message, scheduled_for)
+      values (a.business_id, a.id, 'CLIENTA', v_tel, 'recordatorio_' || v_off || 'h',
+        format('Recordatorio: tu cita con %s es el %s a las %s', b.name,
+          to_char(p_nuevo_inicio at time zone b.timezone, 'DD/MM'),
+          to_char(p_nuevo_inicio at time zone b.timezone, 'HH12:MI AM')),
+        p_nuevo_inicio - make_interval(hours => v_off));
+    end if;
+  end loop;
+
+  insert into notifications (business_id, appointment_id, recipient_type, recipient_phone,
+    template_key, rendered_message, scheduled_for)
+  values (a.business_id, a.id, 'PROFESIONAL', b.phone_whatsapp, 'aviso_reprogramada',
+    format('La cita %s paso del %s %s al %s %s', a.code,
+      to_char(a.starts_at at time zone b.timezone, 'DD/MM'), to_char(a.starts_at at time zone b.timezone, 'HH12:MI AM'),
+      to_char(p_nuevo_inicio at time zone b.timezone, 'DD/MM'), to_char(p_nuevo_inicio at time zone b.timezone, 'HH12:MI AM')),
+    now());
 
   insert into audit_log (business_id, actor_type, action, entity_type, entity_id, before, after)
   values (a.business_id, 'CLIENTA', 'cita.reprogramada', 'appointment', a.id,
@@ -1252,25 +1942,132 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.tg_addon_maximo()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  if tg_when = 'BEFORE' then
+    if new.extra_price_max_snapshot is null and new.addon_id is not null then
+      select extra_price_max into new.extra_price_max_snapshot from service_addons where id = new.addon_id;
+    end if;
+    return new;
+  end if;
+  perform recalcular_total_maximo((select appointment_id from appointment_items
+                                   where id = coalesce(new.appointment_item_id, old.appointment_item_id)));
+  return null;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.tg_cita_aviso()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare v_evento text;
+begin
+  if tg_op = 'INSERT' then
+    v_evento := 'nueva';
+  elsif new.status is distinct from old.status then
+    if new.status = 'CANCELADA_CLIENTA' then v_evento := 'cancelada'; end if;
+  elsif new.starts_at is distinct from old.starts_at then
+    v_evento := 'reagendada';
+  elsif new.total_amount is distinct from old.total_amount
+     or new.total_duration_minutes is distinct from old.total_duration_minutes
+     or new.client_note is distinct from old.client_note then
+    v_evento := 'editada';
+  end if;
+  if v_evento is not null then perform encolar_aviso(new.business_id, v_evento, new.id); end if;
+  return null;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.tg_cita_descuento_maximo()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  perform recalcular_total_maximo(new.id);
+  return null;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.tg_contadores_clienta()
  RETURNS trigger
  LANGUAGE plpgsql
 AS $function$
+declare v_monto_viejo numeric; v_monto_nuevo numeric;
 begin
   if TG_OP = 'UPDATE' and new.status is distinct from old.status then
+    v_monto_viejo := case when old.currency = 'CUP' then old.total_amount
+                          else old.total_amount * coalesce(old.exchange_rate_used, 1) end;
+    v_monto_nuevo := case when new.currency = 'CUP' then new.total_amount
+                          else new.total_amount * coalesce(new.exchange_rate_used, 1) end;
+
+    -- Deshacer lo que sumó el estado anterior
+    if old.status = 'COMPLETADA' then
+      update clients set total_appointments = greatest(total_appointments - 1, 0),
+        total_spent_cup = greatest(total_spent_cup - v_monto_viejo, 0)
+      where id = old.client_id;
+    elsif old.status = 'CANCELADA_CLIENTA' then
+      update clients set total_cancellations = greatest(total_cancellations - 1, 0) where id = old.client_id;
+    elsif old.status = 'NO_SHOW' then
+      update clients set total_no_shows = greatest(total_no_shows - 1, 0) where id = old.client_id;
+    end if;
+
     if new.status = 'COMPLETADA' then
       update clients set total_appointments = total_appointments + 1,
-        total_spent_cup = total_spent_cup + case when new.currency = 'CUP' then new.total_amount
-          else new.total_amount * coalesce(new.exchange_rate_used, 1) end,
-        last_appointment_at = new.starts_at
+        total_spent_cup = total_spent_cup + v_monto_nuevo,
+        last_appointment_at = greatest(coalesce(last_appointment_at, new.starts_at), new.starts_at)
       where id = new.client_id;
-    elsif new.status in ('CANCELADA_CLIENTA') then
+    elsif new.status = 'CANCELADA_CLIENTA' then
       update clients set total_cancellations = total_cancellations + 1 where id = new.client_id;
     elsif new.status = 'NO_SHOW' then
       update clients set total_no_shows = total_no_shows + 1 where id = new.client_id;
     end if;
   end if;
   return new;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.tg_descartar_recordatorios_auto()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+begin
+  -- recordatorio_24h, recordatorio_2h… los creaba la base pero nadie los enviaba.
+  -- El recordatorio real es 'recordatorio' (sin sufijo) y lo registra Lynn desde el panel.
+  if new.template_key like 'recordatorio\_%' then return null; end if;
+  return new;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.tg_espera_aviso()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  perform encolar_aviso(new.business_id, 'espera', new.id);
+  return null;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.tg_resena_aviso()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  perform encolar_aviso(new.business_id, 'opinion', new.id);
+  return null;
 end $function$
 ;
 
@@ -1281,6 +2078,67 @@ AS $function$
 begin new.updated_at := now(); return new; end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.tomar_cola_push(p_limite integer DEFAULT 50)
+ RETURNS SETOF push_cola
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  update push_cola set tomado_at = now()
+   where id in (select id from push_cola
+                where enviado_at is null and (tomado_at is null or tomado_at < now() - interval '5 minutes')
+                  and created_at > now() - interval '2 days'
+                order by created_at limit p_limite
+                for update skip locked)
+  returning *;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.unirse_lista_espera(p_business_id uuid, p_fecha date, p_nombre text, p_telefono text, p_service_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+declare b businesses%rowtype; s settings%rowtype; v_tel text; v_client clients%rowtype;
+        v_hoy date; v_activas int;
+begin
+  select * into b from businesses where id = p_business_id;
+  if not found then raise exception 'NEGOCIO_NO_EXISTE'; end if;
+  select * into s from settings where business_id = p_business_id;
+
+  v_hoy := (now() at time zone b.timezone)::date;
+  if p_fecha < v_hoy or p_fecha > v_hoy + s.max_advance_days then raise exception 'FECHA_NO_VALIDA'; end if;
+  if length(trim(coalesce(p_nombre, ''))) < 2 then raise exception 'NOMBRE_INVALIDO'; end if;
+
+  v_tel := normalizar_telefono(p_telefono);
+  if v_tel is null or length(regexp_replace(v_tel, '\D', '', 'g')) < 10 then raise exception 'TELEFONO_INVALIDO'; end if;
+
+  select * into v_client from clients where business_id = p_business_id and phone = v_tel;
+  if not found then
+    insert into clients (business_id, full_name, phone) values (p_business_id, trim(p_nombre), v_tel)
+    returning * into v_client;
+  elsif v_client.is_blocked then
+    raise exception 'CLIENTA_BLOQUEADA';
+  end if;
+
+  -- Ya estaba apuntada ese día: no se duplica
+  if exists (select 1 from waitlist where client_id = v_client.id and preferred_date_from = p_fecha
+                                       and status = 'ACTIVA') then
+    return jsonb_build_object('ok', true, 'ya_estaba', true);
+  end if;
+
+  select count(*) into v_activas from waitlist
+   where client_id = v_client.id and status = 'ACTIVA' and preferred_date_from >= v_hoy;
+  if v_activas >= 3 then raise exception 'LIMITE_LISTA_ESPERA'; end if;
+
+  insert into waitlist (business_id, client_id, service_id, preferred_date_from, preferred_date_to, status)
+  values (p_business_id, v_client.id, p_service_id, p_fecha, p_fecha, 'ACTIVA');
+
+  return jsonb_build_object('ok', true, 'ya_estaba', false);
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.validar_turno()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1289,9 +2147,7 @@ CREATE OR REPLACE FUNCTION public.validar_turno()
 AS $function$
 begin
   if tg_op = 'UPDATE' and new.starts_at = old.starts_at then return new; end if;
-  if coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', 'anon')
-       <> 'authenticated'
-     and not es_turno_valido(new.business_id, new.starts_at) then
+  if not es_profesional(new.business_id) and not es_turno_valido(new.business_id, new.starts_at) then
     raise exception 'HORARIO_NO_DISPONIBLE';
   end if;
   return new;
@@ -1299,9 +2155,9 @@ end $function$
 ;
 
 
--- ======================================================================
--- 7. Vistas
--- ======================================================================
+-- =====================================================================
+-- Vistas
+-- =====================================================================
 
 create or replace view public.v_agenda with (security_invoker=true) as
  SELECT a.id,
@@ -1322,9 +2178,16 @@ create or replace view public.v_agenda with (security_invoker=true) as
     c.full_name AS cliente_nombre,
     c.phone AS cliente_telefono,
     c.id AS client_id,
-    ( SELECT string_agg(i.service_name_snapshot, ' + '::text ORDER BY i.sort_order) AS string_agg
+    (( SELECT string_agg(i.service_name_snapshot, ' + '::text ORDER BY i.sort_order) AS string_agg
            FROM appointment_items i
-          WHERE i.appointment_id = a.id) AS servicios
+          WHERE i.appointment_id = a.id)) || COALESCE(' + '::text || (( SELECT string_agg(DISTINCT ad.name_snapshot, ' + '::text ORDER BY ad.name_snapshot) AS string_agg
+           FROM appointment_item_addons ad
+             JOIN appointment_items i ON i.id = ad.appointment_item_id
+          WHERE i.appointment_id = a.id)), ''::text) AS servicios,
+    a.discount_percent,
+    a.discount_amount,
+    a.reschedule_count,
+    a.total_amount_max
    FROM appointments a
      JOIN clients c ON c.id = a.client_id;
 
@@ -1358,9 +2221,9 @@ create or replace view public.v_estadisticas_mes with (security_invoker=true) as
   GROUP BY b.id, (date_trunc('month'::text, (a.starts_at AT TIME ZONE b.timezone))::date);
 
 
--- ======================================================================
--- 8. Triggers
--- ======================================================================
+-- =====================================================================
+-- Disparadores (triggers)
+-- =====================================================================
 
 CREATE TRIGGER t_ap_upd BEFORE UPDATE ON public.appointments FOR EACH ROW EXECUTE FUNCTION tg_touch_updated();
 
@@ -1372,14 +2235,28 @@ CREATE TRIGGER t_contadores AFTER UPDATE ON public.appointments FOR EACH ROW EXE
 
 CREATE TRIGGER t_srv_upd BEFORE UPDATE ON public.services FOR EACH ROW EXECUTE FUNCTION tg_touch_updated();
 
+CREATE TRIGGER tg_addon_maximo_antes BEFORE INSERT ON public.appointment_item_addons FOR EACH ROW EXECUTE FUNCTION tg_addon_maximo();
+
+CREATE TRIGGER tg_addon_maximo_despues AFTER INSERT OR DELETE OR UPDATE ON public.appointment_item_addons FOR EACH ROW EXECUTE FUNCTION tg_addon_maximo();
+
 CREATE TRIGGER tg_appointments_turno BEFORE INSERT OR UPDATE OF starts_at ON public.appointments FOR EACH ROW EXECUTE FUNCTION validar_turno();
+
+CREATE TRIGGER tg_cita_aviso AFTER INSERT OR UPDATE ON public.appointments FOR EACH ROW EXECUTE FUNCTION tg_cita_aviso();
+
+CREATE TRIGGER tg_cita_descuento_maximo AFTER UPDATE OF discount_percent ON public.appointments FOR EACH ROW EXECUTE FUNCTION tg_cita_descuento_maximo();
+
+CREATE TRIGGER tg_descartar_recordatorios_auto BEFORE INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION tg_descartar_recordatorios_auto();
+
+CREATE TRIGGER tg_espera_aviso AFTER INSERT ON public.waitlist FOR EACH ROW EXECUTE FUNCTION tg_espera_aviso();
 
 CREATE TRIGGER tg_holds_turno BEFORE INSERT ON public.holds FOR EACH ROW EXECUTE FUNCTION validar_turno();
 
+CREATE TRIGGER tg_resena_aviso AFTER INSERT OR UPDATE OF rating, comment ON public.reviews FOR EACH ROW EXECUTE FUNCTION tg_resena_aviso();
 
--- ======================================================================
--- 9. Row Level Security
--- ======================================================================
+
+-- =====================================================================
+-- Seguridad por filas (RLS)
+-- =====================================================================
 
 alter table public.appointment_item_addons enable row level security;
 
@@ -1413,6 +2290,12 @@ alter table public.photo_tags enable row level security;
 
 alter table public.profiles enable row level security;
 
+alter table public.push_cola enable row level security;
+
+alter table public.push_suscripciones enable row level security;
+
+alter table public.registro_errores enable row level security;
+
 alter table public.reviews enable row level security;
 
 alter table public.schedule_exceptions enable row level security;
@@ -1430,9 +2313,9 @@ alter table public.tags enable row level security;
 alter table public.waitlist enable row level security;
 
 
--- ======================================================================
--- 10. Políticas RLS (incluye storage.objects del bucket galeria)
--- ======================================================================
+-- =====================================================================
+-- Políticas
+-- =====================================================================
 
 create policy prof_item_addons on public.appointment_item_addons as PERMISSIVE for ALL to public using ((EXISTS ( SELECT 1
    FROM (appointment_items i
@@ -1519,10 +2402,14 @@ create policy prof_espera on public.waitlist as PERMISSIVE for ALL to public usi
 
 create policy "Lectura publica galeria" on storage.objects as PERMISSIVE for SELECT to public using ((bucket_id = 'galeria'::text));
 
-create policy "PROFESIONAL borra fotos" on storage.objects as PERMISSIVE for DELETE to public using (((bucket_id = 'galeria'::text) AND (auth.role() = 'authenticated'::text) AND (EXISTS ( SELECT 1
-   FROM profiles
-  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'PROFESIONAL'::rol_usuario))))));
+create policy "PROFESIONAL borra fotos" on storage.objects as PERMISSIVE for DELETE to authenticated using (((bucket_id = 'galeria'::text) AND (EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['PROFESIONAL'::rol_usuario, 'ADMIN_PLATAFORMA'::rol_usuario])) AND ((p.business_id)::text = (storage.foldername(objects.name))[1]))))));
 
-create policy "PROFESIONAL sube fotos" on storage.objects as PERMISSIVE for INSERT to public with check (((bucket_id = 'galeria'::text) AND (auth.role() = 'authenticated'::text) AND (EXISTS ( SELECT 1
-   FROM profiles
-  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'PROFESIONAL'::rol_usuario))))));
+create policy "PROFESIONAL cambia fotos" on storage.objects as PERMISSIVE for UPDATE to authenticated using (((bucket_id = 'galeria'::text) AND (EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['PROFESIONAL'::rol_usuario, 'ADMIN_PLATAFORMA'::rol_usuario])) AND ((p.business_id)::text = (storage.foldername(objects.name))[1]))))));
+
+create policy "PROFESIONAL sube fotos" on storage.objects as PERMISSIVE for INSERT to authenticated with check (((bucket_id = 'galeria'::text) AND (EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.role = ANY (ARRAY['PROFESIONAL'::rol_usuario, 'ADMIN_PLATAFORMA'::rol_usuario])) AND ((p.business_id)::text = (storage.foldername(objects.name))[1]))))));

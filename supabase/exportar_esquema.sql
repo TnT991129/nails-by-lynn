@@ -1,6 +1,7 @@
 -- Exporta la estructura de la base de datos (sin datos) como sentencias SQL, una por fila.
 -- Uso: Supabase → SQL Editor → ejecutar → Export → Download CSV.
--- El resultado se guarda en supabase/esquema.sql como copia de referencia del proyecto.
+-- El resultado se guarda en supabase/esquema.sql como copia de referencia del proyecto
+-- (python supabase/csv_a_esquema.py <archivo.csv>). Solo lee: no cambia nada.
 
 with
 extensiones as (
@@ -18,6 +19,13 @@ enums as (
   join pg_namespace n on n.oid = t.typnamespace
   where n.nspname = 'public'
   group by t.typname
+),
+secuencias as (
+  -- Las que no son de una columna identity (p. ej. audit_log_id_seq)
+  select 1, c.relname::text, format('create sequence if not exists public.%I;', c.relname)
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind = 'S'
+    and not exists (select 1 from pg_depend d where d.objid = c.oid and d.deptype = 'i')
 ),
 tablas as (
   select 2, c.relname::text,
@@ -95,10 +103,65 @@ politicas as (
                 case when with_check is not null then ' with check (' || with_check || ')' else '' end)
   from pg_policies
   where schemaname in ('public', 'storage')
+),
+roles_web as (
+  -- PUBLIC (oid 0) y los roles con los que llega la web
+  select 0::oid as oid, 'public' as nombre
+  union all select oid, rolname from pg_roles where rolname in ('anon', 'authenticated', 'service_role')
+),
+permisos_funciones as (
+  -- Primero se quita todo y luego se da lo que hay ahora (así queda igual que en la base real)
+  select 11, p.proname::text,
+         format('revoke all on function public.%I(%s) from public, anon, authenticated;',
+                p.proname, pg_get_function_identity_arguments(p.oid))
+         || coalesce((select string_agg(format(' grant execute on function public.%I(%s) to %s;',
+                                               p.proname, pg_get_function_identity_arguments(p.oid), r.nombre),
+                                        '' order by r.nombre)
+                      from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+                      join roles_web r on r.oid = a.grantee
+                      where a.privilege_type = 'EXECUTE'), '')
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.prokind in ('f','p')
+    and not exists (select 1 from pg_depend dp where dp.objid = p.oid and dp.deptype = 'e')
+),
+permisos_tablas as (
+  select 12, c.relname::text,
+         format('revoke all on table public.%I from anon, authenticated;', c.relname)
+         || coalesce((select string_agg(format(' grant %s on table public.%I to %s;', x.privs, c.relname, x.nombre), '' order by x.nombre)
+                      from (select r.nombre, string_agg(a.privilege_type, ', ' order by a.privilege_type) as privs
+                            from aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) a
+                            join roles_web r on r.oid = a.grantee and r.nombre in ('anon', 'authenticated')
+                            group by r.nombre) x), '')
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public' and c.relkind in ('r', 'v')
+),
+permisos_columnas as (
+  -- Lecturas por columnas (p. ej. businesses para anon: sin datos internos)
+  select 13, (c.relname || '.' || r.nombre)::text,
+         format('grant %s (%s) on table public.%I to %s;', a.privilege_type,
+                string_agg(quote_ident(at.attname), ', ' order by at.attnum), c.relname, r.nombre)
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  join pg_attribute at on at.attrelid = c.oid and at.attnum > 0 and not at.attisdropped and at.attacl is not null
+  cross join lateral aclexplode(at.attacl) a
+  join roles_web r on r.oid = a.grantee and r.nombre in ('anon', 'authenticated')
+  where n.nspname = 'public'
+  group by c.relname, r.nombre, a.privilege_type
+),
+cajones as (
+  select 14, b.id::text,
+         format('insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values (%L, %L, %s, %s, %L) on conflict (id) do nothing;',
+                b.id, b.name, b.public, coalesce(b.file_size_limit::text, 'null'), b.allowed_mime_types)
+  from storage.buckets b
+),
+tareas as (
+  select 15, j.jobname::text, format('select cron.schedule(%L, %L, %L);', j.jobname, j.schedule, j.command)
+  from cron.job j
 )
 select orden, nombre, sql from (
   select * from extensiones
   union all select * from enums
+  union all select * from secuencias
   union all select * from tablas
   union all select * from restricciones
   union all select * from indices
@@ -107,5 +170,10 @@ select orden, nombre, sql from (
   union all select * from disparadores
   union all select * from rls
   union all select * from politicas
+  union all select * from permisos_funciones
+  union all select * from permisos_tablas
+  union all select * from permisos_columnas
+  union all select * from cajones
+  union all select * from tareas
 ) todo
 order by orden, nombre;

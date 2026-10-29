@@ -18,7 +18,7 @@ export type Addon = {
   name: string
   extra_minutes: number
   extra_price: number
-  extra_price_max?: number | null   // rango de precio (supabase/rango_complementos.sql)
+  extra_price_max?: number | null   // rango de precio (supabase/historial/rango_complementos.sql)
 }
 
 export type Negocio = {
@@ -63,16 +63,16 @@ export type CitaDetalle = {
   descuento_porcentaje?: number
   descuento_monto?: number
   cambio_mes_disponible?: boolean
-  // Opcionales: llegan desde que se aplicó supabase/reprogramar_clienta.sql
+  // Opcionales: llegan desde que se aplicó supabase/historial/reprogramar_clienta.sql
   margen_minutos?: number
   max_reprogramaciones?: number
   horas_minimas_reprogramar?: number
   cliente: { nombre: string; telefono: string }
   negocio: { nombre: string; ubicacion: string | null; whatsapp: string | null; zona: string }
-  // complementos: llegan desde supabase/complementos_y_descuentos.sql
+  // complementos: llegan desde supabase/historial/complementos_y_descuentos.sql
   servicios: { nombre: string; precio: number; complementos?: { nombre: string; precio: number; precio_max?: number | null }[] }[]
-  total_maximo?: number | null   // si lleva algo con precio en rango (supabase/rango_en_citas.sql)
-  resena?: { estrellas: number; comentario: string | null } | null   // supabase/mejoras.sql
+  total_maximo?: number | null   // si lleva algo con precio en rango (supabase/historial/rango_en_citas.sql)
+  resena?: { estrellas: number; comentario: string | null } | null   // supabase/historial/mejoras.sql
 }
 
 export type Resenas = {
@@ -92,7 +92,7 @@ export type Politicas = {
   max_citas_activas: number
   max_dias_antelacion: number
   anticipo: boolean
-  // Secciones que escribe Lynn en el panel (supabase/panel_editar_y_politicas.sql); null = textos de siempre
+  // Secciones que escribe Lynn en el panel (supabase/historial/panel_editar_y_politicas.sql); null = textos de siempre
   secciones?: SeccionPolitica[] | null
   textos: Record<'cancelacion' | 'cambios' | 'anticipo' | 'no_show' | 'retrasos' | 'reembolsos' | 'espera' | 'privacidad', string | null>
 }

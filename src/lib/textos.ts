@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { rpc, NEGOCIO_ID } from './supabase'
 
 // Textos de la web de las clientas. Lynn los cambia en Panel → Más → Textos de la web
-// (se guardan en settings.site_texts, supabase/textos_web.sql). Lo que no cambie usa el texto de aquí.
+// (se guardan en settings.site_texts, supabase/historial/textos_web.sql). Lo que no cambie usa el texto de aquí.
 // {variable} se sustituye por su valor; **así** sale en negrita.
 
 type DefTexto = { grupo: string; etiqueta: string; defecto: string; largo?: boolean; variables?: string }

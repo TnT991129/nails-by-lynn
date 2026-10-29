@@ -10,8 +10,8 @@ export type CitaAgenda = {
   client_note: string | null; internal_note: string | null
   cliente_nombre: string; cliente_telefono: string; client_id: string
   servicios: string | null
-  discount_percent?: number; discount_amount?: number   // desde supabase/turnos_descuentos_cambios.sql
-  total_amount_max?: number | null   // total con precios en rango (supabase/rango_en_citas.sql)
+  discount_percent?: number; discount_amount?: number   // desde supabase/historial/turnos_descuentos_cambios.sql
+  total_amount_max?: number | null   // total con precios en rango (supabase/historial/rango_en_citas.sql)
 }
 
 export type Cliente = {
@@ -19,9 +19,9 @@ export type Cliente = {
   internal_notes: string | null
   total_appointments: number; total_no_shows: number; total_cancellations: number
   total_spent_cup: number; is_blocked: boolean
-  // Descuento para su próxima cita (columnas de supabase/turnos_descuentos_cambios.sql)
+  // Descuento para su próxima cita (columnas de supabase/historial/turnos_descuentos_cambios.sql)
   next_discount_percent?: number | null; next_discount_note?: string | null
-  allergies?: string | null; birthday?: string | null   // supabase/mejoras.sql
+  allergies?: string | null; birthday?: string | null   // supabase/historial/mejoras.sql
   last_appointment_at: string | null; first_seen_at: string
 }
 
@@ -1187,7 +1187,7 @@ export async function subirFotoTrabajo(clientId: string, archivo: File) {
 export type AjustesPoliticas = {
   cancel_blocked_hours: number; reschedule_min_hours: number; max_reschedules: number
   max_active_appointments_per_phone: number; max_advance_days: number; min_advance_hours: number
-  // Textos libres: [{ titulo, texto }] (supabase/panel_editar_y_politicas.sql); null = textos de siempre
+  // Textos libres: [{ titulo, texto }] (supabase/historial/panel_editar_y_politicas.sql); null = textos de siempre
   policy_sections: { titulo: string; texto: string }[] | null
 }
 const CAMPOS_POLITICAS = 'cancel_blocked_hours, reschedule_min_hours, max_reschedules, ' +
@@ -1203,7 +1203,7 @@ export function guardarAjustesPoliticas(a: AjustesPoliticas) {
 }
 
 // ================== TEXTOS DE LA WEB ==================
-// Solo se guardan los que Lynn cambió (supabase/textos_web.sql)
+// Solo se guardan los que Lynn cambió (supabase/historial/textos_web.sql)
 export async function obtenerTextosPanel(): Promise<Record<string, string>> {
   const { data, error } = await sb.from('settings').select('site_texts').eq('business_id', NEGOCIO_ID).single()
   if (error) throw error

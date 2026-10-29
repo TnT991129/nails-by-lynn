@@ -88,24 +88,18 @@ también en modo oscuro.
 
 ## Base de datos (carpeta `supabase/`)
 
-Cada archivo `.sql` es una migración que se ejecuta **una vez** en Supabase → SQL Editor,
-en este orden:
+- **`esquema.sql`**: cómo está la base de datos ahora (tablas, funciones, permisos, políticas, tareas).
+  Es la referencia; **no se ejecuta** sobre la base de datos en uso.
+- **`historial/`**: las migraciones que la fueron construyendo. Ya están aplicadas; no se repiten.
+- **`restaurar_servicios.sql`**: solo si se borran los servicios por error.
 
-1. `turnos_fijos.sql`, `eliminar_clienta.sql`, `seguridad.sql`
-2. `politicas_y_espera.sql`, `reprogramar_clienta.sql`
-3. `turnos_descuentos_cambios.sql`, `correcciones_revision.sql`
-4. `rango_complementos.sql`, `tasa_dolar.sql`
-5. `agenda_complementos.sql`, `complementos_y_descuentos.sql`
-6. `mejoras.sql`, `rango_en_citas.sql`, `editar_cita.sql`
-7. `revision_seguridad_octubre.sql` (incluye lo de `mejoras.sql`; no ejecutes `mejoras.sql`
-   después de `rango_en_citas.sql`, porque instala una versión anterior de `obtener_cita_por_token`)
-8. `panel_editar_y_politicas.sql`
-9. `textos_web.sql`
-10. `fotos_permisos.sql`
-11. `avisos_lynn.sql` (y la Edge Function de abajo)
-12. `avisos_direccion.sql` (la función quedó en la dirección `super-handler`)
-13. `fotos_diagnostico.sql` (permisos de fotos, registro de errores de subida y `diagnostico_fotos()`)
-14. `seguridad_avisos_y_diagnostico.sql` (cierra `diagnostico_fotos()` a la web y crea la clave de los avisos)
+**Para cambiar algo en la base de datos:**
+
+1. Escribe un archivo nuevo en `supabase/` con el cambio (entre `begin;` y `commit;`, para que si
+   falla no se aplique nada) y ejecútalo una vez en Supabase → SQL Editor.
+2. Muévelo a `supabase/historial/`.
+3. Vuelve a sacar el esquema: ejecuta `exportar_esquema.sql` (solo lee) → Export → Download CSV, y
+   `python supabase/csv_a_esquema.py "ruta/al/archivo.csv"`.
 
 ### Avisos al móvil de Lynn (Web Push)
 
@@ -119,12 +113,12 @@ lista de espera o deja una opinión. Lo que hace ella desde el panel no le avisa
 3. Edge Functions → Secrets: crea `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` con los valores de
    `supabase/.env.push.local` (ese archivo no se sube a GitHub; si se pierde, se generan claves nuevas
    y se cambia también la pública en `src/lib/panel/avisos.ts`).
-4. Ejecuta `avisos_lynn.sql`.
+4. Ya ejecutado: `historial/avisos_lynn.sql`.
 
 **Clave de los avisos** (para que nadie más pueda despertar la función). Hacerlo en este orden;
 en cualquier punto intermedio los avisos siguen llegando:
 
-1. Ejecuta `seguridad_avisos_y_diagnostico.sql` (la base de datos empieza a mandar la clave).
+1. Ya hecho (28/10/2026): `historial/seguridad_avisos_y_diagnostico.sql` (la base de datos manda la clave).
 2. Copia la clave: `select decrypted_secret from vault.decrypted_secrets where name = 'avisos_push_secreto';`
 3. Edge Functions → Secrets: crea `AVISOS_SECRETO` con ese valor.
 4. Vuelve a desplegar `enviar-push` con el código actual de `supabase/functions/enviar-push/index.ts`.
@@ -137,8 +131,6 @@ funcionan con el panel añadido a la pantalla de inicio (iOS 16.4 o más).
 Los textos de la web de las clientas están en `src/lib/textos.ts` (texto por defecto de cada uno);
 Lynn los cambia en Panel → Más → Textos de la web.
 
-`restaurar_servicios.sql` solo se usa si se borran los servicios por error.
-**`esquema.sql` no se ejecuta**: es una copia de referencia antigua.
 
 En Supabase → Authentication → Sign In / Providers conviene tener **desactivado
 «Allow new users to sign up»**: la única cuenta debe ser la de Lynn.
