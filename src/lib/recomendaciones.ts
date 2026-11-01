@@ -1,6 +1,6 @@
 // Recomendaciones: una clienta trae a una amiga. Lynn las configura en Panel → Más → Recomendaciones;
 // se guarda en settings.site_texts → «_recomendaciones» y la base de datos da los premios sola cuando la amiga
-// completa su primera cita (tg_premio_recomendacion en supabase/recomendaciones_y_bonos.sql).
+// completa su primera cita (tg_premio_recomendacion en supabase/historial/recomendaciones_y_bonos.sql).
 
 export const CLAVE_RECOMENDACIONES = '_recomendaciones'
 

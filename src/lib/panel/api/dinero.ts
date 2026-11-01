@@ -264,7 +264,7 @@ export async function ganadoEnCitas(citas: Pick<CitaAgenda, 'id' | 'total_amount
   return conCobros.reduce((t, c) => t + ganadoCita(c, tasa).real, 0)
 }
 
-// ================== BONOS REGALO (supabase/recomendaciones_y_bonos.sql) ==================
+// ================== BONOS REGALO (supabase/historial/recomendaciones_y_bonos.sql) ==================
 // Lynn los vende en dólares; cada canje es un cobro de una cita con gift_card_id. La base de datos impide
 // gastar más del saldo (tg_canje_bono). Lo canjeado cuenta como ingreso de la cita, como cualquier cobro.
 export type Bono = {

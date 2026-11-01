@@ -105,16 +105,11 @@ también en modo oscuro.
 - **`historial/`**: las migraciones que la fueron construyendo. Ya están aplicadas; no se repiten.
 - **`restaurar_servicios.sql`**: solo si se borran los servicios por error.
 
-**Pendientes de ejecutar** (cada uno una vez, en Supabase → SQL Editor; después se mueven a `historial/`):
-
-- `recomendaciones_y_bonos.sql`: **recomendaciones** (la clienta comparte su enlace; cuando la amiga completa su
-  primera cita, las dos tienen un descuento) y **bonos regalo** (Lynn los vende y se canjean en «Cobrar»; la base de
-  datos impide gastar más del saldo). Añade `clients.referred_by`, `clients.referral_rewarded_at`,
-  `payments.gift_card_id` y la tabla `gift_cards`; incluye los bonos en el respaldo. Sin él, la web y el panel
-  funcionan igual y esas dos pantallas avisan de que falta.
-
-Los anteriores (`antelacion_en_politicas.sql`, `inspiracion_fidelidad_visitas.sql` y `fidelidad_niveles.sql`) ya
-están aplicados y en `historial/`; `esquema.sql` aún no los incluye: conviene volver a sacarlo (paso 3 de abajo).
+**Pendientes de ejecutar:** ninguno (comprobado el 01/11/2026). El último, `recomendaciones_y_bonos.sql`
+(recomendaciones y bonos regalo: `clients.referred_by`, `clients.referral_rewarded_at`, `payments.gift_card_id` y la
+tabla `gift_cards`), ya está aplicado y en `historial/`, igual que `antelacion_en_politicas.sql`,
+`inspiracion_fidelidad_visitas.sql` y `fidelidad_niveles.sql`. `esquema.sql` aún no incluye estos cuatro: conviene volver
+a sacarlo (paso 3 de abajo).
 
 **Lo que se ganó = lo cobrado.** El precio de los servicios es una estimación: Lynn cobra al final según el
 largo, el diseño… En Estadísticas, Hoy y la ficha de la clienta, una cita completada cuenta lo apuntado en

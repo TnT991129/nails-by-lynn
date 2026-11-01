@@ -10,7 +10,7 @@ import { mensajeDeError } from '../../lib/errores'
 import { Volver, Interruptor } from './comunes'
 
 // Una clienta trae a una amiga: cuando la amiga completa su primera cita, la base de datos les deja
-// un descuento a las dos para su próxima cita (supabase/recomendaciones_y_bonos.sql).
+// un descuento a las dos para su próxima cita (supabase/historial/recomendaciones_y_bonos.sql).
 export default function Recomendaciones() {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['textos-panel'], queryFn: obtenerTextosPanel })

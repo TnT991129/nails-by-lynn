@@ -216,7 +216,7 @@ export async function clientasParaVolver(desde = 21, hasta = 56): Promise<ParaVo
     .sort((a, b) => a.dias - b.dias)
 }
 
-// ================== RECOMENDACIONES (supabase/recomendaciones_y_bonos.sql) ==================
+// ================== RECOMENDACIONES (supabase/historial/recomendaciones_y_bonos.sql) ==================
 /** ¿Está ejecutado el SQL? (columna referred_by en las clientas) */
 export async function recomendacionesInstaladas(): Promise<boolean> {
   const { error } = await sb.from('clients').select('referred_by').limit(1)
