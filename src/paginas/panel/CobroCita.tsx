@@ -18,7 +18,8 @@ const NOMBRE_METODO: Record<string, string> = {
   EFECTIVO: 'Efectivo', TRANSFERMOVIL: 'Transfermóvil', ENZONA: 'EnZona', TRANSFERENCIA: 'Transferencia', OTRO: 'Otro',
 }
 
-// Lo que pagó la clienta: se puede cobrar en varias partes y en CUP o USD
+// Lo que pagó la clienta: se puede cobrar en varias partes y en CUP o USD.
+// El precio de la cita es una estimación; lo que Lynn apunta aquí es lo que cuenta en Estadísticas.
 export default function CobroCita({ cita }: { cita: CitaAgenda }) {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['cobros', cita.id], queryFn: () => cobrosDeCita(cita.id) })
@@ -32,8 +33,17 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
 
   const total = Number(cita.total_amount)
   const pagado = (q.data ?? []).reduce((t, c) => t + cobroEnUsd(c, tasa), 0)
-  const falta = Math.max(0, Math.round((total - pagado) * 100) / 100)
+  // Completada y con cobro: lo cobrado es el precio final, aunque sea distinto del estimado
+  const cobrada = pagado > 0 && (cita.status === 'COMPLETADA' || pagado >= total - 0.009)
+  const falta = cobrada ? 0 : Math.max(0, Math.round((total - pagado) * 100) / 100)
+  const distinto = cobrada && total > 0 && Math.abs(pagado - total) > 0.009
   const f = FORMAS.find(x => x.clave === forma)!
+
+  function refrescar() {
+    qc.invalidateQueries({ queryKey: ['cobros', cita.id] })
+    for (const k of ['resumen', 'top-serv', 'top-cli', 'semana', 'ganado-hoy', 'cli-historial'])
+      qc.invalidateQueries({ queryKey: [k] })
+  }
 
   // Al abrir o cambiar de forma de pago se propone lo que falta, en la moneda elegida
   function sugerir(clave: string) {
@@ -49,8 +59,7 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
     setTrabajando(true); setError(null)
     try {
       await registrarCobro({ citaId: cita.id, monto: n, moneda: f.moneda, metodo: f.metodo, tasa })
-      qc.invalidateQueries({ queryKey: ['cobros', cita.id] })
-      qc.invalidateQueries({ queryKey: ['cobrado'] })
+      refrescar()
       setAbierto(false)
     } catch (e) { setError(mensajeDeError(e)) }
     finally { setTrabajando(false) }
@@ -60,8 +69,7 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
     if (!confirm('¿Borrar este cobro?')) return
     try {
       await eliminarCobro(id)
-      qc.invalidateQueries({ queryKey: ['cobros', cita.id] })
-      qc.invalidateQueries({ queryKey: ['cobrado'] })
+      refrescar()
     } catch (e) { setError(mensajeDeError(e)) }
   }
 
@@ -72,14 +80,25 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-[14px] text-tinta-tenue">Cobro</div>
-          <div className={`text-[16px] font-semibold ${falta <= 0 && total > 0 ? 'text-estado-exito' : ''}`}>
-            {total <= 0 ? 'Sin precio' : falta <= 0 ? '✓ Pagado' : pagado > 0 ? `Falta ${importe(falta)}` : `Pendiente · ${precioRango(total, cita.total_amount_max)}`}
+          <div className={`text-[16px] font-semibold ${cobrada ? 'text-estado-exito' : ''}`}>
+            {cobrada ? `✓ Cobrado ${importe(pagado)}`
+              : pagado > 0 ? `Lleva ${importe(pagado)} · falta ${importe(falta)}`
+              : total <= 0 ? 'Sin precio' : `Pendiente · ${precioRango(total, cita.total_amount_max)}`}
           </div>
+          {distinto && (
+            <div className="text-[12px] text-tinta-tenue">Precio estimado {precioRango(total, cita.total_amount_max)}</div>
+          )}
         </div>
-        {!abierto && falta > 0 && (
+        {!abierto && !cobrada && (
           <Boton onClick={() => { setAbierto(true); setError(null); sugerir(forma) }} className="shrink-0 !min-h-[40px] !text-[14px]">
             Cobrar
           </Boton>
+        )}
+        {!abierto && cobrada && (
+          <button onClick={() => { setAbierto(true); setError(null); sugerir(forma) }}
+            className="shrink-0 min-h-[40px] px-2 text-[13px] text-tinta-suave underline underline-offset-2">
+            + Otro cobro
+          </button>
         )}
       </div>
 
@@ -109,11 +128,14 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
             ))}
           </div>
           <label className="flex items-center gap-2">
-            <span className="text-[14px] text-tinta-suave shrink-0">Monto</span>
+            <span className="text-[14px] text-tinta-suave shrink-0">Le cobré</span>
             <input value={monto} onChange={e => setMonto(e.target.value)} inputMode="decimal" autoFocus
               className="flex-1 min-w-0 min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel" />
             <span className="text-[14px] shrink-0">{f.moneda}</span>
           </label>
+          <p className="text-[12px] text-tinta-tenue">
+            Pon lo que te pagó de verdad, aunque no sea el precio estimado: es lo que cuenta en Estadísticas.
+          </p>
           {f.moneda === 'CUP' && !tasa && (
             <p className="text-[12px] text-estado-aviso">Pon el precio del dólar en «Más» para pasar los CUP a dólares.</p>
           )}

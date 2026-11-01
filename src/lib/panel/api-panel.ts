@@ -23,7 +23,7 @@ export type Cliente = {
   // Descuento para su próxima cita (columnas de supabase/historial/turnos_descuentos_cambios.sql)
   next_discount_percent?: number | null; next_discount_note?: string | null
   allergies?: string | null; birthday?: string | null   // supabase/historial/mejoras.sql
-  // Tarjeta de fidelidad (supabase/fidelidad_niveles.sql): sellos sumados o quitados a mano y si no participa
+  // Tarjeta de fidelidad (supabase/historial/fidelidad_niveles.sql): sellos sumados o quitados a mano y si no participa
   loyalty_adjustment?: number; loyalty_excluded?: boolean
   last_appointment_at: string | null; first_seen_at: string
 }
@@ -203,17 +203,18 @@ export type ResumenHistorial = { citas: number; activas: number; completadas: nu
 
 // Lo que se perdería al eliminar a la clienta (se muestra antes de confirmar)
 export async function resumenHistorialClienta(id: string): Promise<ResumenHistorial> {
-  const filas = await ejecutar<{ status: string; total_amount: number; blocked_until: string }[]>(
-    sb.from('appointments').select('status, total_amount, blocked_until').eq('client_id', id))
+  const filas = await ejecutar<(ConCobros & { status: string; blocked_until: string })[]>(
+    sb.from('appointments').select(`status, total_amount, blocked_until, ${COBROS_EMBEBIDOS}`).eq('client_id', id))
   const ahora = Date.now()
   const completadas = filas.filter(f => f.status === 'COMPLETADA')
+  const tasa = await tasaParaCobros(completadas)
   return {
     citas: filas.length,
     // Mismo criterio que la función SQL: citas activas que aún no han terminado
     activas: filas.filter(f => ['PENDIENTE','CONFIRMADA','EN_CURSO'].includes(f.status)
       && new Date(f.blocked_until).getTime() > ahora).length,
     completadas: completadas.length,
-    ingresos: completadas.reduce((t, f) => t + Number(f.total_amount), 0),
+    ingresos: completadas.reduce((t, f) => t + ganadoCita(f, tasa).real, 0),
   }
 }
 
@@ -410,12 +411,16 @@ export async function registrarEnvio(
 }
 
 // ================== ESTADÍSTICAS ==================
-// Todas las estadísticas se computan sobre appointments completadas del mes.
-// Los precios están en price_snapshot para que subir precios no distorsione
-// el histórico.
+// Todas las estadísticas se computan sobre appointments completadas del mes, con lo que Lynn
+// cobró de verdad (ganadoCita). Si no apuntó el cobro, cuenta el precio estimado de los servicios
+// (price_snapshot: subir precios no distorsiona el histórico).
 
 export type ResumenMes = {
   ingresos: number
+  cobrado: number          // de las citas con cobro apuntado
+  sin_cobro: number        // citas completadas sin cobro apuntado (cuentan por su precio estimado)
+  sin_cobro_estimado: number
+  sobre_estimado: number   // lo cobrado menos lo estimado en las citas con cobro (+ cobró más, − cobró menos)
   gastos: number
   neto: number
   citas_completadas: number
@@ -443,10 +448,11 @@ export async function resumenMes(año: number, mesCero: number): Promise<Resumen
 
   // Traer todas las citas del mes (para contar completadas, no-shows, canceladas)
   const { data: citas, error: eCit } = await sb.from('appointments')
-    .select('id, status, client_id, total_amount, currency, starts_at')
+    .select(`id, status, client_id, total_amount, currency, starts_at, ${COBROS_EMBEBIDOS}`)
     .eq('business_id', NEGOCIO_ID)
     .gte('starts_at', ini).lt('starts_at', fin)
   if (eCit) throw eCit
+  const filas = (citas ?? []) as unknown as (ConCobros & { status: string; client_id: string })[]
 
   // Traer gastos del mes
   const { data: gastos, error: eG } = await sb.from('expenses')
@@ -455,8 +461,11 @@ export async function resumenMes(año: number, mesCero: number): Promise<Resumen
     .gte('date', diaIni).lt('date', diaFin)
   if (eG) throw eG
 
-  const completadas = (citas ?? []).filter(c => c.status === 'COMPLETADA')
-  const ingresos = completadas.reduce((t, c) => t + Number(c.total_amount), 0)
+  const completadas = filas.filter(c => c.status === 'COMPLETADA')
+  const tasaCobros = await tasaParaCobros(completadas)
+  const ganado = completadas.map(c => ganadoCita(c, tasaCobros))
+  const ingresos = ganado.reduce((t, g) => t + g.real, 0)
+  const conCobro = ganado.filter(g => g.cobrada), sinCobro = ganado.filter(g => !g.cobrada)
   // Todo en dólares: los gastos en CUP se convierten con el dólar del día en que se apuntaron
   // (los antiguos, que no lo guardaban, con el último precio del dólar)
   const tasa = (gastos ?? []).some(g => g.currency === 'CUP' && !g.exchange_rate_used)
@@ -470,11 +479,15 @@ export async function resumenMes(año: number, mesCero: number): Promise<Resumen
 
   return {
     ingresos,
+    cobrado: conCobro.reduce((t, g) => t + g.cobrado, 0),
+    sin_cobro: sinCobro.length,
+    sin_cobro_estimado: sinCobro.reduce((t, g) => t + g.estimado, 0),
+    sobre_estimado: conCobro.reduce((t, g) => t + g.cobrado - g.estimado, 0),
     gastos: totalGastos,
     neto: ingresos - totalGastos,
     citas_completadas: completadas.length,
-    citas_no_show: (citas ?? []).filter(c => c.status === 'NO_SHOW').length,
-    citas_canceladas: (citas ?? []).filter(c =>
+    citas_no_show: filas.filter(c => c.status === 'NO_SHOW').length,
+    citas_canceladas: filas.filter(c =>
       c.status === 'CANCELADA_CLIENTA' || c.status === 'CANCELADA_NEGOCIO').length,
     ticket_promedio: completadas.length > 0 ? ingresos / completadas.length : 0,
     clientas_atendidas: clientasSet.size,
@@ -486,20 +499,30 @@ export async function resumenMes(año: number, mesCero: number): Promise<Resumen
 export async function topServiciosMes(año: number, mesCero: number, limite = 5): Promise<FilaServicio[]> {
   const { ini, fin } = rangoMes(año, mesCero)
   const { data, error } = await sb.from('appointment_items')
-    .select('service_name_snapshot, price_snapshot, appointment_id, appointments!inner(status, starts_at, business_id)')
+    .select(`service_name_snapshot, price_snapshot, appointment_id,
+             appointments!inner(status, starts_at, business_id, total_amount, ${COBROS_EMBEBIDOS})`)
     .eq('appointments.business_id', NEGOCIO_ID)
     .eq('appointments.status', 'COMPLETADA')
     .gte('appointments.starts_at', ini).lt('appointments.starts_at', fin)
   if (error) throw error
+  type Fila = { service_name_snapshot: string; price_snapshot: number; appointment_id: string; appointments: ConCobros }
+  const filas = (data ?? []) as unknown as Fila[]
 
-  // Agrupar por nombre
+  // Lo cobrado en cada cita se reparte entre sus servicios según lo que pesa cada uno en el precio
+  const porCita = new Map<string, Fila[]>()
+  for (const f of filas) porCita.set(f.appointment_id, [...(porCita.get(f.appointment_id) ?? []), f])
+  const tasa = await tasaParaCobros(filas.map(f => f.appointments))
+
   const acc = new Map<string, { cantidad: number; ingresos: number }>()
-  for (const fila of (data ?? [])) {
-    const nombre = fila.service_name_snapshot as string
-    const precio = Number(fila.price_snapshot)
-    const cur = acc.get(nombre) ?? { cantidad: 0, ingresos: 0 }
-    cur.cantidad++; cur.ingresos += precio
-    acc.set(nombre, cur)
+  for (const items of porCita.values()) {
+    const real = ganadoCita(items[0].appointments, tasa).real
+    const suma = items.reduce((t, f) => t + Number(f.price_snapshot), 0)
+    for (const f of items) {
+      const parte = suma > 0 ? real * Number(f.price_snapshot) / suma : real / items.length
+      const cur = acc.get(f.service_name_snapshot) ?? { cantidad: 0, ingresos: 0 }
+      cur.cantidad++; cur.ingresos += parte
+      acc.set(f.service_name_snapshot, cur)
+    }
   }
 
   return Array.from(acc.entries())
@@ -512,17 +535,19 @@ export async function topServiciosMes(año: number, mesCero: number, limite = 5)
 export async function topClientasMes(año: number, mesCero: number, limite = 5): Promise<FilaClienta[]> {
   const { ini, fin } = rangoMes(año, mesCero)
   const { data, error } = await sb.from('appointments')
-    .select('client_id, total_amount, clients!inner(id, full_name)')
+    .select(`client_id, total_amount, clients!inner(id, full_name), ${COBROS_EMBEBIDOS}`)
     .eq('business_id', NEGOCIO_ID)
     .eq('status', 'COMPLETADA')
     .gte('starts_at', ini).lt('starts_at', fin)
   if (error) throw error
+  const filas = (data ?? []) as unknown as (ConCobros & { client_id: string; clients: { full_name: string } })[]
+  const tasa = await tasaParaCobros(filas)
 
   const acc = new Map<string, { nombre: string; visitas: number; gastado: number }>()
-  for (const fila of (data ?? [])) {
-    const id = fila.client_id as string
-    const nombre = (fila.clients as unknown as { full_name: string }).full_name
-    const monto = Number(fila.total_amount)
+  for (const fila of filas) {
+    const id = fila.client_id
+    const nombre = fila.clients.full_name
+    const monto = ganadoCita(fila, tasa).real
     const cur = acc.get(id) ?? { nombre, visitas: 0, gastado: 0 }
     cur.visitas++; cur.gastado += monto
     acc.set(id, cur)
@@ -1120,17 +1145,44 @@ export function cobroEnUsd(c: Pick<Cobro, 'amount' | 'currency' | 'exchange_rate
   return tasa > 0 ? Number(c.amount) / tasa : 0
 }
 
-// Cobrado en el mes (en USD), según la fecha de la cita
-export async function cobradoMes(año: number, mesCero: number): Promise<number> {
-  const { ini, fin } = rangoMes(año, mesCero)
-  const { data, error } = await sb.from('payments')
-    .select('amount, currency, exchange_rate_used, appointments!inner(starts_at)')
-    .eq('business_id', NEGOCIO_ID).eq('status', 'PAGADO_COMPLETO')
-    .gte('appointments.starts_at', ini).lt('appointments.starts_at', fin)
-  if (error) throw error
-  const filas = (data ?? []) as unknown as Cobro[]
-  const tasa = filas.some(p => p.currency === 'CUP' && !p.exchange_rate_used) ? (await obtenerTasaPanel())?.tasa ?? null : null
-  return filas.reduce((t, p) => t + cobroEnUsd(p, tasa), 0)
+// ---------- Lo que se ganó de verdad con cada cita ----------
+// El precio de los servicios es una estimación: al terminar, Lynn cobra según el largo, el diseño…
+// En Estadísticas cuenta lo que apuntó en «Cobrar»; si no apuntó nada, el precio estimado.
+type CobroEmbebido = Pick<Cobro, 'amount' | 'currency' | 'exchange_rate_used'> & { status: string }
+type ConCobros = { total_amount: number; payments?: CobroEmbebido[] | null }
+const COBROS_EMBEBIDOS = 'payments(amount, currency, exchange_rate_used, status)'
+
+function cobrosValidos(c: ConCobros) {
+  return (c.payments ?? []).filter(p => p.status === 'PAGADO_COMPLETO')
+}
+
+// El dólar actual solo hace falta para cobros en CUP antiguos que no guardaron el suyo
+async function tasaParaCobros(citas: ConCobros[]): Promise<number | null> {
+  return citas.some(c => cobrosValidos(c).some(p => p.currency === 'CUP' && !p.exchange_rate_used))
+    ? (await obtenerTasaPanel())?.tasa ?? null : null
+}
+
+export type Ganado = { real: number; cobrado: number; estimado: number; cobrada: boolean }
+
+export function ganadoCita(c: ConCobros, tasa: number | null): Ganado {
+  const cobros = cobrosValidos(c)
+  const estimado = Number(c.total_amount)
+  // Un cobro en CUP sin precio del dólar no se puede pasar a dólares: mejor el estimado que un cero
+  const convertible = cobros.every(p => p.currency === 'USD' || Number(p.exchange_rate_used ?? tasa ?? 0) > 0)
+  const cobrado = cobros.reduce((t, p) => t + cobroEnUsd(p, tasa), 0)
+  const cobrada = cobros.length > 0 && convertible
+  return { real: cobrada ? cobrado : estimado, cobrado, estimado, cobrada }
+}
+
+// Lo ganado en unas citas de la agenda (v_agenda no trae los cobros: se piden aparte)
+export async function ganadoEnCitas(citas: Pick<CitaAgenda, 'id' | 'total_amount'>[]): Promise<number> {
+  if (citas.length === 0) return 0
+  const pagos = await ejecutar<(CobroEmbebido & { appointment_id: string })[]>(sb.from('payments')
+    .select('appointment_id, amount, currency, exchange_rate_used, status')
+    .in('appointment_id', citas.map(c => c.id)))
+  const conCobros = citas.map(c => ({ total_amount: Number(c.total_amount), payments: pagos.filter(p => p.appointment_id === c.id) }))
+  const tasa = await tasaParaCobros(conCobros)
+  return conCobros.reduce((t, c) => t + ganadoCita(c, tasa).real, 0)
 }
 
 // ================== RESUMEN SEMANAL ==================
@@ -1149,19 +1201,20 @@ export async function resumenSemana(desplazamiento: number): Promise<ResumenSema
   const ini = instanteEnHabana(desde, '00:00'), fin = instanteEnHabana(hasta, '00:00')
 
   const [rCitas, rNuevas] = await Promise.all([
-    sb.from('appointments').select('status, total_amount').eq('business_id', NEGOCIO_ID)
+    sb.from('appointments').select(`status, total_amount, ${COBROS_EMBEBIDOS}`).eq('business_id', NEGOCIO_ID)
       .gte('starts_at', ini).lt('starts_at', fin),
     sb.from('clients').select('id', { count: 'exact', head: true }).eq('business_id', NEGOCIO_ID)
       .gte('first_seen_at', ini).lt('first_seen_at', fin),
   ])
   if (rCitas.error) throw rCitas.error
   if (rNuevas.error) throw rNuevas.error
-  const citas = rCitas.data ?? []
+  const citas = (rCitas.data ?? []) as unknown as (ConCobros & { status: string })[]
   const completadas = citas.filter(c => c.status === 'COMPLETADA')
+  const tasa = await tasaParaCobros(completadas)
   return {
     desde, hasta,
     citas: completadas.length,
-    ingresos: completadas.reduce((t, c) => t + Number(c.total_amount), 0),
+    ingresos: completadas.reduce((t, c) => t + ganadoCita(c, tasa).real, 0),
     nuevas: rNuevas.count ?? 0,
     noVino: citas.filter(c => c.status === 'NO_SHOW').length,
     canceladas: citas.filter(c => c.status === 'CANCELADA_CLIENTA' || c.status === 'CANCELADA_NEGOCIO').length,
@@ -1284,7 +1337,7 @@ export function eliminarResena(id: string) {
   return ejecutar(sb.from('reviews').delete().eq('id', id))
 }
 
-// ================== INSPIRACIÓN, FIDELIDAD Y VISITAS (supabase/inspiracion_fidelidad_visitas.sql) ==================
+// ================== INSPIRACIÓN, FIDELIDAD Y VISITAS (supabase/historial/inspiracion_fidelidad_visitas.sql) ==================
 /** ¿Está ejecutado el SQL nuevo? (false = falta; las pantallas lo avisan) */
 export async function funcionesNuevasInstaladas(): Promise<boolean> {
   const { error } = await sb.rpc('embudo_web', { p_dias: 1 })
@@ -1313,4 +1366,26 @@ export async function inspiracionDeCita(citaId: string): Promise<{ id: string; u
 export async function fidelidadInstalada(): Promise<boolean> {
   const { error } = await sb.from('clients').select('loyalty_adjustment').limit(1)
   return !(error && /loyalty_/.test(error.message))
+}
+
+// ================== CLIENTAS PARA VOLVER ==================
+export type ParaVolver = { id: string; full_name: string; phone: string; dias: number }
+
+// Clientas cuya última cita completada fue hace entre `desde` y `hasta` días y que no tienen otra reservada
+export async function clientasParaVolver(desde = 21, hasta = 56): Promise<ParaVolver[]> {
+  const ahora = Date.now(), dia = 86_400_000
+  const clientas = await ejecutar<{ id: string; full_name: string; phone: string; last_appointment_at: string }[]>(
+    sb.from('clients').select('id, full_name, phone, last_appointment_at')
+      .eq('business_id', NEGOCIO_ID).eq('is_blocked', false)
+      .lte('last_appointment_at', new Date(ahora - desde * dia).toISOString())
+      .gte('last_appointment_at', new Date(ahora - hasta * dia).toISOString()))
+  if (clientas.length === 0) return []
+  const conCita = await ejecutar<{ client_id: string }[]>(sb.from('appointments').select('client_id')
+    .eq('business_id', NEGOCIO_ID).in('status', ['PENDIENTE', 'CONFIRMADA', 'EN_CURSO'])
+    .gte('starts_at', new Date(ahora).toISOString()))
+  const reservadas = new Set(conCita.map(c => c.client_id))
+  return clientas.filter(c => !reservadas.has(c.id))
+    .map(c => ({ id: c.id, full_name: c.full_name, phone: c.phone,
+                 dias: Math.floor((ahora - Date.parse(c.last_appointment_at)) / dia) }))
+    .sort((a, b) => a.dias - b.dias)
 }

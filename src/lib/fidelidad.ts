@@ -1,6 +1,6 @@
 // Tarjeta de fidelidad. Lynn la configura en Panel → Más → Tarjeta de fidelidad; se guarda en
 // settings.site_texts → «_fidelidad» y la base de datos da el premio sola al completar la cita que toca
-// (tg_premio_fidelidad en supabase/fidelidad_niveles.sql).
+// (tg_premio_fidelidad en supabase/historial/fidelidad_niveles.sql).
 //
 // Varios premios en la misma tarjeta: p. ej. 5.ª cita → 15 %, 10.ª → 20 %. La tarjeta mide lo que
 // el premio más alto (10 sellos) y, si «repetir», al llenarse vuelve a empezar.

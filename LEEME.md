@@ -93,15 +93,15 @@ también en modo oscuro.
 - **`historial/`**: las migraciones que la fueron construyendo. Ya están aplicadas; no se repiten.
 - **`restaurar_servicios.sql`**: solo si se borran los servicios por error.
 
-**Pendientes de ejecutar** (cada uno una vez, en Supabase → SQL Editor; después se mueven a `historial/`):
+**Pendientes de ejecutar:** ninguno (comprobado el 01/11/2026). Los tres últimos (`antelacion_en_politicas.sql`,
+`inspiracion_fidelidad_visitas.sql` y `fidelidad_niveles.sql`) ya están aplicados y en `historial/`;
+`esquema.sql` aún no los incluye: conviene volver a sacarlo (paso 3 de abajo).
 
-- `antelacion_en_politicas.sql`: la web sabe cuántas horas de antelación pide Lynn (opcional).
-- `inspiracion_fidelidad_visitas.sql`: foto de inspiración (almacén privado `referencias`), tarjeta de
-  fidelidad (sellos y premio automático al completar) y visitas anónimas para Estadísticas.
-  Solo añade cosas; sin él, esas tres funciones no se ven y el resto de la web va igual.
-- `fidelidad_niveles.sql`: tarjeta con varios premios (p. ej. 5.ª cita 15 %, 10.ª 20 %) y, en la ficha de
-  cada clienta, sumar o quitar sellos y sacarla de la tarjeta. Añade `clients.loyalty_adjustment` y
-  `clients.loyalty_excluded` y redefine la función y el trigger de la tarjeta (vale con o sin el anterior).
+**Lo que se ganó = lo cobrado.** El precio de los servicios es una estimación: Lynn cobra al final según el
+largo, el diseño… En Estadísticas, Hoy y la ficha de la clienta, una cita completada cuenta lo apuntado en
+«Cobrar» (tabla `payments`); si no se apuntó nada, su precio estimado (`total_amount`). Ver `ganadoCita` en
+`src/lib/panel/api-panel.ts`. En «Servicios más vendidos», lo cobrado se reparte entre los servicios de la cita
+según lo que pesa cada uno en el precio.
 
 **Ajustes guardados junto a los textos.** `settings.site_texts` guarda, además de los textos, ajustes de la web
 en claves que empiezan por «_» (JSON): `_diseno` (Diseño de la web) y `_fidelidad` (Tarjeta de fidelidad).
@@ -120,8 +120,10 @@ Textos de la web las conserva al guardar.
 Le llegan a Lynn cuando una clienta reserva, cancela, cambia la fecha o los servicios, se apunta a la
 lista de espera o deja una opinión. Lo que hace ella desde el panel no le avisa.
 
-1. Supabase → Edge Functions → *Deploy a new function* → *Via editor*. Nombre: `enviar-push`.
-   Pega `supabase/functions/enviar-push/index.ts` y despliega.
+1. Supabase → Edge Functions → *Deploy a new function* → *Via editor*. Pega
+   `supabase/functions/enviar-push/index.ts` y despliega. **Está publicada con el nombre `super-handler`**
+   (el que puso Supabase por defecto): la base de datos llama a `/functions/v1/super-handler`
+   (`despertar_envio_push`). Si se vuelve a crear con otro nombre, hay que cambiar también esa URL.
 2. En los ajustes de esa función, desactiva **Enforce JWT verification** (la llama la base de datos;
    solo envía lo que ya está en la cola, así que no se puede abusar de ella).
 3. Edge Functions → Secrets: crea `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` con los valores de
@@ -145,6 +147,22 @@ funcionan con el panel añadido a la pantalla de inicio (iOS 16.4 o más).
 Los textos de la web de las clientas están en `src/lib/textos.ts` (texto por defecto de cada uno);
 Lynn los cambia en Panel → Más → Textos de la web.
 
+
+### Copia de seguridad automática
+
+El plan gratis de Supabase no guarda copias: si se borra algo, no hay vuelta atrás. La tarea
+`.github/workflows/respaldo.yml` descarga la base de datos entera cada domingo, la **cifra** (el repositorio
+puede ser público y ahí están los teléfonos de las clientas) y la guarda 90 días.
+
+Para activarla, en GitHub → Settings → Secrets and variables → Actions crea dos secretos:
+
+- `SUPABASE_DB_URL`: Supabase → botón **Connect** → *Session pooler* (no la «Direct», que GitHub no alcanza).
+  Es algo como `postgresql://postgres.wxkywplcbfrldnoajirn:CONTRASEÑA@aws-0-….pooler.supabase.com:5432/postgres`.
+- `RESPALDO_CLAVE`: una contraseña larga inventada. **Guárdala fuera del ordenador**: sin ella la copia no se abre.
+
+Probarla: Actions → «Copia de seguridad de la base de datos» → *Run workflow*. Sin los secretos, la tarea no hace
+nada y no da error. Para abrir una copia: descarga el artifact, descomprime el .zip y
+`gpg -d respaldo-AAAA-MM-DD.tar.gz.gpg | tar xz` (pide la clave). Dentro van `esquema.sql` y `datos.sql`.
 
 En Supabase → Authentication → Sign In / Providers conviene tener **desactivado
 «Allow new users to sign up»**: la única cuenta debe ser la de Lynn.

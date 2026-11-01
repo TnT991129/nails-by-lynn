@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { citasEnRango } from '../../lib/panel/api-panel'
+import { citasEnRango, ganadoEnCitas } from '../../lib/panel/api-panel'
 import { Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
 import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, importe } from '../../lib/formato'
 import RecordatoriosManana from './RecordatoriosManana'
 import Cumpleanos from './Cumpleanos'
+import VolverAVenir from './VolverAVenir'
 import EnlaceClientas from './EnlaceClientas'
 import EnCup from '../../componentes/EnCup'
 import { sumarDias } from '../../componentes/CalendarioMes'
@@ -28,9 +29,14 @@ export default function Hoy() {
 
   const activas = (q.data ?? []).filter(c =>
     c.status !== 'CANCELADA_CLIENTA' && c.status !== 'CANCELADA_NEGOCIO')
-  const ingresoDia = activas
-    .filter(c => c.status === 'COMPLETADA')
-    .reduce((t, c) => t + Number(c.total_amount), 0)
+  // Lo cobrado de verdad en las completadas (o su precio estimado si aún no se apuntó el cobro)
+  const completadas = activas.filter(c => c.status === 'COMPLETADA')
+  const qGanado = useQuery({
+    queryKey: ['ganado-hoy', completadas.map(c => c.id).join(',')],
+    queryFn: () => ganadoEnCitas(completadas),
+    enabled: completadas.length > 0,
+  })
+  const ingresoDia = completadas.length > 0 ? qGanado.data ?? 0 : 0
 
   return (
     <div className="p-5 space-y-5">
@@ -42,6 +48,7 @@ export default function Hoy() {
       <EnlaceClientas />
       <RecordatoriosManana />
       <Cumpleanos />
+      <VolverAVenir />
 
       <div className="grid grid-cols-2 gap-3">
         <Tarjeta className="text-center py-4">
@@ -51,7 +58,7 @@ export default function Hoy() {
         <Tarjeta className="text-center py-4">
           <div className="text-[12px] tracking-wider uppercase text-tinta-tenue">Completadas</div>
           <div className="font-display text-[30px] mt-1">
-            {activas.filter(c => c.status === 'COMPLETADA').length}
+            {completadas.length}
           </div>
         </Tarjeta>
       </div>

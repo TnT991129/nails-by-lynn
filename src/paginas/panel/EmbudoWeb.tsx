@@ -5,7 +5,7 @@ import { Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
 
 // Visitas y reservas de la web: cuánta gente entra, hasta qué paso llega y cuántas reservan.
-// Anónimo (supabase/inspiracion_fidelidad_visitas.sql): un número al azar por visita, sin datos de nadie.
+// Anónimo (supabase/historial/inspiracion_fidelidad_visitas.sql): un número al azar por visita, sin datos de nadie.
 const PASOS: { evento: string; titulo: string }[] = [
   { evento: 'visita', titulo: 'Entraron a la web' },
   { evento: 'reserva_inicio', titulo: 'Empezaron a reservar' },

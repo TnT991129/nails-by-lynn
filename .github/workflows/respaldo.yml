@@ -1,0 +1,54 @@
+name: Copia de seguridad de la base de datos
+
+# Cada domingo (y cuando se pulse «Run workflow») descarga la base de datos entera, la cifra con
+# RESPALDO_CLAVE y la guarda 90 días en Actions → esta tarea → Artifacts. Ver «Copia de seguridad» en LEEME.md.
+on:
+  schedule:
+    - cron: '0 8 * * 0'   # domingo, 04:00 en La Habana
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      RESPALDO_CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+    steps:
+      - name: Comprobar secretos
+        id: secretos
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$RESPALDO_CLAVE" ]; then
+            echo "::notice::Faltan los secretos SUPABASE_DB_URL o RESPALDO_CLAVE: no se hace copia (ver LEEME.md)."
+            echo "listo=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "listo=si" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.secretos.outputs.listo == 'si'
+        with:
+          version: latest
+
+      - name: Descargar y cifrar
+        if: steps.secretos.outputs.listo == 'si'
+        run: |
+          set -euo pipefail
+          mkdir respaldo
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f respaldo/esquema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -f respaldo/datos.sql
+          fecha=$(date -u +%Y-%m-%d)
+          tar czf - respaldo | gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --passphrase "$RESPALDO_CLAVE" -o "respaldo-$fecha.tar.gz.gpg"
+          rm -rf respaldo
+          echo "FECHA=$fecha" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.secretos.outputs.listo == 'si'
+        with:
+          name: respaldo-${{ env.FECHA }}
+          path: respaldo-*.tar.gz.gpg
+          retention-days: 90
+          if-no-files-found: error

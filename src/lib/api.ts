@@ -170,7 +170,7 @@ export function editarCita(token: string, items: ItemReserva[], nota: string | n
   })
 }
 
-// ---------- Foto de inspiración (supabase/inspiracion_fidelidad_visitas.sql) ----------
+// ---------- Foto de inspiración (supabase/historial/inspiracion_fidelidad_visitas.sql) ----------
 /** Reduce la foto en el móvil, la sube al almacén privado y la une a la cita. Devuelve cuántas tiene ya. */
 export async function enviarInspiracion(token: string, original: File): Promise<number> {
   const { reducirImagen } = await import('./panel/imagen')   // solo se descarga si la clienta adjunta una foto

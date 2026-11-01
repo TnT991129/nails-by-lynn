@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { resumenMes, topServiciosMes, topClientasMes, cobradoMes } from '../../lib/panel/api-panel'
+import { resumenMes, topServiciosMes, topClientasMes } from '../../lib/panel/api-panel'
 import ResumenSemanal from './ResumenSemanal'
 import { Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
 import { importe, fechaISO } from '../../lib/formato'
@@ -38,10 +38,6 @@ export default function Estadisticas() {
     queryKey: ['top-cli', año, mes],
     queryFn: () => topClientasMes(año, mes),
   })
-  const qCobrado = useQuery({
-    queryKey: ['cobrado', año, mes],
-    queryFn: () => cobradoMes(año, mes),
-  })
 
   return (
     <div className="p-5 space-y-5">
@@ -74,19 +70,29 @@ export default function Estadisticas() {
             </Tarjeta>
           </div>
 
-          {qCobrado.data !== undefined && qResumen.data.ingresos > 0 && (
+          {qResumen.data.citas_completadas > 0 && (
             <Tarjeta className="py-3 space-y-1.5">
               <div className="flex justify-between text-[14px]">
                 <span className="text-tinta-suave">Cobrado</span>
-                <b className="text-estado-exito">{importe(qCobrado.data)}</b>
+                <b className="text-estado-exito">{importe(qResumen.data.cobrado)}</b>
               </div>
-              <div className="flex justify-between text-[14px]">
-                <span className="text-tinta-suave">Pendiente de cobrar</span>
-                <b className={qResumen.data.ingresos - qCobrado.data > 0.009 ? 'text-estado-aviso' : ''}>
-                  {importe(Math.max(0, qResumen.data.ingresos - qCobrado.data))}
-                </b>
-              </div>
-              <p className="text-[11px] text-tinta-tenue">Se marca en el detalle de cada cita, botón «Cobrar».</p>
+              {Math.abs(qResumen.data.sobre_estimado) > 0.009 && (
+                <div className="flex justify-between text-[14px]">
+                  <span className="text-tinta-suave">Frente al precio estimado</span>
+                  <b>{qResumen.data.sobre_estimado > 0 ? '+' : '−'}{importe(Math.abs(qResumen.data.sobre_estimado))}</b>
+                </div>
+              )}
+              {qResumen.data.sin_cobro > 0 && (
+                <div className="flex justify-between text-[14px]">
+                  <span className="text-tinta-suave">
+                    {qResumen.data.sin_cobro} {qResumen.data.sin_cobro === 1 ? 'cita' : 'citas'} sin apuntar el cobro
+                  </span>
+                  <b className="text-estado-aviso">≈ {importe(qResumen.data.sin_cobro_estimado)}</b>
+                </div>
+              )}
+              <p className="text-[11px] text-tinta-tenue">
+                Los ingresos son lo que apuntas en «Cobrar» en cada cita. Si no lo apuntas, cuenta el precio estimado.
+              </p>
             </Tarjeta>
           )}
 

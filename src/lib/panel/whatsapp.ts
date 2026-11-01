@@ -178,3 +178,14 @@ Que tengas un día precioso.${porcentaje ? ` Para celebrarlo, tienes un ${porcen
 Reserva aquí cuando quieras:
 ${urlPublica()}reservar`)
 }
+
+// Invitar a volver a una clienta que hace semanas que no viene
+export function mensajeVolver(nombre: string, semanas: number): string {
+  return (
+`Hola ${primeroNombre(nombre)} 💖
+
+¡Ya van ${semanas} semanas desde tu última cita! Si quieres retocar o cambiar tus uñas, tengo turnos libres.
+
+Reserva aquí cuando quieras:
+${urlPublica()}reservar`)
+}

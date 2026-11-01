@@ -1,7 +1,7 @@
 import { rpc } from './supabase'
 import { enVistaPrevia } from './diseno'
 
-// Visitas y reservas para Estadísticas (supabase/inspiracion_fidelidad_visitas.sql).
+// Visitas y reservas para Estadísticas (supabase/historial/inspiracion_fidelidad_visitas.sql).
 // Anónimo: un número al azar que solo dura mientras la pestaña está abierta; ni IP ni datos de la clienta.
 export type EventoWeb = 'visita' | 'reserva_inicio' | 'reserva_fecha' | 'reserva_hora' | 'reserva_datos'
   | 'reserva_resumen' | 'reserva_hecha' | 'whatsapp'
@@ -16,9 +16,15 @@ function sesion(): string | null {
   } catch { return null }
 }
 
+// Lynn mirando su propia web (tiene abierta la sesión del panel en este móvil) no cuenta como visita.
+// La clave es la de storageKey en lib/panel/supabase-panel.ts
+function esLynn(): boolean {
+  try { return !!localStorage.getItem('nbl.panel.auth') } catch { return false }
+}
+
 /** Cuenta el evento una vez por visita. Nunca falla ni hace esperar: si no hay conexión, no cuenta */
 export function registrarEvento(evento: EventoWeb) {
-  if (enVistaPrevia || location.pathname.includes('/panel')) return
+  if (enVistaPrevia || location.pathname.includes('/panel') || esLynn()) return
   const s = sesion()
   if (!s) return
   try {

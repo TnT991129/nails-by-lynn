@@ -4,7 +4,7 @@ import { enviarInspiracion, contarInspiracion } from '../../lib/api'
 import { IconoCerrar, IconoCheck } from '../../componentes/iconos'
 
 // Foto de inspiración: la clienta enseña el diseño que quiere (de Instagram, Pinterest…) para que Lynn
-// calcule tiempo y material. Va a un almacén privado: solo Lynn la ve (supabase/inspiracion_fidelidad_visitas.sql).
+// calcule tiempo y material. Va a un almacén privado: solo Lynn la ve (supabase/historial/inspiracion_fidelidad_visitas.sql).
 
 const MAX_FOTOS = 3
 
