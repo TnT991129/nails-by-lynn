@@ -2,7 +2,7 @@
 import { sb, NEGOCIO_ID } from '../supabase-panel'
 import { fechaISO, instanteEnHabana } from '../../formato'
 import { CitaAgenda, ejecutar } from './base'
-import { Cobro, CobroEmbebido, COBROS_EMBEBIDOS, cobrosValidos, ConCobros, ganadoCita, MetodoCobro } from './ganado'
+import { Cobro, CobroEmbebido, COBROS_EMBEBIDOS, cobrosValidos, ConCobros, ganadoCita, MetodoCobro, normalizarCodigoBono } from './ganado'
 
 // ================== ESTADÍSTICAS ==================
 // Todas las estadísticas se computan sobre appointments completadas del mes, con lo que Lynn
@@ -304,12 +304,6 @@ export async function listarBonos(): Promise<Bono[] | null> {
     throw error
   }
   return (data as unknown as FilaBono[]).map(armarBono)
-}
-
-/** Lo que escribe Lynn («lynn ab12», «LYNN-AB12») → «LYNN-AB12» */
-export function normalizarCodigoBono(texto: string): string {
-  const t = texto.toUpperCase().replace(/[^A-Z0-9]/g, '')
-  return t.startsWith('LYNN') && t.length > 4 ? `LYNN-${t.slice(4)}` : t
 }
 
 export async function buscarBono(codigo: string): Promise<Bono | null> {

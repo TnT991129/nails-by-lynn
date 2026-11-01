@@ -38,3 +38,10 @@ export function ganadoCita(c: ConCobros, tasa: number | null): Ganado {
   const cobrada = cobros.length > 0 && convertible
   return { real: cobrada ? cobrado : estimado, cobrado, estimado, cobrada }
 }
+
+// ---------- Bonos regalo ----------
+/** Lo que escribe Lynn («lynn ab12», «LYNN-AB12») → «LYNN-AB12» */
+export function normalizarCodigoBono(texto: string): string {
+  const t = texto.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return t.startsWith('LYNN') && t.length > 4 ? `LYNN-${t.slice(4)}` : t
+}

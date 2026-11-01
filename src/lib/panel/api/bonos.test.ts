@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizarCodigoBono } from './dinero'
+import { normalizarCodigoBono } from './ganado'
 
 describe('normalizarCodigoBono (lo que escribe Lynn al cobrar)', () => {
   it('acepta minúsculas, espacios y sin guion', () => {
