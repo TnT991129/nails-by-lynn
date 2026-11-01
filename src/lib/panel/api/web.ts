@@ -1,6 +1,7 @@
 // Web de las clientas: galería, portada, logo, diseño, textos, opiniones, fotos e inspiración.
 import { sb, NEGOCIO_ID } from '../supabase-panel'
 import { reducirImagen } from '../imagen'
+import { codigoDeFalloSubida, esFalloDeRed, esFalloDeSesion } from '../subida'
 import { idAleatorio } from '../../almacenamiento'
 import { CLAVE_DISENO, type Diseno } from '../../diseno'
 import { ejecutar } from './base'
@@ -24,6 +25,35 @@ export class ErrorSubida extends Error {
 const textoDeError = (e: unknown) =>
   `${(e as { message?: string })?.message ?? String(e)} ${(e as { statusCode?: string })?.statusCode ?? ''}`.trim()
 
+// En el móvil el panel pasa horas en segundo plano: el permiso de la sesión (dura una hora) puede haber caducado
+// y, con datos móviles, no haberse renovado. Se renueva antes de subir para que Supabase no rechace la foto.
+async function sesionAlDia(forzar = false) {
+  const { data: { session } } = await sb.auth.getSession()
+  if (forzar || !session || (session.expires_at ?? 0) * 1000 - Date.now() < 5 * 60_000) await sb.auth.refreshSession()
+}
+
+// Fotos JPEG/PNG/WebP de hasta 4 MB se pueden subir tal cual si el móvil no consigue reducirlas
+const MAX_ORIGINAL = 4 * 1024 * 1024
+
+async function subirUnaVez(path: string, archivo: File, espera: number): Promise<unknown> {
+  // Con la conexión de Cuba una subida puede quedarse colgada: se avisa en vez de girar para siempre
+  let reloj: ReturnType<typeof setTimeout> | undefined
+  const limite = new Promise<never>((_, rechazar) => { reloj = setTimeout(() => rechazar(new Error('SUBIDA_LENTA')), espera) })
+  try {
+    const { error } = await Promise.race([
+      sb.storage.from('galeria').upload(path, archivo, {
+        cacheControl: '31536000', upsert: false, contentType: archivo.type || 'image/jpeg',
+      }),
+      limite,
+    ])
+    return error
+  } catch (e) {
+    return e
+  } finally {
+    clearTimeout(reloj)
+  }
+}
+
 // Subir un archivo al bucket 'galeria' y devolver su URL pública.
 // Antes se reduce en el móvil (maxLado px, WebP) para ahorrar datos al subir y al ver.
 export async function subirImagen(original: File, maxLado = 1600): Promise<{ url: string; path: string }> {
@@ -32,37 +62,29 @@ export async function subirImagen(original: File, maxLado = 1600): Promise<{ url
     archivo = await reducirImagen(original, maxLado)
   } catch (e) {
     const m = textoDeError(e)
-    throw new ErrorSubida(/fetch|network|import/i.test(m) ? 'SIN_CONEXION_FOTO' : 'IMAGEN_INVALIDA', 'preparar la foto', m)
+    if (/fetch|network|import/i.test(m)) throw new ErrorSubida('SIN_CONEXION_FOTO', 'preparar la foto', m)
+    // El móvil no pudo abrirla (poca memoria, formato raro): si es una foto normal y no muy grande, va tal cual
+    if (!/image\/(jpeg|png|webp)/.test(original.type) || original.size > MAX_ORIGINAL) {
+      throw new ErrorSubida('IMAGEN_INVALIDA', `preparar la foto (${original.type || 'sin tipo'}, ${Math.round(original.size / 1024)} KB)`, m)
+    }
+    archivo = original
   }
-  const ext = archivo.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const ext = archivo.type === 'image/webp' ? 'webp' : archivo.type === 'image/png' ? 'png' : 'jpg'
   const path = `${NEGOCIO_ID}/${idAleatorio()}.${ext}`
 
-  // Con la conexión de Cuba una subida puede quedarse colgada: se avisa en vez de girar para siempre
-  let reloj: ReturnType<typeof setTimeout> | undefined
-  const limite = new Promise<never>((_, rechazar) => { reloj = setTimeout(() => rechazar(new Error('SUBIDA_LENTA')), 120_000) })
-  let error: unknown
-  try {
-    ({ error } = await Promise.race([
-      sb.storage.from('galeria').upload(path, archivo, {
-        cacheControl: '31536000', upsert: false, contentType: archivo.type || 'image/jpeg',
-      }),
-      limite,
-    ]))
-  } catch (e) {
-    error = e
-  } finally {
-    clearTimeout(reloj)
+  try { await sesionAlDia() } catch { /* sin conexión para renovar: se intenta igual */ }
+  let error = await subirUnaVez(path, archivo, 90_000)
+  // Un segundo intento si falló por la sesión (se renueva a la fuerza) o por un corte de la red
+  if (error) {
+    const m = textoDeError(error)
+    if (esFalloDeSesion(m) || esFalloDeRed(m)) {
+      try { await sesionAlDia(esFalloDeSesion(m)) } catch { /* se intenta igual */ }
+      error = await subirUnaVez(path, archivo, 90_000)
+    }
   }
   if (error) {
     const m = textoDeError(error)
-    const codigo = /SUBIDA_LENTA/.test(m) ? 'SUBIDA_LENTA'
-      : /row-level security|unauthorized|403/i.test(m) ? 'SUBIDA_SIN_PERMISO'
-      : /exceeded|too large|413/i.test(m) ? 'FOTO_DEMASIADO_GRANDE'
-      : /mime|content.?type|415/i.test(m) ? 'TIPO_NO_ADMITIDO'
-      : /bucket not found/i.test(m) ? 'FALTA_BUCKET'
-      : /fetch|network/i.test(m) ? 'SIN_CONEXION_FOTO'
-      : 'SUBIDA_FALLIDA'
-    throw new ErrorSubida(codigo, `subir a Supabase (${archivo.type || 'sin tipo'}, ${Math.round(archivo.size / 1024)} KB)`, m)
+    throw new ErrorSubida(codigoDeFalloSubida(m), `subir a Supabase (${archivo.type || 'sin tipo'}, ${Math.round(archivo.size / 1024)} KB)`, m)
   }
 
   const { data } = sb.storage.from('galeria').getPublicUrl(path)
