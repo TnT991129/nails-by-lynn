@@ -13,8 +13,9 @@ npm run dev
 
 Abre http://localhost:5173
 
-Antes de publicar: `npm run lint` (revisión automática del código; el despliegue también la pasa y se
-detiene si hay errores).
+Antes de publicar: `npm run lint` (revisión automática del código) y `npm test` (pruebas de los cálculos:
+lo cobrado en Estadísticas, la tarjeta de fidelidad, fechas en hora de Cuba, teléfonos, el diseño guardado).
+El despliegue pasa las dos y se detiene si algo falla. Las pruebas son los archivos `*.test.ts`.
 
 ## Variables de entorno
 
@@ -51,6 +52,12 @@ src/
     formato.ts        Fechas, horas y dinero en hora de Cuba
     almacenamiento.ts Tokens de cita en el dispositivo
     errores.ts        Traduce errores de PostgreSQL a lenguaje de marca
+    diseno.ts         Diseño de la web que elige Lynn (colores, fuentes, secciones)
+    panel/
+      api-panel.ts    Índice: las pantallas del panel importan de aquí
+      api/            Funciones del panel por áreas: agenda, clientas, negocio (servicios, horarios,
+                      políticas, respaldo), dinero (estadísticas, gastos, cobros), web (galería, textos,
+                      diseño, opiniones) y ganado.ts (lo cobrado de cada cita, sin Supabase)
   componentes/
     ui.tsx            Boton, Tarjeta, Campo, Pildora, Esqueleto, Vacio, Aviso
     Movimiento.tsx    Animaciones: Revelar (aparece al hacer scroll), paralaje, contador, confeti
@@ -80,6 +87,11 @@ manipula el JavaScript, el precio real no cambia.
 "Mis citas" los lee. El enlace del WhatsApp funciona desde cualquier teléfono.
 
 **El panel (`/panel`) sí usa `@supabase/supabase-js`**, cargado aparte solo en esa ruta.
+
+**Fuentes dentro de la web.** Playfair Display (Elegante, la de siempre), Dancing Script (Manuscrita) y
+Nunito (Redondeada) vienen en `@fontsource-variable/*` (importadas en `main.tsx`): antes dependían de que el
+móvil las tuviera y en Android salía otra. Unos 40 KB cada una; el navegador solo baja la que usa el diseño
+elegido y el service worker la guarda para las siguientes visitas.
 
 **Animaciones sin librerías.** Todo el movimiento es CSS + `IntersectionObserver` (unos 2 KB).
 Si el móvil tiene activado «reducir movimiento» o es muy antiguo, la web se ve quieta y completa.

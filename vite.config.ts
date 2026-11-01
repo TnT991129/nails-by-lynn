@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -14,5 +15,9 @@ export default defineConfig(({ command }) => ({
         manualChunks: { react: ['react', 'react-dom', 'react-router-dom'] },
       },
     },
+  },
+  // Tests (npm test): no tocan Supabase; estas claves solo evitan que lib/supabase.ts se queje al importarse
+  test: {
+    env: { VITE_SUPABASE_URL: 'http://localhost', VITE_SUPABASE_KEY: 'prueba' },
   },
 }))

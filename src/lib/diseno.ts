@@ -43,16 +43,18 @@ export const DISENO_INICIAL: Diseno = {
     .map(id => ({ id, visible: true })),
 }
 
+// Las tres fuentes con nombre «… Variable» van dentro de la web (main.tsx): se ven igual en Android y iPhone.
+// El navegador solo descarga la que usa el diseño elegido.
 export const FUENTES_TITULOS: Record<Diseno['fuenteTitulos'], { nombre: string; pila: string }> = {
-  elegante:   { nombre: 'Elegante',   pila: '"Playfair Display", Didot, "Bodoni 72", Georgia, "Noto Serif", serif' },
+  elegante:   { nombre: 'Elegante',   pila: '"Playfair Display Variable", "Playfair Display", Didot, "Bodoni 72", Georgia, "Noto Serif", serif' },
   clasica:    { nombre: 'Clásica',    pila: 'Georgia, "Times New Roman", "Noto Serif", serif' },
   moderna:    { nombre: 'Moderna',    pila: '"Helvetica Neue", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
-  redonda:    { nombre: 'Redondeada', pila: 'ui-rounded, "SF Pro Rounded", Nunito, "Varela Round", "Segoe UI", system-ui, sans-serif' },
-  manuscrita: { nombre: 'Manuscrita', pila: '"Snell Roundhand", "Segoe Script", "Brush Script MT", "Dancing Script", cursive' },
+  redonda:    { nombre: 'Redondeada', pila: '"Nunito Variable", ui-rounded, "SF Pro Rounded", Nunito, "Segoe UI", system-ui, sans-serif' },
+  manuscrita: { nombre: 'Manuscrita', pila: '"Dancing Script Variable", "Snell Roundhand", "Segoe Script", cursive' },
 }
 export const FUENTES_TEXTO: Record<Diseno['fuenteTexto'], { nombre: string; pila: string }> = {
   sistema: { nombre: 'Limpia',     pila: 'Inter, system-ui, sans-serif' },
-  redonda: { nombre: 'Redondeada', pila: 'ui-rounded, "SF Pro Rounded", Nunito, system-ui, sans-serif' },
+  redonda: { nombre: 'Redondeada', pila: '"Nunito Variable", ui-rounded, "SF Pro Rounded", Nunito, system-ui, sans-serif' },
   clasica: { nombre: 'Clásica',    pila: 'Georgia, "Noto Serif", serif' },
 }
 const RADIOS: Record<Diseno['esquinas'], [number, number, number, number]> = {

@@ -34,6 +34,10 @@ function Cargando() {
     </div>
   )
 }
+// Fuentes de «Diseño de la web» incluidas en la web (antes dependían de que el móvil las tuviera)
+import '@fontsource-variable/playfair-display'
+import '@fontsource-variable/dancing-script'
+import '@fontsource-variable/nunito'
 import './index.css'
 import { codigoDeError } from './lib/errores'
 import { escucharInstalacion } from './lib/panel/instalar'
