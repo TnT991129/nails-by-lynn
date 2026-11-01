@@ -210,15 +210,24 @@ export async function guardarTasa(cupPorUsd: number) {
 
 // ================== COBROS ==================
 // Tipos, paso a dólares y «lo que se ganó» de cada cita: en ganado.ts
-export function cobrosDeCita(citaId: string) {
-  return ejecutar<Cobro[]>(sb.from('payments')
-    .select('id, amount, currency, method, exchange_rate_used, created_at')
-    .eq('appointment_id', citaId).eq('status', 'PAGADO_COMPLETO')
-    .order('created_at'))
+export async function cobrosDeCita(citaId: string): Promise<Cobro[]> {
+  const pedir = (campos: string) => sb.from('payments').select(campos)
+    .eq('appointment_id', citaId).eq('status', 'PAGADO_COMPLETO').order('created_at')
+  const base = 'id, amount, currency, method, exchange_rate_used, created_at'
+  const { data, error } = await pedir(`${base}, gift_cards(code)`)
+  if (error) {
+    if (!/gift_card/.test(error.message)) throw error
+    const sinBonos = await pedir(base)   // aún sin el SQL de bonos
+    if (sinBonos.error) throw sinBonos.error
+    return sinBonos.data as unknown as Cobro[]
+  }
+  return (data as unknown as (Cobro & { gift_cards: { code: string } | null })[])
+    .map(({ gift_cards, ...c }) => ({ ...c, bono: gift_cards?.code ?? null }))
 }
 
 export async function registrarCobro(args: {
   citaId: string; monto: number; moneda: 'CUP' | 'USD'; metodo: MetodoCobro; tasa: number | null
+  bonoId?: string | null   // pagado con un bono regalo
 }) {
   // La base exige que un pago verificado diga quién lo verificó (regla pa_verificacion):
   // es Lynn, la usuaria con la sesión abierta en el panel.
@@ -230,6 +239,7 @@ export async function registrarCobro(args: {
     exchange_rate_used: args.moneda === 'CUP' ? args.tasa : null,
     status: 'PAGADO_COMPLETO',
     verified_by: yo, verified_at: yo ? new Date().toISOString() : null,
+    ...(args.bonoId ? { gift_card_id: args.bonoId, reference: 'Bono regalo' } : {}),
   }).select('id').single())
 }
 
@@ -252,6 +262,83 @@ export async function ganadoEnCitas(citas: Pick<CitaAgenda, 'id' | 'total_amount
   const conCobros = citas.map(c => ({ total_amount: Number(c.total_amount), payments: pagos.filter(p => p.appointment_id === c.id) }))
   const tasa = await tasaParaCobros(conCobros)
   return conCobros.reduce((t, c) => t + ganadoCita(c, tasa).real, 0)
+}
+
+// ================== BONOS REGALO (supabase/recomendaciones_y_bonos.sql) ==================
+// Lynn los vende en dólares; cada canje es un cobro de una cita con gift_card_id. La base de datos impide
+// gastar más del saldo (tg_canje_bono). Lo canjeado cuenta como ingreso de la cita, como cualquier cobro.
+export type Bono = {
+  id: string; code: string; amount: number; buyer_name: string | null; recipient_name: string | null
+  note: string | null; expires_on: string | null; is_cancelled: boolean; created_at: string
+  usado: number; saldo: number; usos: { fecha: string; monto: number; cita: string }[]
+}
+type FilaBono = Omit<Bono, 'usado' | 'saldo' | 'usos'> & {
+  payments: { amount: number; status: string; created_at: string; appointment_id: string }[] | null
+}
+
+function armarBono(f: FilaBono): Bono {
+  const usos = (f.payments ?? []).filter(p => p.status === 'PAGADO_COMPLETO')
+    .map(p => ({ fecha: p.created_at, monto: Number(p.amount), cita: p.appointment_id }))
+    .sort((a, b) => a.fecha.localeCompare(b.fecha))
+  const usado = usos.reduce((t, u) => t + u.monto, 0)
+  const { payments: _pagos, ...resto } = f
+  void _pagos
+  return { ...resto, amount: Number(f.amount), usado, saldo: Math.max(0, Math.round((Number(f.amount) - usado) * 100) / 100), usos }
+}
+
+const CAMPOS_BONO = 'id, code, amount, buyer_name, recipient_name, note, expires_on, is_cancelled, created_at, '
+  + 'payments(amount, status, created_at, appointment_id)'
+
+/** ¿Está ejecutado el SQL de bonos? (CobroCita solo ofrece «Bono regalo» si lo está) */
+export async function bonosInstalados(): Promise<boolean> {
+  const { error } = await sb.from('gift_cards').select('id').limit(1)
+  return !error
+}
+
+/** null = falta ejecutar el SQL de bonos */
+export async function listarBonos(): Promise<Bono[] | null> {
+  const { data, error } = await sb.from('gift_cards').select(CAMPOS_BONO)
+    .eq('business_id', NEGOCIO_ID).order('created_at', { ascending: false })
+  if (error) {
+    if (/gift_cards/.test(error.message) || error.code === '42P01' || error.code === 'PGRST205') return null
+    throw error
+  }
+  return (data as unknown as FilaBono[]).map(armarBono)
+}
+
+/** Lo que escribe Lynn («lynn ab12», «LYNN-AB12») → «LYNN-AB12» */
+export function normalizarCodigoBono(texto: string): string {
+  const t = texto.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return t.startsWith('LYNN') && t.length > 4 ? `LYNN-${t.slice(4)}` : t
+}
+
+export async function buscarBono(codigo: string): Promise<Bono | null> {
+  const { data, error } = await sb.from('gift_cards').select(CAMPOS_BONO)
+    .eq('business_id', NEGOCIO_ID).eq('code', normalizarCodigoBono(codigo)).maybeSingle()
+  if (error) throw error
+  return data ? armarBono(data as unknown as FilaBono) : null
+}
+
+// Sin letras que se confunden al dictarlas o escribirlas (O/0, I/1)
+const ALFABETO_BONO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+function codigoBono() {
+  const n = crypto.getRandomValues(new Uint32Array(4))
+  return 'LYNN-' + Array.from(n, x => ALFABETO_BONO[x % ALFABETO_BONO.length]).join('')
+}
+
+export async function crearBono(d: {
+  amount: number; buyer_name: string | null; recipient_name: string | null; note: string | null; expires_on: string | null
+}): Promise<Bono> {
+  for (let intento = 0; ; intento++) {
+    const { data, error } = await sb.from('gift_cards')
+      .insert({ ...d, business_id: NEGOCIO_ID, code: codigoBono() }).select(CAMPOS_BONO).single()
+    if (!error) return armarBono(data as unknown as FilaBono)
+    if (error.code !== '23505' || intento >= 4) throw error   // código repetido: se prueba otro
+  }
+}
+
+export function anularBono(id: string, anulado: boolean) {
+  return ejecutar(sb.from('gift_cards').update({ is_cancelled: anulado }).eq('id', id).select('id').single())
 }
 
 // ================== RESUMEN SEMANAL ==================

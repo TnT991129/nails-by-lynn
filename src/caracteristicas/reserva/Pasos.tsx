@@ -12,7 +12,8 @@ import type { Datos } from './useReserva'
 import { useHorarioPublico } from '../../lib/useHorarioPublico'
 import CalendarioMes from '../../componentes/CalendarioMes'
 import EnCup from '../../componentes/EnCup'
-import { useTextos, conNegritas } from '../../lib/textos'
+import { useTextos, conNegritas, obtenerTextosGuardados, leerTextosLocales } from '../../lib/textos'
+import { leerRecomendaciones } from '../../lib/recomendaciones'
 import { SelectorInspiracion } from './Inspiracion'
 
 const NOMBRES_PASOS = ['Servicio','Extras','Fecha','Hora','Datos','Listo']
@@ -309,6 +310,9 @@ export function PasoDatos({
   const t = useTextos()
   const set = (k: keyof Datos) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setDatos({ ...datos, [k]: e.target.value })
+  // «¿Quién te recomendó?» solo si Lynn tiene activadas las recomendaciones (o si ya viene en el enlace)
+  const qTextos = useQuery({ queryKey: ['textos'], queryFn: obtenerTextosGuardados, staleTime: 10 * 60_000, placeholderData: leerTextosLocales })
+  const recomendaciones = leerRecomendaciones(qTextos.data)
 
   return (
     <div className="space-y-4 animate-entrada">
@@ -325,6 +329,12 @@ export function PasoDatos({
              error={intentado ? validarEmail(datos.email) ?? undefined : undefined} />
       <Campo etiqueta="Instagram (opcional)" value={datos.instagram} onChange={set('instagram')}
              placeholder="@tuusuario" />
+      {(recomendaciones.activa || datos.amiga) && (
+        <Campo etiqueta="¿Te recomendó una clienta? Su teléfono (opcional)" value={datos.amiga} onChange={set('amiga')}
+               placeholder="5455 9179" inputMode="tel"
+               ayuda="Si es tu primera vez, las dos tienen un regalo cuando vengas."
+               error={intentado && datos.amiga.trim() ? validarTelefono(datos.amiga) ?? undefined : undefined} />
+      )}
       <label className="block">
         <span className="block text-[14px] font-medium text-tinta-suave mb-1.5">
           {t('reserva.ayuda_nota')}

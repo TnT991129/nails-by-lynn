@@ -28,6 +28,8 @@ const TextosWeb = lazy(() => import('./TextosWeb'))
 const PortadaWeb = lazy(() => import('./PortadaWeb'))
 const DisenoWeb = lazy(() => import('./DisenoWeb'))
 const Fidelidad = lazy(() => import('./Fidelidad'))
+const Recomendaciones = lazy(() => import('./Recomendaciones'))
+const Bonos = lazy(() => import('./Bonos'))
 
 function Cargando() {
   return <div className="p-5"><Esqueleto className="h-24" /></div>
@@ -71,6 +73,8 @@ export default function Panel() {
             <Route path="portada" element={<PortadaWeb />} />
             <Route path="diseno" element={<DisenoWeb />} />
             <Route path="fidelidad" element={<Fidelidad />} />
+            <Route path="recomendaciones" element={<Recomendaciones />} />
+            <Route path="bonos" element={<Bonos />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/panel/entrar" replace />} />

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  cobrosDeCita, registrarCobro, eliminarCobro, cobroEnUsd, obtenerTasaPanel,
-  type CitaAgenda, type MetodoCobro,
+  cobrosDeCita, registrarCobro, eliminarCobro, cobroEnUsd, obtenerTasaPanel, bonosInstalados, buscarBono,
+  type CitaAgenda, type MetodoCobro, type Bono,
 } from '../../lib/panel/api-panel'
 import { Boton, Tarjeta, Aviso } from '../../componentes/ui'
 import { importe, precioRango, leerNumero } from '../../lib/formato'
@@ -13,6 +13,7 @@ const FORMAS: { clave: string; etiqueta: string; metodo: MetodoCobro; moneda: 'C
   { clave: 'ef-usd', etiqueta: 'Efectivo USD',  metodo: 'EFECTIVO',      moneda: 'USD' },
   { clave: 'tm',     etiqueta: 'Transfermóvil', metodo: 'TRANSFERMOVIL', moneda: 'CUP' },
   { clave: 'ez',     etiqueta: 'EnZona',        metodo: 'ENZONA',        moneda: 'CUP' },
+  { clave: 'bono',   etiqueta: '🎁 Bono regalo', metodo: 'OTRO',          moneda: 'USD' },   // solo con el SQL de bonos
 ]
 const NOMBRE_METODO: Record<string, string> = {
   EFECTIVO: 'Efectivo', TRANSFERMOVIL: 'Transfermóvil', ENZONA: 'EnZona', TRANSFERENCIA: 'Transferencia', OTRO: 'Otro',
@@ -30,6 +31,11 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
   const [monto, setMonto] = useState('')
   const [trabajando, setTrabajando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const qBonos = useQuery({ queryKey: ['bonos-instalados'], queryFn: bonosInstalados, staleTime: Infinity })
+  const formas = FORMAS.filter(x => x.clave !== 'bono' || qBonos.data)
+  const [codigo, setCodigo] = useState('')
+  const [bono, setBono] = useState<Bono | null>(null)
+  const [buscando, setBuscando] = useState(false)
 
   const total = Number(cita.total_amount)
   const pagado = (q.data ?? []).reduce((t, c) => t + cobroEnUsd(c, tasa), 0)
@@ -41,7 +47,7 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
 
   function refrescar() {
     qc.invalidateQueries({ queryKey: ['cobros', cita.id] })
-    for (const k of ['resumen', 'top-serv', 'top-cli', 'semana', 'ganado-hoy', 'cli-historial'])
+    for (const k of ['resumen', 'top-serv', 'top-cli', 'semana', 'ganado-hoy', 'cli-historial', 'bonos'])
       qc.invalidateQueries({ queryKey: [k] })
   }
 
@@ -49,18 +55,37 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
   function sugerir(clave: string) {
     setForma(clave)
     const fx = FORMAS.find(x => x.clave === clave)!
+    if (clave === 'bono') { setMonto(bono && falta > 0 ? String(Math.min(falta, bono.saldo)) : ''); return }
     if (falta <= 0) { setMonto(''); return }
     setMonto(fx.moneda === 'USD' ? String(falta) : tasa ? String(Math.round(falta * tasa)) : '')
+  }
+
+  async function buscar() {
+    setBuscando(true); setError(null); setBono(null)
+    try {
+      const b = await buscarBono(codigo)
+      if (!b) setError('No hay ningún bono con ese código.')
+      else if (b.is_cancelled) setError('Ese bono está anulado.')
+      else if (b.saldo <= 0) setError('A ese bono ya no le queda saldo.')
+      else {
+        setBono(b)
+        setMonto(falta > 0 ? String(Math.min(falta, b.saldo)) : String(b.saldo))
+      }
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setBuscando(false) }
   }
 
   async function guardar() {
     const n = leerNumero(monto)
     if (!(n > 0)) { setError('Escribe cuánto pagó.'); return }
+    const conBono = forma === 'bono'
+    if (conBono && !bono) { setError('Escribe el código del bono y pulsa «Buscar».'); return }
+    if (conBono && n > bono!.saldo + 0.001) { setError(`Al bono solo le quedan ${importe(bono!.saldo)}.`); return }
     setTrabajando(true); setError(null)
     try {
-      await registrarCobro({ citaId: cita.id, monto: n, moneda: f.moneda, metodo: f.metodo, tasa })
+      await registrarCobro({ citaId: cita.id, monto: n, moneda: f.moneda, metodo: f.metodo, tasa, bonoId: conBono ? bono!.id : null })
       refrescar()
-      setAbierto(false)
+      setAbierto(false); setBono(null); setCodigo('')
     } catch (e) { setError(mensajeDeError(e)) }
     finally { setTrabajando(false) }
   }
@@ -107,7 +132,7 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
           {q.data!.map(c => (
             <li key={c.id} className="flex items-center justify-between gap-2">
               <span>
-                {importe(Number(c.amount), c.currency)} · {NOMBRE_METODO[c.method ?? 'OTRO']}
+                {importe(Number(c.amount), c.currency)} · {c.bono ? `Bono ${c.bono}` : NOMBRE_METODO[c.method ?? 'OTRO']}
                 {c.currency === 'CUP' && <span className="text-tinta-tenue"> (≈ {importe(cobroEnUsd(c, tasa))})</span>}
               </span>
               <button onClick={() => quitar(c.id)} className="text-[12px] text-estado-error min-h-[36px] px-1">Quitar</button>
@@ -119,7 +144,7 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
       {abierto && (
         <div className="space-y-3 pt-1">
           <div className="grid grid-cols-2 gap-2">
-            {FORMAS.map(x => (
+            {formas.map(x => (
               <button key={x.clave} onClick={() => sugerir(x.clave)}
                 className={`min-h-[44px] rounded-full border text-[14px] font-semibold transition
                   ${forma === x.clave ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200 bg-papel text-tinta-suave'}`}>
@@ -127,9 +152,26 @@ export default function CobroCita({ cita }: { cita: CitaAgenda }) {
               </button>
             ))}
           </div>
+          {forma === 'bono' && (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input value={codigo} onChange={e => { setCodigo(e.target.value); setBono(null) }} placeholder="LYNN-AB12"
+                  aria-label="Código del bono" autoCapitalize="characters"
+                  className="flex-1 min-w-0 min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] font-mono uppercase bg-papel" />
+                <Boton variante="secundario" onClick={buscar} cargando={buscando} disabled={!codigo.trim()} className="shrink-0 !min-h-[44px]">
+                  Buscar
+                </Boton>
+              </div>
+              {bono && (
+                <p className="text-[13px] text-estado-exito">
+                  ✓ {bono.code}{bono.recipient_name ? ` · para ${bono.recipient_name}` : ''} · le quedan {importe(bono.saldo)}
+                </p>
+              )}
+            </div>
+          )}
           <label className="flex items-center gap-2">
             <span className="text-[14px] text-tinta-suave shrink-0">Le cobré</span>
-            <input value={monto} onChange={e => setMonto(e.target.value)} inputMode="decimal" autoFocus
+            <input value={monto} onChange={e => setMonto(e.target.value)} inputMode="decimal" autoFocus={forma !== 'bono'}
               className="flex-1 min-w-0 min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel" />
             <span className="text-[14px] shrink-0">{f.moneda}</span>
           </label>

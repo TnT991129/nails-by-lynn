@@ -215,3 +215,49 @@ export async function clientasParaVolver(desde = 21, hasta = 56): Promise<ParaVo
                  dias: Math.floor((ahora - Date.parse(c.last_appointment_at)) / dia) }))
     .sort((a, b) => a.dias - b.dias)
 }
+
+// ================== RECOMENDACIONES (supabase/recomendaciones_y_bonos.sql) ==================
+/** ¿Está ejecutado el SQL? (columna referred_by en las clientas) */
+export async function recomendacionesInstaladas(): Promise<boolean> {
+  const { error } = await sb.from('clients').select('referred_by').limit(1)
+  return !(error && /referred_by/.test(error.message))
+}
+
+export type Recomendacion = {
+  id: string; nombre: string; quien_id: string; quien_nombre: string
+  premiada: boolean; vino: boolean; desde: string
+}
+
+// Todas las clientas que vinieron recomendadas, con quién las trajo; las más recientes primero
+export async function listaRecomendaciones(): Promise<Recomendacion[]> {
+  const filas = await ejecutar<{ id: string; full_name: string; referred_by: string; referral_rewarded_at: string | null;
+                                 total_appointments: number; first_seen_at: string }[]>(
+    sb.from('clients').select('id, full_name, referred_by, referral_rewarded_at, total_appointments, first_seen_at')
+      .eq('business_id', NEGOCIO_ID).not('referred_by', 'is', null).order('first_seen_at', { ascending: false }))
+  if (filas.length === 0) return []
+  const quienes = await ejecutar<{ id: string; full_name: string }[]>(
+    sb.from('clients').select('id, full_name').in('id', [...new Set(filas.map(f => f.referred_by))]))
+  const nombre = new Map(quienes.map(q => [q.id, q.full_name]))
+  return filas.map(f => ({
+    id: f.id, nombre: f.full_name, quien_id: f.referred_by, quien_nombre: nombre.get(f.referred_by) ?? '—',
+    premiada: !!f.referral_rewarded_at, vino: f.total_appointments > 0, desde: f.first_seen_at,
+  }))
+}
+
+/** Lynn apunta a mano quién la recomendó (por teléfono) o lo quita (null) */
+export async function ponerRecomendacion(id: string, telefono: string | null) {
+  let quien: string | null = null
+  if (telefono) {
+    const phone = await normalizarTelefono(telefono)
+    const c = await ejecutar<{ id: string } | null>(sb.from('clients').select('id')
+      .eq('business_id', NEGOCIO_ID).eq('phone', phone).neq('id', id).maybeSingle())
+    if (!c) throw new Error('CLIENTA_NO_ENCONTRADA')
+    quien = c.id
+  }
+  return ejecutar(sb.from('clients').update({ referred_by: quien }).eq('id', id).select('id').single())
+}
+
+export function recomendadasPor(id: string) {
+  return ejecutar<{ id: string; full_name: string; referral_rewarded_at: string | null }[]>(
+    sb.from('clients').select('id, full_name, referral_rewarded_at').eq('referred_by', id).order('first_seen_at'))
+}

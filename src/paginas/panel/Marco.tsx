@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { sb } from '../../lib/panel/supabase-panel'
-import { IconoInicio, IconoCalendario, IconoPersonas, IconoCuadricula, IconoSalir } from '../../componentes/iconos'
+import { IconoInicio, IconoCalendario, IconoPersonas, IconoGrafico, IconoCuadricula, IconoSalir } from '../../componentes/iconos'
 import BotonTema from '../../componentes/BotonTema'
 
 const ITEMS: { a: string; etiqueta: string; icono: ReactNode }[] = [
   { a: '/panel',          etiqueta: 'Hoy',      icono: <IconoInicio /> },
   { a: '/panel/agenda',   etiqueta: 'Agenda',   icono: <IconoCalendario /> },
   { a: '/panel/clientas', etiqueta: 'Clientas', icono: <IconoPersonas /> },
+  { a: '/panel/estadisticas', etiqueta: 'Estadísticas', icono: <IconoGrafico /> },
   { a: '/panel/mas',      etiqueta: 'Más',      icono: <IconoCuadricula /> },
 ]
 
@@ -48,7 +49,7 @@ export default function Marco() {
                    ${isActive ? 'text-rosa-600' : 'text-tinta-tenue'}`}>
                 {({ isActive }) => (
                   <>
-                    <span className={`px-4 py-1 rounded-full transition-colors ${isActive ? 'bg-rosa-50' : ''}`}>
+                    <span className={`px-3 py-1 rounded-full transition-colors ${isActive ? 'bg-rosa-50' : ''}`}>
                       {i.icono}
                     </span>
                     <span className={`text-[11px] ${isActive ? 'font-semibold' : ''}`}>{i.etiqueta}</span>

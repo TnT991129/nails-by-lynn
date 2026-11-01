@@ -4,11 +4,10 @@ import InstalarPanel from './InstalarPanel'
 import TasaDolar from './TasaDolar'
 import AvisosMovil from './AvisosMovil'
 import {
-  IconoGrafico, IconoGaleria, IconoBillete, IconoDestellos, IconoCalendario, IconoReloj, IconoDescarga, IconoCheck, IconoMas, IconoInicio,
+  IconoGaleria, IconoBillete, IconoPersonas, IconoDestellos, IconoCalendario, IconoReloj, IconoDescarga, IconoCheck, IconoMas, IconoInicio,
 } from '../../componentes/iconos'
 
 const ITEMS: { a: string; titulo: string; desc: string; icono: ReactNode }[] = [
-  { a: '/panel/estadisticas', titulo: 'Estadísticas',    desc: 'Ingresos, neto, clientas top',       icono: <IconoGrafico /> },
   { a: '/panel/galeria',      titulo: 'Galería',         desc: 'Subir y publicar fotos',             icono: <IconoGaleria /> },
   { a: '/panel/gastos',       titulo: 'Gastos',          desc: 'Material, transporte, marketing',    icono: <IconoBillete /> },
   { a: '/panel/servicios',    titulo: 'Servicios',       desc: 'Precios, fotos y complementos',      icono: <IconoDestellos /> },
@@ -16,6 +15,8 @@ const ITEMS: { a: string; titulo: string; desc: string; icono: ReactNode }[] = [
   { a: '/panel/espera',       titulo: 'Lista de espera', desc: 'Clientas esperando un turno libre',  icono: <IconoReloj /> },
   { a: '/panel/opiniones',    titulo: 'Opiniones',       desc: 'Valoraciones y cuáles salen en la web', icono: <IconoCheck /> },
   { a: '/panel/fidelidad',    titulo: 'Tarjeta de fidelidad', desc: 'Sellos y premio para las clientas que vuelven', icono: <IconoCheck /> },
+  { a: '/panel/recomendaciones', titulo: 'Recomendaciones', desc: 'Premio a quien trae a una amiga', icono: <IconoPersonas /> },
+  { a: '/panel/bonos',        titulo: 'Bonos regalo',    desc: 'Vender bonos y ver su saldo',       icono: <IconoBillete /> },
   { a: '/panel/diseno',       titulo: 'Diseño de la web', desc: 'Colores, letras, portada, secciones y animaciones', icono: <IconoDestellos /> },
   { a: '/panel/portada',      titulo: 'Portada de la web', desc: 'La foto grande de arriba de la web', icono: <IconoGaleria /> },
   { a: '/panel/textos',       titulo: 'Textos de la web', desc: 'Cambia lo que leen las clientas', icono: <IconoInicio /> },

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { obtenerServicios, obtenerAddons, obtenerDisponibilidad, obtenerDiasLaborables, obtenerDiasCerrados, descuentoPendiente, obtenerFotosPublicas,
-  obtenerPoliticas, obtenerTurnos, obtenerNegocio } from '../lib/api'
+  obtenerPoliticas, obtenerTurnos, obtenerNegocio, anotarRecomendacion } from '../lib/api'
 import ListaEspera from '../caracteristicas/reserva/ListaEspera'
 import { useReserva } from '../caracteristicas/reserva/useReserva'
 import { Progreso, PasoServicio, PasoExtras, PasoFecha, PasoHora, PasoDatos, PasoResumen }
@@ -60,6 +60,13 @@ export default function Reserva() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar: con `r` volvería a marcar el servicio si la clienta lo quita
   }, [params, qServicios.data])
+
+  // Enlace de recomendación: /reservar?amiga=53XXXXXXXX (lo comparte una clienta desde su cita)
+  useEffect(() => {
+    const amiga = params.get('amiga')?.replace(/\D/g, '')
+    if (amiga) r.setDatos(d => d.amiga ? d : { ...d, amiga })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al llegar
+  }, [params])
 
   // "Reservar lo mismo otra vez": mismos servicios, complementos y datos de contacto
   const ubicacion = useLocation()
@@ -139,6 +146,9 @@ export default function Reserva() {
     try {
       const cita = await r.confirmar()
       registrarEvento('reserva_hecha')
+      // Un número de recomendación mal escrito no impide reservar: simplemente no se anota
+      const amiga = r.datos.amiga.trim()
+      if (amiga && !validarTelefono(amiga)) await anotarRecomendacion(cita.access_token, amiga)
       // La foto de inspiración se envía ya en la página de la cita (allí se ve cómo va)
       navegar(`/cita/${cita.access_token}?nueva=1`, { state: inspiracion ? { inspiracion } : undefined })
     } catch (e) {

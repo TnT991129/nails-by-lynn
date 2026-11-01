@@ -17,6 +17,7 @@ import { useTextos, conNegritas } from '../lib/textos'
 import { Confeti, Revelar } from '../componentes/Movimiento'
 import { InspiracionCita } from '../caracteristicas/reserva/Inspiracion'
 import TarjetaSellos from '../caracteristicas/fidelidad/TarjetaSellos'
+import RecomiendaAmiga from '../caracteristicas/fidelidad/RecomiendaAmiga'
 import { descargarIcs, enlaceGoogleCalendar } from '../lib/calendario'
 
 // Complementos de todos los servicios, sin repetir (citas antiguas los tenían por servicio)
@@ -219,6 +220,7 @@ export default function Cita() {
         <InspiracionCita token={token} activa={activa} pendiente={inspiracionPendiente}
           enlaceWhatsApp={c.negocio.whatsapp ? `https://wa.me/${numeroWhatsApp(c.negocio.whatsapp)}?text=${encodeURIComponent(`Hola Lynn! Te mando la foto del diseño para mi cita ${c.code}`)}` : null} />
         <TarjetaSellos token={token} />
+        {!['CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO', 'NO_SHOW'].includes(c.estado) && <RecomiendaAmiga telefono={c.cliente.telefono} />}
 
         {!esNueva && bloqueAviso}
 

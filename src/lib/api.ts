@@ -186,6 +186,12 @@ export async function contarInspiracion(token: string): Promise<number | null> {
   try { return await rpc<number>('contar_referencias', { p_token: token }) } catch { return null }   // sin el SQL: no se muestra
 }
 
+// ---------- Recomendaciones (supabase/recomendaciones_y_bonos.sql) ----------
+/** La clienta nueva dice qué clienta la recomendó. Nunca falla: sin el SQL o sin conexión, no se anota */
+export async function anotarRecomendacion(token: string, telefono: string): Promise<void> {
+  try { await rpc('anotar_recomendacion', { p_token: token, p_telefono: telefono }) } catch { /* no es imprescindible */ }
+}
+
 // ---------- Tarjeta de fidelidad ----------
 export async function tarjetaFidelidad(token: string): Promise<{ completadas: number; fuera?: boolean; descuento_pendiente: number | null } | null> {
   try { return await rpc('tarjeta_fidelidad', { p_token: token }) } catch { return null }

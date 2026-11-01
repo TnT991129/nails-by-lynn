@@ -6,7 +6,6 @@ import { Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
 import { importe, fechaISO } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import EmbudoWeb from './EmbudoWeb'
-import { Volver } from './comunes'
 
 const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -41,7 +40,6 @@ export default function Estadisticas() {
 
   return (
     <div className="p-5 space-y-5">
-      <Volver />
       <h1 className="text-[30px] leading-tight">Estadísticas</h1>
 
       <ResumenSemanal />

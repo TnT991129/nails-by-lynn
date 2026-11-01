@@ -28,3 +28,14 @@ export function ListaServicios({ texto, className = '', vineta = 'text-rosa-600'
     </ul>
   )
 }
+
+/** Interruptor de encendido/apagado (Tarjeta de fidelidad, Recomendaciones) */
+export function Interruptor({ activo, onChange, etiqueta }: { activo: boolean; onChange: (v: boolean) => void; etiqueta: string }) {
+  return (
+    <button role="switch" aria-checked={activo} aria-label={etiqueta} onClick={() => onChange(!activo)}
+      className={`relative w-14 h-8 rounded-full transition-colors duration-300 shrink-0 ${activo ? 'bg-rosa-600' : 'bg-rosa-200'}`}>
+      <span className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow transition-transform duration-300
+                        ease-[cubic-bezier(.34,1.56,.64,1)] ${activo ? 'translate-x-6' : ''}`} />
+    </button>
+  )
+}

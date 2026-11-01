@@ -8,7 +8,7 @@ import {
 import { Boton, Tarjeta, Aviso, Esqueleto } from '../../componentes/ui'
 import { IconoCerrar } from '../../componentes/iconos'
 import { mensajeDeError } from '../../lib/errores'
-import { Volver } from './comunes'
+import { Volver, Interruptor } from './comunes'
 
 // Lynn configura la tarjeta: uno o varios premios (p. ej. 5.ª cita → 15 %, 10.ª → 20 %) y si vuelve a empezar.
 // Cada cita completada es un sello; al llegar a un premio, la base de datos le deja el descuento para la próxima.
@@ -154,15 +154,5 @@ export default function Fidelidad() {
         Si ya tenía un descuento mayor, se queda el mayor.
       </p>
     </div>
-  )
-}
-
-function Interruptor({ activo, onChange, etiqueta }: { activo: boolean; onChange: (v: boolean) => void; etiqueta: string }) {
-  return (
-    <button role="switch" aria-checked={activo} aria-label={etiqueta} onClick={() => onChange(!activo)}
-      className={`relative w-14 h-8 rounded-full transition-colors duration-300 shrink-0 ${activo ? 'bg-rosa-600' : 'bg-rosa-200'}`}>
-      <span className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow transition-transform duration-300
-                        ease-[cubic-bezier(.34,1.56,.64,1)] ${activo ? 'translate-x-6' : ''}`} />
-    </button>
   )
 }

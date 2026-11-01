@@ -7,9 +7,10 @@ export type Paso = 1 | 2 | 3 | 4 | 5 | 6
 
 export type Datos = {
   nombre: string; telefono: string; email: string; instagram: string; nota: string
+  amiga: string   // teléfono de la clienta que la recomendó (opcional)
 }
 
-const DATOS_VACIOS: Datos = { nombre:'', telefono:'', email:'', instagram:'', nota:'' }
+const DATOS_VACIOS: Datos = { nombre:'', telefono:'', email:'', instagram:'', nota:'', amiga:'' }
 
 export function useReserva(servicios: Servicio[], addons: Addon[]) {
   // Una sesión por reserva: así cada turno retenido sustituye al anterior en el servidor

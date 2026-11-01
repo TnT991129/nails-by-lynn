@@ -22,6 +22,12 @@ const MENSAJES: Record<string, string> = {
   LIMITE_LISTA_ESPERA:   'Ya estás en espera para 3 días. Espera a que te avisemos de alguno.',
   FECHA_NO_VALIDA:       'Esa fecha no está disponible.',
   NOMBRE_INVALIDO:       'Escribe tu nombre.',
+  BONO_NO_EXISTE:        'No hay ningún bono con ese código.',
+  BONO_ANULADO:          'Ese bono está anulado.',
+  BONO_CADUCADO:         'Ese bono ya caducó.',
+  BONO_EN_DOLARES:       'Los bonos se cobran en dólares.',
+  BONO_SIN_SALDO:        'Al bono no le queda tanto saldo.',
+  gift_cards_business_id_code_key: 'Ya hay un bono con ese código.',
   extra_price_max:       'Falta ejecutar en Supabase el SQL de rangos de precio (rango_complementos.sql).',
   addons_rango_valido:   'El precio «hasta» no puede ser menor que el precio «desde».',
   aplicar_descuento_cita: 'Falta ejecutar en Supabase el SQL complementos_y_descuentos.sql.',
@@ -64,6 +70,8 @@ const MENSAJES: Record<string, string> = {
   SIN_CONEXION_FOTO:     'No hay conexión suficiente para subir la foto. Revisa los datos o el wifi y vuelve a intentarlo.',
   SUBIDA_FALLIDA:        'La foto no se pudo subir.',
   FALTA_BUCKET:          'Falta el espacio de fotos «galeria» en Supabase (Storage).',
+  referred_by:           'Falta ejecutar en Supabase el SQL recomendaciones_y_bonos.sql.',
+  gift_card:             'Falta ejecutar en Supabase el SQL recomendaciones_y_bonos.sql.',
 }
 
 /** Mensaje de un fallo al subir una foto: el claro para Lynn y, debajo, en qué paso falló y por qué */

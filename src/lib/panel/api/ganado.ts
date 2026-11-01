@@ -6,6 +6,7 @@ export type MetodoCobro = 'EFECTIVO' | 'TRANSFERMOVIL' | 'ENZONA' | 'OTRO'
 export type Cobro = {
   id: string; amount: number; currency: 'CUP' | 'USD'; method: MetodoCobro | null
   exchange_rate_used: number | null; created_at: string
+  bono?: string | null   // código del bono regalo si se pagó con él (supabase/recomendaciones_y_bonos.sql)
 }
 
 // Un cobro en dólares: los CUP se pasan con el dólar de ese día (o el actual si no se guardó)

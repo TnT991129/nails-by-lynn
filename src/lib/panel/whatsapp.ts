@@ -189,3 +189,17 @@ export function mensajeVolver(nombre: string, semanas: number): string {
 Reserva aquí cuando quieras:
 ${urlPublica()}reservar`)
 }
+
+// Bono regalo: Lynn se lo manda a quien lo compró para que se lo reenvíe a la persona regalada
+export function mensajeBono(b: { code: string; amount: number; recipient_name: string | null; buyer_name: string | null;
+                                 note: string | null; expires_on: string | null }): string {
+  const caduca = b.expires_on ? `\nVálido hasta el ${fechaLarga(`${b.expires_on}T16:00:00Z`)}.` : ''
+  return (
+`🎁 *Bono regalo de Nails by Lynn* 💅
+${b.recipient_name ? `\nPara: ${b.recipient_name}` : ''}${b.buyer_name ? `\nDe parte de: ${b.buyer_name}` : ''}
+Valor: $${b.amount}
+Código: *${b.code}*${b.note ? `\n\n«${b.note}»` : ''}
+
+Reserva tu cita aquí y dile el código a Lynn al pagar:
+${urlPublica()}reservar${caduca}`)
+}
