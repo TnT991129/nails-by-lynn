@@ -107,15 +107,14 @@ también en modo oscuro.
 
 **Pendientes de ejecutar** (una vez, en Supabase → SQL Editor; después se mueve a `historial/`):
 
-- `fidelidad_elegidas.sql`: la tarjeta de fidelidad puede ser para todas o **solo para las clientas que elija Lynn**.
-  Añade `clients.loyalty_enrolled` y redefine `tarjeta_fidelidad` y `tg_premio_fidelidad` (iguales que en
-  `historial/fidelidad_niveles.sql`, más el modo). Sin él, «Solo las que yo elija» no tiene efecto.
+- `fidelidad_varias_tarjetas.sql`: **varias tarjetas de fidelidad** (p. ej. «Normal» y «VIP») y cada clienta con la
+  suya. Añade `clients.loyalty_card` (las que ya tenían tarjeta «solo para las que elija» pasan a tener la primera),
+  la función `tarjeta_de_clienta` y redefine `tarjeta_fidelidad` y `tg_premio_fidelidad`. Sin él, todas las clientas
+  tienen la primera tarjeta y no se pueden dar tarjetas concretas.
 
-Ya aplicados: `recomendaciones_y_bonos.sql`
-(recomendaciones y bonos regalo: `clients.referred_by`, `clients.referral_rewarded_at`, `payments.gift_card_id` y la
-tabla `gift_cards`), ya está aplicado y en `historial/`, igual que `antelacion_en_politicas.sql`,
-`inspiracion_fidelidad_visitas.sql` y `fidelidad_niveles.sql`. `esquema.sql` aún no incluye estos cuatro: conviene volver
-a sacarlo (paso 3 de abajo).
+Ya aplicados y en `historial/`: `fidelidad_elegidas.sql` (tarjeta para todas o solo para las elegidas),
+`recomendaciones_y_bonos.sql`, `antelacion_en_politicas.sql`, `inspiracion_fidelidad_visitas.sql` y
+`fidelidad_niveles.sql`. `esquema.sql` aún no los incluye: conviene volver a sacarlo (paso 3 de abajo).
 
 **Lo que se ganó = lo cobrado.** El precio de los servicios es una estimación: Lynn cobra al final según el
 largo, el diseño… En Estadísticas, Hoy y la ficha de la clienta, una cita completada cuenta lo apuntado en
@@ -124,7 +123,7 @@ largo, el diseño… En Estadísticas, Hoy y la ficha de la clienta, una cita co
 según lo que pesa cada uno en el precio.
 
 **Ajustes guardados junto a los textos.** `settings.site_texts` guarda, además de los textos, ajustes de la web
-en claves que empiezan por «_» (JSON): `_diseno` (Diseño de la web), `_fidelidad` (Tarjeta de fidelidad) y `_recomendaciones` (Recomendaciones).
+en claves que empiezan por «_» (JSON): `_diseno` (Diseño de la web), `_fidelidad` (Tarjeta de fidelidad: modo y tarjetas) y `_recomendaciones` (Recomendaciones).
 Textos de la web las conserva al guardar.
 
 **Para cambiar algo en la base de datos:**

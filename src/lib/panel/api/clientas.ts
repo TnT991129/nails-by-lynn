@@ -171,17 +171,24 @@ export function excluirDeFidelidad(id: string, fuera: boolean) {
   return ejecutar(sb.from('clients').update({ loyalty_excluded: fuera }).eq('id', id).select('id').single())
 }
 
-/** Darle (o quitarle) la tarjeta cuando es «solo para las que elija» */
-export function darTarjetaFidelidad(id: string, tiene: boolean) {
-  return ejecutar(sb.from('clients').update({ loyalty_enrolled: tiene }).eq('id', id).select('id').single())
+/** Darle una tarjeta concreta (id de la tarjeta) o quitársela (null) */
+export function asignarTarjetaFidelidad(id: string, tarjeta: string | null) {
+  return ejecutar(sb.from('clients').update({ loyalty_card: tarjeta }).eq('id', id).select('id').single())
 }
 
-/** Clientas con la tarjeta dada a mano. null = falta ejecutar fidelidad_elegidas.sql */
+/** Al borrar tarjetas, sus clientas pasan a otra (o se quedan sin ninguna con null) */
+export async function cambiarClientasDeTarjeta(desde: string[], hacia: string | null) {
+  if (desde.length === 0) return
+  const { error } = await sb.from('clients').update({ loyalty_card: hacia }).eq('business_id', NEGOCIO_ID).in('loyalty_card', desde)
+  if (error) throw error
+}
+
+/** Clientas con una tarjeta dada a mano. null = falta ejecutar fidelidad_varias_tarjetas.sql */
 export async function clientasConTarjeta(): Promise<Cliente[] | null> {
   const { data, error } = await sb.from('clients').select('*').eq('business_id', NEGOCIO_ID)
-    .eq('loyalty_enrolled', true).order('full_name')
+    .not('loyalty_card', 'is', null).order('full_name')
   if (error) {
-    if (/loyalty_enrolled/.test(error.message)) return null
+    if (/loyalty_card/.test(error.message)) return null
     throw error
   }
   return data as Cliente[]

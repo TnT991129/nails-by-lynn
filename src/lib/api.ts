@@ -1,5 +1,6 @@
 import { seleccionar, rpc, subirArchivo, NEGOCIO_ID } from './supabase'
 import type { Servicio, Addon, Negocio, CitaCreada, CitaDetalle, ItemReserva, Politicas, Resenas } from './tipos'
+import type { TarjetaFidelidad } from './fidelidad'
 
 export async function obtenerNegocio(): Promise<Negocio> {
   // Solo las columnas públicas: la dirección exacta y las coordenadas no se pueden leer sin sesión
@@ -193,6 +194,9 @@ export async function anotarRecomendacion(token: string, telefono: string): Prom
 }
 
 // ---------- Tarjeta de fidelidad ----------
-export async function tarjetaFidelidad(token: string): Promise<{ completadas: number; fuera?: boolean; descuento_pendiente: number | null } | null> {
+export async function tarjetaFidelidad(token: string): Promise<{
+  completadas: number; fuera?: boolean; descuento_pendiente: number | null
+  tarjeta?: Partial<TarjetaFidelidad> | null   // su tarjeta (supabase/fidelidad_varias_tarjetas.sql)
+} | null> {
   try { return await rpc('tarjeta_fidelidad', { p_token: token }) } catch { return null }
 }

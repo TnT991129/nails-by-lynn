@@ -2,17 +2,19 @@ import type { CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { tarjetaFidelidad } from '../../lib/api'
 import { obtenerTextosGuardados, leerTextosLocales } from '../../lib/textos'
-import { leerFidelidad, tamanoTarjeta, sellosEnTarjeta, premioAlLlegar, siguientePremio } from '../../lib/fidelidad'
+import { leerFidelidad, limpiarTarjeta, tamanoTarjeta, sellosEnTarjeta, premioAlLlegar, siguientePremio } from '../../lib/fidelidad'
 import { useVisto } from '../../componentes/Movimiento'
 
 // Sellos de la clienta. Solo sale si Lynn activó la tarjeta, la clienta participa y la base de datos la tiene.
 // Las casillas con premio muestran su porcentaje.
 export default function TarjetaSellos({ token, className = '' }: { token: string; className?: string }) {
   const qTextos = useQuery({ queryKey: ['textos'], queryFn: obtenerTextosGuardados, staleTime: 10 * 60_000, placeholderData: leerTextosLocales })
-  const cfg = leerFidelidad(qTextos.data)
-  const q = useQuery({ queryKey: ['fidelidad', token], queryFn: () => tarjetaFidelidad(token), enabled: cfg.activa })
+  const config = leerFidelidad(qTextos.data)
+  const q = useQuery({ queryKey: ['fidelidad', token], queryFn: () => tarjetaFidelidad(token), enabled: config.activa })
   const [ref, visto] = useVisto<HTMLDivElement>()
-  if (!cfg.activa || !q.data || q.data.fuera) return null
+  if (!config.activa || !q.data || q.data.fuera) return null
+  // Su tarjeta (puede haber varias); sin el SQL de varias tarjetas, la de siempre
+  const cfg = q.data.tarjeta ? limpiarTarjeta(q.data.tarjeta) : config.tarjetas[0]
 
   const sellos = Number(q.data.completadas) || 0
   const tamano = tamanoTarjeta(cfg)

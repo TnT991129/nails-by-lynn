@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  FIDELIDAD_INICIAL, leerFidelidad, limpiarNiveles, participa, premioAlLlegar, sellosEnTarjeta, siguientePremio,
-  type ConfigFidelidad,
+  FIDELIDAD_INICIAL, fidelidadParaGuardar, leerFidelidad, limpiarNiveles, limpiarTarjetas, premioAlLlegar,
+  sellosEnTarjeta, siguientePremio, tarjetaDeClienta, type ConfigFidelidad, type ReglasTarjeta,
 } from './fidelidad'
 
 // 5.ª cita → 15 %, 10.ª → 20 %
-const repite: ConfigFidelidad = { activa: true, modo: 'todas', repetir: true, niveles: [{ citas: 5, premio: 15 }, { citas: 10, premio: 20 }] }
-const unaVez: ConfigFidelidad = { ...repite, repetir: false }
+const repite: ReglasTarjeta = { repetir: true, niveles: [{ citas: 5, premio: 15 }, { citas: 10, premio: 20 }] }
+const unaVez: ReglasTarjeta = { ...repite, repetir: false }
 
 describe('leerFidelidad', () => {
   it('sin configuración: la inicial, apagada', () => {
@@ -14,15 +14,38 @@ describe('leerFidelidad', () => {
     expect(leerFidelidad({ _fidelidad: 'esto no es JSON' })).toEqual(FIDELIDAD_INICIAL)
   })
   it('lee la versión anterior de un solo premio', () => {
-    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, sellos: 8, premio: 25 }) }))
-      .toEqual({ activa: true, modo: 'todas', repetir: true, niveles: [{ citas: 8, premio: 25 }] })
+    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, sellos: 8, premio: 25 }) }).tarjetas)
+      .toEqual([{ id: 'principal', nombre: 'Normal', repetir: true, niveles: [{ citas: 8, premio: 25 }] }])
+  })
+  it('lee la configuración de una sola tarjeta (la que había hasta ahora)', () => {
+    const c = leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, repetir: false, niveles: [{ citas: 6, premio: 10 }] }) })
+    expect(c.tarjetas).toEqual([{ id: 'principal', nombre: 'Normal', repetir: false, niveles: [{ citas: 6, premio: 10 }] }])
+  })
+  it('lee varias tarjetas', () => {
+    const c = leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, tarjetas: [
+      { id: 'principal', nombre: 'Normal', niveles: [{ citas: 5, premio: 15 }] },
+      { id: 'vip', nombre: 'VIP', repetir: false, niveles: [{ citas: 3, premio: 20 }] },
+    ] }) })
+    expect(c.tarjetas.map(t => t.nombre)).toEqual(['Normal', 'VIP'])
+    expect(c.tarjetas[1].repetir).toBe(false)
   })
 })
 
-describe('limpiarNiveles', () => {
+describe('limpiarNiveles y limpiarTarjetas', () => {
   it('ordena, quita repetidos y ajusta valores fuera de rango', () => {
     expect(limpiarNiveles([{ citas: 10, premio: 20 }, { citas: 5, premio: 15 }, { citas: 5, premio: 30 }, { citas: 99, premio: 500 }]))
       .toEqual([{ citas: 5, premio: 30 }, { citas: 10, premio: 20 }, { citas: 30, premio: 100 }])
+  })
+  it('quita tarjetas con el mismo id, pone nombre si falta y siempre deja al menos una', () => {
+    const t = limpiarTarjetas([{ id: 'vip', nombre: '' }, { id: 'vip', nombre: 'Otra' }])
+    expect(t).toHaveLength(1)
+    expect(t[0].nombre).toBe('Normal')
+    expect(limpiarTarjetas([])).toEqual(FIDELIDAD_INICIAL.tarjetas)
+  })
+  it('al guardar, los premios de la primera van también arriba (como antes)', () => {
+    const g = fidelidadParaGuardar({ activa: true, modo: 'todas', tarjetas: [{ id: 'principal', nombre: 'N', repetir: false, niveles: [{ citas: 4, premio: 10 }] }] })
+    expect(g.niveles).toEqual([{ citas: 4, premio: 10 }])
+    expect(g.repetir).toBe(false)
   })
 })
 
@@ -55,23 +78,30 @@ describe('tarjeta de una sola vez', () => {
   })
 })
 
-describe('para quién es la tarjeta', () => {
-  it('sin «modo» (como estaba guardada antes) es para todas', () => {
-    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true }) }).modo).toBe('todas')
-    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, modo: 'elegidas' }) }).modo).toBe('elegidas')
-    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, modo: 'otra-cosa' }) }).modo).toBe('todas')
+describe('qué tarjeta tiene cada clienta (igual que la base de datos)', () => {
+  const NORMAL = { id: 'principal', nombre: 'Normal', ...repite }
+  const VIP = { id: 'vip', nombre: 'VIP', repetir: true, niveles: [{ citas: 3, premio: 20 }] }
+  const todas: ConfigFidelidad = { activa: true, modo: 'todas', tarjetas: [NORMAL, VIP] }
+  const elegidas: ConfigFidelidad = { ...todas, modo: 'elegidas' }
+
+  it('para todas: sin tarjeta asignada, la primera; con una asignada, esa', () => {
+    expect(tarjetaDeClienta(todas, {})?.nombre).toBe('Normal')
+    expect(tarjetaDeClienta(todas, { loyalty_card: 'vip' })?.nombre).toBe('VIP')
+    expect(tarjetaDeClienta(todas, { loyalty_card: 'borrada' })?.nombre).toBe('Normal')
   })
-  it('para todas: participan todas menos las que Lynn saca', () => {
-    expect(participa(repite, {})).toBe(true)
-    expect(participa(repite, { loyalty_excluded: true })).toBe(false)
+  it('para todas: la que Lynn saca no tiene ninguna', () => {
+    expect(tarjetaDeClienta(todas, { loyalty_card: 'vip', loyalty_excluded: true })).toBeNull()
   })
-  it('solo las elegidas: participan las que tienen la tarjeta', () => {
-    const elegidas = { ...repite, modo: 'elegidas' as const }
-    expect(participa(elegidas, {})).toBe(false)
-    expect(participa(elegidas, { loyalty_enrolled: true })).toBe(true)
-    expect(participa(elegidas, { loyalty_enrolled: true, loyalty_excluded: true })).toBe(true)
+  it('solo las elegidas: solo quien tiene una tarjeta dada', () => {
+    expect(tarjetaDeClienta(elegidas, {})).toBeNull()
+    expect(tarjetaDeClienta(elegidas, { loyalty_card: 'vip' })?.nombre).toBe('VIP')
+    expect(tarjetaDeClienta(elegidas, { loyalty_card: 'borrada' })).toBeNull()
   })
   it('apagada: nadie', () => {
-    expect(participa({ ...repite, activa: false }, { loyalty_enrolled: true })).toBe(false)
+    expect(tarjetaDeClienta({ ...todas, activa: false }, { loyalty_card: 'vip' })).toBeNull()
+  })
+  it('sin «modo» guardado (como antes) es para todas', () => {
+    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true }) }).modo).toBe('todas')
+    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, modo: 'otra-cosa' }) }).modo).toBe('todas')
   })
 })

@@ -49,6 +49,7 @@ const MENSAJES: Record<string, string> = {
   site_texts:            'Falta ejecutar en Supabase el SQL textos_web.sql.',
   next_discount:         'Falta ejecutar en Supabase el SQL de descuentos (turnos_descuentos_cambios.sql).',
   loyalty_:              'Falta ejecutar en Supabase el SQL de la tarjeta de fidelidad (fidelidad_niveles.sql).',
+  loyalty_card:          'Falta ejecutar en Supabase el SQL de varias tarjetas de fidelidad (fidelidad_varias_tarjetas.sql).',
   LIMITE_REPROGRAMACIONES_MES:'Ya cambiaste una cita este mes. Si necesitas moverla, escríbeme por WhatsApp.',
   HORARIO_OCUPADO:       'Ese horario choca con otra cita. Elige otro.',
   sin_citas_solapadas:   'Ese horario choca con otra cita. Elige otro.',
