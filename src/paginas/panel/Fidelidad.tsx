@@ -14,6 +14,8 @@ import { IconoCerrar } from '../../componentes/iconos'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver, Interruptor } from './comunes'
 
+const TITULO_DAR = 'Dar tarjeta a una clienta'
+
 const OPCIONES: { clave: 'apagada' | ModoFidelidad; titulo: string }[] = [
   { clave: 'apagada', titulo: 'Apagada' },
   { clave: 'todas', titulo: 'Para todas' },
@@ -96,6 +98,11 @@ export default function Fidelidad() {
           descuento en su siguiente cita, sin que hagas nada. Ella ve sus sellos en «Mis citas».
         </p>
       </div>
+
+      <button onClick={() => document.getElementById('dar-tarjeta')?.scrollIntoView({ behavior: 'smooth' })}
+        className="w-full min-h-[48px] rounded-boton border border-rosa-300 bg-rosa-50 text-rosa-800 text-[15px] font-semibold">
+        👤 {TITULO_DAR} ↓
+      </button>
 
       {qSql.data === false && (
         <Aviso tipo="aviso">
@@ -223,25 +230,23 @@ export default function Fidelidad() {
         </Boton>
       </Tarjeta>
 
-      {/* Asignar tarjetas a clientas: con lo ya guardado (una tarjeta nueva tiene que estar guardada para poder darla) */}
-      {c.activa && (
-        cambios ? (
-          <Tarjeta className="space-y-1">
-            <div className="text-[16px] font-semibold">Clientas con tarjeta</div>
-            <p className="text-[14px] text-tinta-tenue">Pulsa <b>Guardar</b> arriba y aquí podrás dar las tarjetas a tus clientas.</p>
-          </Tarjeta>
-        ) : guardada.modo === 'elegidas' || guardada.tarjetas.length > 1 ? (
-          <ElegirClientas cfg={guardada} />
-        ) : (
-          <Tarjeta className="space-y-1">
-            <div className="text-[16px] font-semibold">Clientas con tarjeta</div>
-            <p className="text-[14px] text-tinta-tenue">
-              Con una sola tarjeta «para todas», todas tus clientas ya la tienen. Para dársela solo a algunas, elige
-              <b> Solo las que yo elija</b>; para dar una distinta a algunas, crea otra con <b>+ Nueva tarjeta</b>. Después, Guardar.
-            </p>
-          </Tarjeta>
-        )
+      {/* Dar tarjetas a clientas: siempre con el mismo nombre; si aún no se puede, se explica por qué.
+          Usa lo ya guardado (una tarjeta nueva tiene que estar guardada para poder darla). */}
+      <div id="dar-tarjeta" className="scroll-mt-20">
+      {c.activa && !cambios && (guardada.modo === 'elegidas' || guardada.tarjetas.length > 1) ? (
+        <ElegirClientas cfg={guardada} />
+      ) : (
+        <Tarjeta className="space-y-1">
+          <div className="text-[16px] font-semibold">{TITULO_DAR}</div>
+          <p className="text-[14px] text-tinta-tenue">
+            {!c.activa ? <>La tarjeta está <b>apagada</b>. Elige arriba «Para todas» o «Solo las que yo elija» y pulsa Guardar.</>
+              : cambios ? <>Pulsa <b>Guardar</b> arriba y aquí podrás dar las tarjetas a tus clientas.</>
+              : <>Ahora todas tus clientas tienen la tarjeta «{guardada.tarjetas[0].nombre}». Para darle una distinta a algunas,
+                  crea otra con <b>+ Nueva tarjeta</b>; para dársela solo a algunas, elige <b>Solo las que yo elija</b>. Después, Guardar.</>}
+          </p>
+        </Tarjeta>
       )}
+      </div>
 
       <Tarjeta className="space-y-1">
         <div className="text-[15px] font-semibold">¿Y una clienta en concreto?</div>
@@ -300,11 +305,12 @@ function ElegirClientas({ cfg }: { cfg: ConfigFidelidad }) {
   return (
     <Tarjeta className="space-y-3">
       <div>
-        <div className="text-[16px] font-semibold">{elegidas ? 'Clientas con tarjeta' : 'Clientas con otra tarjeta'}</div>
+        <div className="text-[16px] font-semibold">{TITULO_DAR}</div>
         <div className="text-[13px] text-tinta-tenue">
           {con.length === 0
-            ? (elegidas ? 'Todavía ninguna. Búscalas abajo para darles una.' : `Todas tienen «${cfg.tarjetas[0].nombre}». Busca abajo a quien quieras darle otra.`)
-            : `${con.length} ${con.length === 1 ? 'clienta' : 'clientas'}`}
+            ? (elegidas ? 'Todavía ninguna la tiene. Elige abajo a quién dársela.' : `Todas tienen «${cfg.tarjetas[0].nombre}». Elige abajo a quién darle otra.`)
+            : elegidas ? `${con.length} ${con.length === 1 ? 'clienta la tiene' : 'clientas la tienen'}:`
+            : `${con.length} ${con.length === 1 ? 'clienta tiene' : 'clientas tienen'} otra tarjeta:`}
         </div>
       </div>
 
