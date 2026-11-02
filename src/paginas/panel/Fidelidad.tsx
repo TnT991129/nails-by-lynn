@@ -22,7 +22,7 @@ const OPCIONES: { clave: 'apagada' | ModoFidelidad; titulo: string }[] = [
 
 // Lynn configura la tarjeta: para quién es y una o varias tarjetas (p. ej. «Normal» y «VIP»), cada una con sus
 // premios (5.ª cita → 15 %…) y si vuelve a empezar. Cada cita completada es un sello; al llegar a un premio de su
-// tarjeta, la base de datos le deja el descuento para la próxima (supabase/fidelidad_varias_tarjetas.sql).
+// tarjeta, la base de datos le deja el descuento para la próxima (supabase/historial/fidelidad_varias_tarjetas.sql).
 export default function Fidelidad() {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['textos-panel'], queryFn: obtenerTextosPanel })

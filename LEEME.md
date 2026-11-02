@@ -105,14 +105,10 @@ también en modo oscuro.
 - **`historial/`**: las migraciones que la fueron construyendo. Ya están aplicadas; no se repiten.
 - **`restaurar_servicios.sql`**: solo si se borran los servicios por error.
 
-**Pendientes de ejecutar** (una vez, en Supabase → SQL Editor; después se mueve a `historial/`):
+**Pendientes de ejecutar:** ninguno (comprobado el 02/11/2026).
 
-- `fidelidad_varias_tarjetas.sql`: **varias tarjetas de fidelidad** (p. ej. «Normal» y «VIP») y cada clienta con la
-  suya. Añade `clients.loyalty_card` (las que ya tenían tarjeta «solo para las que elija» pasan a tener la primera),
-  la función `tarjeta_de_clienta` y redefine `tarjeta_fidelidad` y `tg_premio_fidelidad`. Sin él, todas las clientas
-  tienen la primera tarjeta y no se pueden dar tarjetas concretas.
-
-Ya aplicados y en `historial/`: `fidelidad_elegidas.sql` (tarjeta para todas o solo para las elegidas),
+Ya aplicados y en `historial/`: `fidelidad_varias_tarjetas.sql` (varias tarjetas y cada clienta con la suya:
+`clients.loyalty_card`), `fidelidad_elegidas.sql` (tarjeta para todas o solo para las elegidas),
 `recomendaciones_y_bonos.sql`, `antelacion_en_politicas.sql`, `inspiracion_fidelidad_visitas.sql` y
 `fidelidad_niveles.sql`. `esquema.sql` aún no los incluye: conviene volver a sacarlo (paso 3 de abajo).
 

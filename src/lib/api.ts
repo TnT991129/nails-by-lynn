@@ -196,7 +196,7 @@ export async function anotarRecomendacion(token: string, telefono: string): Prom
 // ---------- Tarjeta de fidelidad ----------
 export async function tarjetaFidelidad(token: string): Promise<{
   completadas: number; fuera?: boolean; descuento_pendiente: number | null
-  tarjeta?: Partial<TarjetaFidelidad> | null   // su tarjeta (supabase/fidelidad_varias_tarjetas.sql)
+  tarjeta?: Partial<TarjetaFidelidad> | null   // su tarjeta (supabase/historial/fidelidad_varias_tarjetas.sql)
 } | null> {
   try { return await rpc('tarjeta_fidelidad', { p_token: token }) } catch { return null }
 }

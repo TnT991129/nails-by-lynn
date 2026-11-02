@@ -21,7 +21,7 @@ export type Cliente = {
   allergies?: string | null; birthday?: string | null   // supabase/historial/mejoras.sql
   // Tarjeta de fidelidad (supabase/historial/fidelidad_niveles.sql): sellos sumados o quitados a mano y si no participa
   loyalty_adjustment?: number; loyalty_excluded?: boolean
-  loyalty_card?: string | null   // id de su tarjeta de fidelidad (supabase/fidelidad_varias_tarjetas.sql)
+  loyalty_card?: string | null   // id de su tarjeta de fidelidad (supabase/historial/fidelidad_varias_tarjetas.sql)
   // Recomendaciones (supabase/historial/recomendaciones_y_bonos.sql): quién la trajo y si ya se dieron los premios
   referred_by?: string | null; referral_rewarded_at?: string | null
   last_appointment_at: string | null; first_seen_at: string
