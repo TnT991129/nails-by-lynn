@@ -44,6 +44,8 @@ export default function Marco() {
           {ITEMS.map(i => (
             <li key={i.a} className="flex-1">
               <NavLink to={i.a} end={i.a === '/panel'}
+                // Tocar la pestaña en la que ya está la lleva arriba del todo
+                onClick={e => { if (e.currentTarget.getAttribute('aria-current') === 'page') window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                 className={({ isActive }) =>
                   `h-16 flex flex-col items-center justify-center gap-1 transition-colors
                    ${isActive ? 'text-rosa-600' : 'text-tinta-tenue'}`}>

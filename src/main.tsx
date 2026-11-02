@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from 'react'
+import React, { Suspense, lazy, useEffect, useLayoutEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -57,6 +57,9 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   })
 }
 
+// El navegador no recoloca el scroll al ir atrás: cada pantalla empieza arriba (ver Rutas)
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+
 // Aviso de "instalar app" (el panel lo usa para su botón)
 escucharInstalacion()
 
@@ -69,6 +72,8 @@ function Rutas() {
   const { pathname } = useLocation()
   useAplicarDiseno()   // colores, letras y formas que eligió Lynn (Panel → Diseño de la web)
   useEffect(() => { if (!pathname.startsWith('/panel')) registrarEvento('visita') }, [pathname])
+  // Cada pantalla empieza arriba (si no, se abría a la altura donde se dejó la anterior)
+  useLayoutEffect(() => { window.scrollTo(0, 0) }, [pathname])
   return (
     <LimiteErrores ruta={pathname}>
       <BarraProgreso />
