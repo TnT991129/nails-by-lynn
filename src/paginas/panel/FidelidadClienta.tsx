@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { obtenerTextosPanel, ajustarSellos, excluirDeFidelidad, aplicarDescuento, type Cliente } from '../../lib/panel/api-panel'
-import { leerFidelidad, tamanoTarjeta, sellosEnTarjeta, premioAlLlegar, siguientePremio } from '../../lib/fidelidad'
+import {
+  obtenerTextosPanel, ajustarSellos, excluirDeFidelidad, darTarjetaFidelidad, aplicarDescuento, type Cliente,
+} from '../../lib/panel/api-panel'
+import { leerFidelidad, tamanoTarjeta, sellosEnTarjeta, premioAlLlegar, siguientePremio, participa } from '../../lib/fidelidad'
 import { Tarjeta, Aviso } from '../../componentes/ui'
 import { mensajeDeError } from '../../lib/errores'
 
 // La tarjeta de una clienta en su ficha: cuántos sellos lleva, sumar o quitar sellos a mano
-// (p. ej. clientas de antes de la web) y sacarla de la tarjeta si Lynn quiere.
+// (p. ej. clientas de antes de la web) y, según para quién sea la tarjeta, sacarla o darle la tarjeta.
 export default function FidelidadClienta({ clienta }: { clienta: Cliente }) {
   const qc = useQueryClient()
   const qCfg = useQuery({ queryKey: ['textos-panel'], queryFn: obtenerTextosPanel })
@@ -23,9 +25,11 @@ export default function FidelidadClienta({ clienta }: { clienta: Cliente }) {
     )
   }
 
-  const sinSql = clienta.loyalty_adjustment === undefined
+  const elegidas = cfg.modo === 'elegidas'
+  // «Solo las que yo elija» necesita la columna de fidelidad_elegidas.sql
+  const sinSql = clienta.loyalty_adjustment === undefined || (elegidas && clienta.loyalty_enrolled === undefined)
   const ajuste = clienta.loyalty_adjustment ?? 0
-  const fuera = clienta.loyalty_excluded === true
+  const fuera = !participa(cfg, clienta)
   const sellos = Math.max(0, clienta.total_appointments + ajuste)
   const tamano = tamanoTarjeta(cfg)
   const llenos = sellosEnTarjeta(cfg, sellos)
@@ -54,7 +58,12 @@ export default function FidelidadClienta({ clienta }: { clienta: Cliente }) {
 
   async function alternarFuera() {
     setTrabajando(true); setError(null)
-    try { await excluirDeFidelidad(clienta.id, !fuera); refrescar() }
+    try {
+      if (elegidas) await darTarjetaFidelidad(clienta.id, fuera)
+      else await excluirDeFidelidad(clienta.id, !fuera)
+      refrescar()
+      qc.invalidateQueries({ queryKey: ['clientas-con-tarjeta'] })
+    }
     catch (e) { setError(mensajeDeError(e)) }
     finally { setTrabajando(false) }
   }
@@ -65,7 +74,7 @@ export default function FidelidadClienta({ clienta }: { clienta: Cliente }) {
         <div>
           <div className="text-[15px] font-semibold">Tarjeta de fidelidad</div>
           <div className="text-[13px] text-tinta-tenue">
-            {fuera ? 'No participa: no ve la tarjeta ni gana premios.'
+            {fuera ? (elegidas ? 'No tiene tarjeta: no la ve ni gana premios.' : 'No participa: no ve la tarjeta ni gana premios.')
               : siguiente ? `${sellos} ${sellos === 1 ? 'sello' : 'sellos'} · le ${siguiente.faltan === 1 ? 'falta 1 cita' : `faltan ${siguiente.faltan} citas`} para su ${siguiente.nivel.premio}%`
               : `${sellos} sellos · completó la tarjeta`}
           </div>
@@ -89,7 +98,10 @@ export default function FidelidadClienta({ clienta }: { clienta: Cliente }) {
       )}
 
       {sinSql ? (
-        <Aviso tipo="aviso">Para sumar sellos a mano o sacar a una clienta de la tarjeta, falta ejecutar en Supabase <b>fidelidad_niveles.sql</b>.</Aviso>
+        <Aviso tipo="aviso">
+          Para sumar sellos a mano o {elegidas ? 'dar la tarjeta a una clienta' : 'sacar a una clienta de la tarjeta'}, falta ejecutar en
+          Supabase <b>{clienta.loyalty_adjustment === undefined ? 'fidelidad_niveles.sql' : 'fidelidad_elegidas.sql'}</b>.
+        </Aviso>
       ) : (
         <div className="flex items-center gap-2 flex-wrap">
           {!fuera && <>
@@ -98,9 +110,16 @@ export default function FidelidadClienta({ clienta }: { clienta: Cliente }) {
             <button onClick={() => cambiarSellos(1)} disabled={trabajando}
               className="min-h-[40px] px-3 rounded-boton border border-rosa-300 bg-rosa-50 text-rosa-800 text-[14px] font-semibold disabled:opacity-40">+ Sumar sello</button>
           </>}
-          <button onClick={alternarFuera} disabled={trabajando} className="ml-auto text-[13px] text-tinta-tenue underline min-h-[40px]">
-            {fuera ? 'Volver a incluirla' : 'Sacarla de la tarjeta'}
-          </button>
+          {elegidas && fuera ? (
+            <button onClick={alternarFuera} disabled={trabajando}
+              className="min-h-[40px] px-4 rounded-boton bg-rosa-600 text-white text-[14px] font-semibold disabled:opacity-40">
+              + Darle la tarjeta
+            </button>
+          ) : (
+            <button onClick={alternarFuera} disabled={trabajando} className="ml-auto text-[13px] text-tinta-tenue underline min-h-[40px]">
+              {elegidas ? 'Quitarle la tarjeta' : fuera ? 'Volver a incluirla' : 'Sacarla de la tarjeta'}
+            </button>
+          )}
         </div>
       )}
       {!sinSql && ajuste !== 0 && (

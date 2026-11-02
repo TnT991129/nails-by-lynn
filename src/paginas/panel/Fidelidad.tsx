@@ -1,14 +1,22 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { obtenerTextosPanel, guardarAjusteWeb, fidelidadInstalada } from '../../lib/panel/api-panel'
 import {
-  leerFidelidad, limpiarNiveles, tamanoTarjeta, CLAVE_FIDELIDAD, MAX_NIVELES, type ConfigFidelidad, type NivelFidelidad,
+  obtenerTextosPanel, guardarAjusteWeb, fidelidadInstalada, clientasConTarjeta, listarClientas, darTarjetaFidelidad, type Cliente,
+} from '../../lib/panel/api-panel'
+import {
+  leerFidelidad, limpiarNiveles, tamanoTarjeta, CLAVE_FIDELIDAD, MAX_NIVELES, type ConfigFidelidad, type NivelFidelidad, type ModoFidelidad,
 } from '../../lib/fidelidad'
 import { Boton, Tarjeta, Aviso, Esqueleto } from '../../componentes/ui'
 import { IconoCerrar } from '../../componentes/iconos'
 import { mensajeDeError } from '../../lib/errores'
 import { Volver, Interruptor } from './comunes'
+
+const OPCIONES: { clave: 'apagada' | ModoFidelidad; titulo: string }[] = [
+  { clave: 'apagada', titulo: 'Apagada' },
+  { clave: 'todas', titulo: 'Para todas' },
+  { clave: 'elegidas', titulo: 'Solo las que yo elija' },
+]
 
 // Lynn configura la tarjeta: uno o varios premios (p. ej. 5.ª cita → 15 %, 10.ª → 20 %) y si vuelve a empezar.
 // Cada cita completada es un sello; al llegar a un premio, la base de datos le deja el descuento para la próxima.
@@ -70,12 +78,26 @@ export default function Fidelidad() {
       )}
 
       <Tarjeta className="space-y-5">
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <div className="text-[16px] font-semibold">Tarjeta activa</div>
-            <div className="text-[13px] text-tinta-tenue">{c.activa ? 'Las clientas la ven y ganan premios' : 'Apagada: nadie la ve'}</div>
+        <div>
+          <div className="text-[16px] font-semibold mb-2">¿Para quién es?</div>
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Para quién es la tarjeta">
+            {OPCIONES.map(o => {
+              const elegida = o.clave === 'apagada' ? !c.activa : c.activa && c.modo === o.clave
+              return (
+                <button key={o.clave} role="radio" aria-checked={elegida}
+                  onClick={() => poner(o.clave === 'apagada' ? { activa: false } : { activa: true, modo: o.clave })}
+                  className={`min-h-[56px] px-2 rounded-xl border text-[13px] font-semibold leading-tight transition
+                    ${elegida ? 'bg-rosa-600 border-rosa-600 text-white' : 'border-rosa-200 bg-papel text-tinta-suave'}`}>
+                  {o.titulo}
+                </button>
+              )
+            })}
           </div>
-          <Interruptor activo={c.activa} onChange={v => poner({ activa: v })} etiqueta="Tarjeta activa" />
+          <p className="text-[13px] text-tinta-tenue mt-2">
+            {!c.activa ? 'Apagada: nadie la ve ni gana premios.'
+              : c.modo === 'todas' ? 'Todas las clientas la tienen. Puedes sacar a alguna desde su ficha.'
+              : 'Solo la tienen las clientas que elijas abajo (o desde su ficha).'}
+          </p>
         </div>
 
         <div>
@@ -140,11 +162,13 @@ export default function Fidelidad() {
         </Boton>
       </Tarjeta>
 
+      {c.activa && c.modo === 'elegidas' && <ElegirClientas />}
+
       <Tarjeta className="space-y-1">
         <div className="text-[15px] font-semibold">¿Y una clienta en concreto?</div>
         <p className="text-[14px] text-tinta-tenue">
           En la ficha de cada clienta puedes <b>sumarle o quitarle sellos</b> (por ejemplo, si venía antes de la web),
-          darle el premio al momento o <b>sacarla de la tarjeta</b>.
+          darle el premio al momento y {c.modo === 'elegidas' ? <><b>darle o quitarle la tarjeta</b></> : <><b>sacarla de la tarjeta</b></>}.
         </p>
         <Link to="/panel/clientas" className="inline-flex items-center min-h-[44px] text-[14px] font-semibold text-rosa-800 underline">Ir a Clientas</Link>
       </Tarjeta>
@@ -154,5 +178,85 @@ export default function Fidelidad() {
         Si ya tenía un descuento mayor, se queda el mayor.
       </p>
     </div>
+  )
+}
+
+// «Solo las que yo elija»: quién tiene la tarjeta y un buscador para dársela a más clientas.
+// Cada cambio se guarda al momento (no hace falta el botón Guardar de arriba).
+function ElegirClientas() {
+  const qc = useQueryClient()
+  const qCon = useQuery({ queryKey: ['clientas-con-tarjeta'], queryFn: clientasConTarjeta })
+  const [busqueda, setBusqueda] = useState('')
+  const qBuscar = useQuery({
+    queryKey: ['clientas', busqueda.trim()], queryFn: () => listarClientas(busqueda.trim()), enabled: busqueda.trim().length >= 2,
+  })
+  const [trabajando, setTrabajando] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  if (qCon.isLoading) return <Esqueleto className="h-32" />
+  if (qCon.data === null) {
+    return <Aviso tipo="aviso">Para elegir clientas, falta ejecutar en Supabase el SQL <b>fidelidad_elegidas.sql</b>.</Aviso>
+  }
+  const con = qCon.data ?? []
+  const ids = new Set(con.map(x => x.id))
+  const encontradas = (qBuscar.data ?? []).filter(x => !ids.has(x.id)).slice(0, 8)
+
+  async function cambiar(cli: Cliente, tiene: boolean) {
+    setTrabajando(cli.id); setError(null)
+    try {
+      await darTarjetaFidelidad(cli.id, tiene)
+      await qc.invalidateQueries({ queryKey: ['clientas-con-tarjeta'] })
+      qc.invalidateQueries({ queryKey: ['cli', cli.id] })
+      if (tiene) setBusqueda('')
+    } catch (e) { setError(mensajeDeError(e)) }
+    finally { setTrabajando(null) }
+  }
+
+  return (
+    <Tarjeta className="space-y-3">
+      <div>
+        <div className="text-[16px] font-semibold">Clientas con tarjeta</div>
+        <div className="text-[13px] text-tinta-tenue">
+          {con.length === 0 ? 'Todavía ninguna. Búscalas abajo para dársela.' : `${con.length} ${con.length === 1 ? 'clienta' : 'clientas'}`}
+        </div>
+      </div>
+
+      {con.length > 0 && (
+        <ul className="divide-y divide-rosa-100">
+          {con.map(x => (
+            <li key={x.id} className="flex items-center justify-between gap-2 py-2">
+              <Link to={`/panel/clientas/${x.id}`} className="text-[15px] font-medium truncate underline-offset-2 hover:underline">{x.full_name}</Link>
+              <button onClick={() => cambiar(x, false)} disabled={trabajando === x.id}
+                className="shrink-0 min-h-[36px] px-2 text-[13px] text-estado-error disabled:opacity-50">Quitar</button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por nombre o teléfono"
+             aria-label="Buscar clienta para darle la tarjeta"
+             className="w-full min-h-[44px] px-3 rounded-lg border border-rosa-200 text-[16px] bg-papel" />
+      {busqueda.trim().length >= 2 && (
+        qBuscar.isLoading ? <Esqueleto className="h-16" />
+        : encontradas.length === 0 ? <p className="text-[13px] text-tinta-tenue">No hay más clientas con ese nombre o teléfono.</p>
+        : (
+          <ul className="space-y-1">
+            {encontradas.map(x => (
+              <li key={x.id} className="flex items-center justify-between gap-2">
+                <span className="min-w-0">
+                  <span className="block text-[15px] truncate">{x.full_name}</span>
+                  <span className="block text-[12px] text-tinta-tenue">{x.phone}</span>
+                </span>
+                <button onClick={() => cambiar(x, true)} disabled={trabajando === x.id}
+                  className="shrink-0 min-h-[40px] px-3 rounded-full bg-rosa-600 text-white text-[13px] font-semibold disabled:opacity-50">
+                  + Dar tarjeta
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+      {error && <Aviso>{error}</Aviso>}
+    </Tarjeta>
   )
 }

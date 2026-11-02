@@ -5,15 +5,19 @@
 // Varios premios en la misma tarjeta: p. ej. 5.ª cita → 15 %, 10.ª → 20 %. La tarjeta mide lo que
 // el premio más alto (10 sellos) y, si «repetir», al llenarse vuelve a empezar.
 // Sellos de una clienta = citas completadas + los que Lynn sume o quite a mano en su ficha.
+//
+// Para quién es (supabase/fidelidad_elegidas.sql): «todas» (menos las que Lynn saque) o solo las «elegidas»
+// (a las que Lynn da la tarjeta). La base de datos aplica lo mismo al mostrar los sellos y al dar el premio.
 
 export const CLAVE_FIDELIDAD = '_fidelidad'
 
 export type NivelFidelidad = { citas: number; premio: number }
-export type ConfigFidelidad = { activa: boolean; niveles: NivelFidelidad[]; repetir: boolean }
+export type ModoFidelidad = 'todas' | 'elegidas'
+export type ConfigFidelidad = { activa: boolean; modo: ModoFidelidad; niveles: NivelFidelidad[]; repetir: boolean }
 
 export const MAX_NIVELES = 5
 export const FIDELIDAD_INICIAL: ConfigFidelidad = {
-  activa: false, repetir: true,
+  activa: false, modo: 'todas', repetir: true,
   niveles: [{ citas: 5, premio: 15 }, { citas: 10, premio: 20 }],
 }
 
@@ -34,7 +38,7 @@ export function leerFidelidad(textos: Record<string, string> | undefined | null)
     const niveles = Array.isArray(c.niveles) && c.niveles.length
       ? limpiarNiveles(c.niveles)
       : c.sellos ? limpiarNiveles([{ citas: c.sellos, premio: c.premio ?? 20 }]) : FIDELIDAD_INICIAL.niveles
-    return { activa: c.activa === true, repetir: c.repetir !== false, niveles }
+    return { activa: c.activa === true, modo: c.modo === 'elegidas' ? 'elegidas' : 'todas', repetir: c.repetir !== false, niveles }
   } catch { return FIDELIDAD_INICIAL }
 }
 
@@ -62,4 +66,10 @@ export function siguientePremio(cfg: ConfigFidelidad, sellos: number): { nivel: 
   const pos = sellos <= 0 ? 0 : sellosEnTarjeta(cfg, sellos) === t ? 0 : sellosEnTarjeta(cfg, sellos)   // llena: empieza otra
   const nivel = cfg.niveles.find(n => n.citas > pos)!
   return { nivel, faltan: nivel.citas - pos }
+}
+
+/** ¿Participa esta clienta? (igual que tarjeta_fidelidad y tg_premio_fidelidad en la base de datos) */
+export function participa(cfg: ConfigFidelidad, c: { loyalty_excluded?: boolean; loyalty_enrolled?: boolean }): boolean {
+  if (!cfg.activa) return false
+  return cfg.modo === 'elegidas' ? c.loyalty_enrolled === true : c.loyalty_excluded !== true
 }

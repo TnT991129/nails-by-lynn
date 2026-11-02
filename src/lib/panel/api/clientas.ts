@@ -166,9 +166,25 @@ export function ajustarSellos(id: string, ajuste: number) {
   return ejecutar(sb.from('clients').update({ loyalty_adjustment: Math.round(ajuste) }).eq('id', id).select('id').single())
 }
 
-/** Sacar a una clienta de la tarjeta (o volver a meterla) */
+/** Sacar a una clienta de la tarjeta (o volver a meterla) cuando la tarjeta es para todas */
 export function excluirDeFidelidad(id: string, fuera: boolean) {
   return ejecutar(sb.from('clients').update({ loyalty_excluded: fuera }).eq('id', id).select('id').single())
+}
+
+/** Darle (o quitarle) la tarjeta cuando es «solo para las que elija» */
+export function darTarjetaFidelidad(id: string, tiene: boolean) {
+  return ejecutar(sb.from('clients').update({ loyalty_enrolled: tiene }).eq('id', id).select('id').single())
+}
+
+/** Clientas con la tarjeta dada a mano. null = falta ejecutar fidelidad_elegidas.sql */
+export async function clientasConTarjeta(): Promise<Cliente[] | null> {
+  const { data, error } = await sb.from('clients').select('*').eq('business_id', NEGOCIO_ID)
+    .eq('loyalty_enrolled', true).order('full_name')
+  if (error) {
+    if (/loyalty_enrolled/.test(error.message)) return null
+    throw error
+  }
+  return data as Cliente[]
 }
 
 // ================== CUMPLEAÑOS ==================

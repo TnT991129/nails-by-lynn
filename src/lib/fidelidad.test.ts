@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  FIDELIDAD_INICIAL, leerFidelidad, limpiarNiveles, premioAlLlegar, sellosEnTarjeta, siguientePremio,
+  FIDELIDAD_INICIAL, leerFidelidad, limpiarNiveles, participa, premioAlLlegar, sellosEnTarjeta, siguientePremio,
   type ConfigFidelidad,
 } from './fidelidad'
 
 // 5.ª cita → 15 %, 10.ª → 20 %
-const repite: ConfigFidelidad = { activa: true, repetir: true, niveles: [{ citas: 5, premio: 15 }, { citas: 10, premio: 20 }] }
+const repite: ConfigFidelidad = { activa: true, modo: 'todas', repetir: true, niveles: [{ citas: 5, premio: 15 }, { citas: 10, premio: 20 }] }
 const unaVez: ConfigFidelidad = { ...repite, repetir: false }
 
 describe('leerFidelidad', () => {
@@ -15,7 +15,7 @@ describe('leerFidelidad', () => {
   })
   it('lee la versión anterior de un solo premio', () => {
     expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, sellos: 8, premio: 25 }) }))
-      .toEqual({ activa: true, repetir: true, niveles: [{ citas: 8, premio: 25 }] })
+      .toEqual({ activa: true, modo: 'todas', repetir: true, niveles: [{ citas: 8, premio: 25 }] })
   })
 })
 
@@ -52,5 +52,26 @@ describe('tarjeta de una sola vez', () => {
     expect(premioAlLlegar(unaVez, 15)).toBeNull()
     expect(siguientePremio(unaVez, 10)).toBeNull()
     expect(sellosEnTarjeta(unaVez, 14)).toBe(10)
+  })
+})
+
+describe('para quién es la tarjeta', () => {
+  it('sin «modo» (como estaba guardada antes) es para todas', () => {
+    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true }) }).modo).toBe('todas')
+    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, modo: 'elegidas' }) }).modo).toBe('elegidas')
+    expect(leerFidelidad({ _fidelidad: JSON.stringify({ activa: true, modo: 'otra-cosa' }) }).modo).toBe('todas')
+  })
+  it('para todas: participan todas menos las que Lynn saca', () => {
+    expect(participa(repite, {})).toBe(true)
+    expect(participa(repite, { loyalty_excluded: true })).toBe(false)
+  })
+  it('solo las elegidas: participan las que tienen la tarjeta', () => {
+    const elegidas = { ...repite, modo: 'elegidas' as const }
+    expect(participa(elegidas, {})).toBe(false)
+    expect(participa(elegidas, { loyalty_enrolled: true })).toBe(true)
+    expect(participa(elegidas, { loyalty_enrolled: true, loyalty_excluded: true })).toBe(true)
+  })
+  it('apagada: nadie', () => {
+    expect(participa({ ...repite, activa: false }, { loyalty_enrolled: true })).toBe(false)
   })
 })

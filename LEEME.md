@@ -105,7 +105,13 @@ también en modo oscuro.
 - **`historial/`**: las migraciones que la fueron construyendo. Ya están aplicadas; no se repiten.
 - **`restaurar_servicios.sql`**: solo si se borran los servicios por error.
 
-**Pendientes de ejecutar:** ninguno (comprobado el 01/11/2026). El último, `recomendaciones_y_bonos.sql`
+**Pendientes de ejecutar** (una vez, en Supabase → SQL Editor; después se mueve a `historial/`):
+
+- `fidelidad_elegidas.sql`: la tarjeta de fidelidad puede ser para todas o **solo para las clientas que elija Lynn**.
+  Añade `clients.loyalty_enrolled` y redefine `tarjeta_fidelidad` y `tg_premio_fidelidad` (iguales que en
+  `historial/fidelidad_niveles.sql`, más el modo). Sin él, «Solo las que yo elija» no tiene efecto.
+
+Ya aplicados: `recomendaciones_y_bonos.sql`
 (recomendaciones y bonos regalo: `clients.referred_by`, `clients.referral_rewarded_at`, `payments.gift_card_id` y la
 tabla `gift_cards`), ya está aplicado y en `historial/`, igual que `antelacion_en_politicas.sql`,
 `inspiracion_fidelidad_visitas.sql` y `fidelidad_niveles.sql`. `esquema.sql` aún no incluye estos cuatro: conviene volver
