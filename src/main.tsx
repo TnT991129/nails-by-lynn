@@ -6,7 +6,7 @@ import Inicio from './paginas/Inicio'
 import Navegacion from './componentes/Navegacion'
 import LimiteErrores, { recargarPorVersionNueva } from './componentes/LimiteErrores'
 import { BarraProgreso } from './componentes/Movimiento'
-import { useAplicarDiseno } from './lib/diseno'
+import { useAplicarDiseno, enVistaPrevia } from './lib/diseno'
 import { registrarEvento } from './lib/visitas'
 
 // Páginas públicas: se descargan en segundo plano tras abrir la web para que funcionen sin conexión
@@ -56,6 +56,10 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     }
   })
 }
+
+// En la vista previa del panel la web va dentro de un iframe: si sus enlaces añadieran pasos al historial,
+// el botón «atrás» del móvil los recorrería antes de cerrar la vista previa. Ahí cada enlace sustituye al anterior.
+if (enVistaPrevia) history.pushState = history.replaceState.bind(history)
 
 // El navegador no recoloca el scroll al ir atrás: cada pantalla empieza arriba (ver Rutas)
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { obtenerTextosPanel, guardarDiseno, obtenerLogo, cambiarLogo, registrarErrorSubida } from '../../lib/panel/api-panel'
 import {
@@ -29,7 +29,17 @@ export default function DisenoWeb() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hecho, setHecho] = useState(false)
-  const [previaMovil, setPreviaMovil] = useState(false)
+  // La vista previa del móvil va en la dirección (?previa=1): así el botón «atrás» del teléfono la cierra
+  // y Lynn sigue aquí con sus cambios, en vez de volver a «Más» y perder lo que no guardó
+  const [params, setParams] = useSearchParams()
+  const navegar = useNavigate()
+  const previaMovil = params.has('previa')
+  const abiertaAqui = useRef(false)
+  function abrirPrevia() { abiertaAqui.current = true; setParams({ previa: '1' }) }
+  function cerrarPrevia() {
+    if (abiertaAqui.current) { abiertaAqui.current = false; navegar(-1) }
+    else setParams({}, { replace: true })   // llegó ya con ?previa=1 (p. ej. al recargar): no hay paso atrás propio
+  }
 
   if (guardado && !d) setD(guardado)
 
@@ -245,7 +255,7 @@ export default function DisenoWeb() {
       <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] lg:bottom-0 z-30 px-4 pb-3 pointer-events-none">
         <div className="max-w-lg mx-auto bg-papel/95 backdrop-blur-lg border border-rosa-100 rounded-xl shadow-flota p-3
                         flex items-center gap-2 pointer-events-auto">
-          <button onClick={() => setPreviaMovil(true)}
+          <button onClick={abrirPrevia}
                   className="lg:hidden min-h-[48px] px-4 rounded-boton border border-rosa-200 text-rosa-800 font-semibold text-[14px]">
             Vista previa
           </button>
@@ -266,7 +276,7 @@ export default function DisenoWeb() {
         <div role="dialog" aria-modal="true" aria-label="Vista previa" className="fixed inset-0 z-50 bg-noche/95 flex flex-col animate-entrada">
           <div className="flex items-center justify-between px-4 py-3 text-white">
             <span className="text-[14px]">Así la verán tus clientas{cambios ? ' (sin guardar)' : ''}</span>
-            <button onClick={() => setPreviaMovil(false)} aria-label="Cerrar vista previa"
+            <button onClick={cerrarPrevia} aria-label="Cerrar vista previa"
                     className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center"><IconoCerrar /></button>
           </div>
           <iframe key={d.animaciones} title="Vista previa de la web" src={`${BASE}?vista_previa=1`} className="flex-1 w-full border-0 bg-superficie-base rounded-t-xl" />
