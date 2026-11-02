@@ -223,7 +223,25 @@ export default function Fidelidad() {
         </Boton>
       </Tarjeta>
 
-      {guardada.activa && (guardada.modo === 'elegidas' || guardada.tarjetas.length > 1) && <ElegirClientas cfg={guardada} />}
+      {/* Asignar tarjetas a clientas: con lo ya guardado (una tarjeta nueva tiene que estar guardada para poder darla) */}
+      {c.activa && (
+        cambios ? (
+          <Tarjeta className="space-y-1">
+            <div className="text-[16px] font-semibold">Clientas con tarjeta</div>
+            <p className="text-[14px] text-tinta-tenue">Pulsa <b>Guardar</b> arriba y aquí podrás dar las tarjetas a tus clientas.</p>
+          </Tarjeta>
+        ) : guardada.modo === 'elegidas' || guardada.tarjetas.length > 1 ? (
+          <ElegirClientas cfg={guardada} />
+        ) : (
+          <Tarjeta className="space-y-1">
+            <div className="text-[16px] font-semibold">Clientas con tarjeta</div>
+            <p className="text-[14px] text-tinta-tenue">
+              Con una sola tarjeta «para todas», todas tus clientas ya la tienen. Para dársela solo a algunas, elige
+              <b> Solo las que yo elija</b>; para dar una distinta a algunas, crea otra con <b>+ Nueva tarjeta</b>. Después, Guardar.
+            </p>
+          </Tarjeta>
+        )
+      )}
 
       <Tarjeta className="space-y-1">
         <div className="text-[15px] font-semibold">¿Y una clienta en concreto?</div>
@@ -250,9 +268,9 @@ function ElegirClientas({ cfg }: { cfg: ConfigFidelidad }) {
   const qCon = useQuery({ queryKey: ['clientas-con-tarjeta'], queryFn: clientasConTarjeta })
   const [busqueda, setBusqueda] = useState('')
   const [dar, setDar] = useState(cfg.tarjetas[0].id)
-  const qBuscar = useQuery({
-    queryKey: ['clientas', busqueda.trim()], queryFn: () => listarClientas(busqueda.trim()), enabled: busqueda.trim().length >= 2,
-  })
+  // Sin escribir nada salen las clientas más recientes; escribiendo, las que coinciden
+  const texto = busqueda.trim()
+  const qBuscar = useQuery({ queryKey: ['clientas', texto], queryFn: () => listarClientas(texto || undefined) })
   const [trabajando, setTrabajando] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -265,7 +283,7 @@ function ElegirClientas({ cfg }: { cfg: ConfigFidelidad }) {
   // Con «para todas», tener la primera es lo mismo que no tener ninguna asignada: solo se listan las que tienen otra
   const con = (qCon.data ?? []).filter(x => elegidas || x.loyalty_card !== cfg.tarjetas[0].id)
   const ids = new Set(con.map(x => x.id))
-  const encontradas = (qBuscar.data ?? []).filter(x => !ids.has(x.id)).slice(0, 8)
+  const encontradas = (qBuscar.data ?? []).filter(x => !ids.has(x.id)).slice(0, texto ? 8 : 6)
   const opcionesDar = elegidas ? cfg.tarjetas : cfg.tarjetas.slice(1)
 
   async function asignar(cli: Cliente, tarjeta: string | null) {
@@ -323,10 +341,14 @@ function ElegirClientas({ cfg }: { cfg: ConfigFidelidad }) {
           </select>
         )}
       </div>
-      {busqueda.trim().length >= 2 && (
-        qBuscar.isLoading ? <Esqueleto className="h-16" />
-        : encontradas.length === 0 ? <p className="text-[13px] text-tinta-tenue">No hay más clientas con ese nombre o teléfono.</p>
-        : (
+      {!texto && encontradas.length > 0 && <div className="text-[12px] text-tinta-tenue">Últimas clientas (o busca arriba):</div>}
+      {qBuscar.isLoading ? <Esqueleto className="h-16" />
+        : qBuscar.isError ? <Aviso>{mensajeDeError(qBuscar.error)}</Aviso>
+        : encontradas.length === 0 ? (
+          <p className="text-[13px] text-tinta-tenue">
+            {texto ? 'No hay más clientas con ese nombre o teléfono.' : 'No hay más clientas a las que darles tarjeta.'}
+          </p>
+        ) : (
           <ul className="space-y-1">
             {encontradas.map(x => (
               <li key={x.id} className="flex items-center justify-between gap-2">
@@ -341,8 +363,7 @@ function ElegirClientas({ cfg }: { cfg: ConfigFidelidad }) {
               </li>
             ))}
           </ul>
-        )
-      )}
+        )}
       {error && <Aviso>{error}</Aviso>}
     </Tarjeta>
   )
