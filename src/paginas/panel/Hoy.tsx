@@ -2,16 +2,15 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { citasEnRango, ganadoEnCitas } from '../../lib/panel/api-panel'
-import { Tarjeta, Esqueleto, Aviso, Pildora, Vacio } from '../../componentes/ui'
-import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, importe } from '../../lib/formato'
+import { Esqueleto, Aviso, Vacio, estiloBoton } from '../../componentes/ui'
+import { hora, fechaLarga, fechaISO, instanteEnHabana, importe } from '../../lib/formato'
 import RecordatoriosManana from './RecordatoriosManana'
 import Cumpleanos from './Cumpleanos'
 import VolverAVenir from './VolverAVenir'
-import EnlaceClientas from './EnlaceClientas'
 import EnCup from '../../componentes/EnCup'
 import { sumarDias } from '../../componentes/CalendarioMes'
 import { mensajeDeError } from '../../lib/errores'
-import { ListaServicios } from './comunes'
+import { Cabecera, Seccion, Cifras, FilaCita } from './piezas'
 
 // Hoy de 00:00 a 24:00 en hora de La Habana, aunque el móvil esté en otra zona
 function iniFin(fecha: Date) {
@@ -38,34 +37,22 @@ export default function Hoy() {
   })
   const ingresoDia = completadas.length > 0 ? qGanado.data ?? 0 : 0
 
+  // La que toca ahora: la que está en curso o, si no, la siguiente sin empezar
+  const siguiente = activas.find(c => c.status === 'EN_CURSO')
+    ?? activas.find(c => ['CONFIRMADA', 'PENDIENTE'].includes(c.status) && new Date(c.ends_at).getTime() > Date.now())
+
   return (
-    <div className="p-5 space-y-5">
-      <div>
-        <p className="text-[14px] text-tinta-tenue first-letter:uppercase">{fechaLarga(new Date().toISOString())}</p>
-        <h1 className="text-[30px] leading-tight mt-1">Hoy</h1>
-      </div>
+    <div className="p-5 space-y-6">
+      <Cabecera titulo="Hoy" sobre={fechaLarga(new Date().toISOString())}
+        accion={<Link to="/panel/agenda/nueva" className={`${estiloBoton('secundario')} !min-h-[42px] !px-4 !text-[14px]`}>+ Cita</Link>} />
 
-      <EnlaceClientas />
-      <RecordatoriosManana />
-      <Cumpleanos />
-      <VolverAVenir />
+      <Cifras datos={[
+        { etiqueta: 'Citas', valor: activas.length },
+        { etiqueta: 'Completadas', valor: completadas.length },
+        { etiqueta: 'Ganado hoy', valor: importe(ingresoDia), apoyo: ingresoDia > 0 ? <EnCup min={ingresoDia} className="!text-[11px]" /> : undefined },
+      ]} />
 
-      <div className="grid grid-cols-2 gap-3">
-        <Tarjeta className="text-center py-4">
-          <div className="text-[12px] tracking-wider uppercase text-tinta-tenue">Citas</div>
-          <div className="font-display text-[30px] mt-1">{activas.length}</div>
-        </Tarjeta>
-        <Tarjeta className="text-center py-4">
-          <div className="text-[12px] tracking-wider uppercase text-tinta-tenue">Completadas</div>
-          <div className="font-display text-[30px] mt-1">
-            {completadas.length}
-          </div>
-        </Tarjeta>
-      </div>
-
-
-      <section>
-        <h2 className="text-[19px] font-semibold mb-3">Citas de hoy</h2>
+      <Seccion titulo="Citas de hoy" extra={siguiente ? `Ahora: ${siguiente.cliente_nombre.trim().split(/\s+/)[0]} · ${hora(siguiente.starts_at)}` : undefined}>
         {q.isLoading && <div className="space-y-2">
           {Array.from({length:3}).map((_,i) => <Esqueleto key={i} className="h-20" />)}
         </div>}
@@ -74,35 +61,19 @@ export default function Hoy() {
           <Vacio titulo="Día libre" texto="No tienes citas para hoy." />
         )}
         <div className="space-y-2">
-          {activas.map(c => (
-            <Link key={c.id} to={`/panel/cita/${c.id}`} className="block">
-              <Tarjeta className="flex items-start gap-3">
-                <div className="text-center min-w-[64px] pt-0.5">
-                  <div className="font-display text-[19px]">{hora(c.starts_at)}</div>
-                  <div className="text-[12px] text-tinta-tenue">
-                    {duracion(c.total_duration_minutes)}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="text-[16px] font-medium truncate">{c.cliente_nombre}</div>
-                    <div className="shrink-0"><Pildora estado={c.status} /></div>
-                  </div>
-                  <ListaServicios texto={c.servicios} className="text-[14px] text-tinta-tenue mt-1" />
-                </div>
-              </Tarjeta>
-            </Link>
-          ))}
+          {activas.map(c => <FilaCita key={c.id} cita={c} />)}
         </div>
-      </section>
+      </Seccion>
 
-      {ingresoDia > 0 && (
-        <Tarjeta className="text-center py-3">
-          <div className="text-[12px] tracking-wider uppercase text-tinta-tenue">Ingreso del día</div>
-          <div className="font-display text-[24px] mt-1">{importe(ingresoDia)}</div>
-          <EnCup min={ingresoDia} className="!text-[13px]" />
-        </Tarjeta>
-      )}
+      {/* Lo que conviene hacer hoy: cada bloque solo sale si tiene algo */}
+      <Seccion titulo="Por hacer">
+        <div className="space-y-3 empty:hidden peer">
+          <RecordatoriosManana />
+          <Cumpleanos />
+          <VolverAVenir />
+        </div>
+        <p className="hidden peer-empty:block text-[14px] text-tinta-tenue px-1">Nada pendiente por ahora ✨</p>
+      </Seccion>
     </div>
   )
 }

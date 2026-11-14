@@ -77,3 +77,29 @@ export const IconoSalir = (p: Props) => (
 export const IconoLuna = (p: Props) => (
   <Base {...p}><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z" /></Base>
 )
+
+// ---------- Panel: un icono propio para cada opción ----------
+export const IconoRegalo = (p: Props) => (
+  <Base {...p}><rect x="3.5" y="9" width="17" height="11.5" rx="2" /><path d="M2.5 9h19M12 9v11.5" /><path d="M12 9c-1.5-4-6-4.5-6-1.8C6 9 9.5 9 12 9zM12 9c1.5-4 6-4.5 6-1.8C18 9 14.500 9 12 9z" /></Base>
+)
+export const IconoEstrella = (p: Props) => (
+  <Base {...p}><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.200-2.800-5.200 2.800 1-5.900L3.500 9.700l5.900-.8z" /></Base>
+)
+export const IconoTarjeta = (p: Props) => (
+  <Base {...p}><rect x="2.5" y="5" width="19" height="14" rx="3" /><circle cx="8" cy="12" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="16" cy="12" r="1.3" /></Base>
+)
+export const IconoPaleta = (p: Props) => (
+  <Base {...p}><path d="M12 3.500a8.500 8.500 0 1 0 0 17c1.400 0 2-1 1.500-2.200-.6-1.400.2-2.800 1.800-2.800H17a3.500 3.500 0 0 0 3.500-3.500c0-4.700-3.800-8.500-8.500-8.500z" /><circle cx="8" cy="11" r="1" /><circle cx="11" cy="7.500" r="1" /><circle cx="15.500" cy="8.500" r="1" /></Base>
+)
+export const IconoTexto = (p: Props) => (
+  <Base {...p}><path d="M5 6.500V5h14v1.500M12 5v14M9 19h6" /></Base>
+)
+export const IconoEscudo = (p: Props) => (
+  <Base {...p}><path d="M12 3 4.500 6v5.500c0 4.500 3 8 7.500 9.500 4.500-1.500 7.500-5 7.500-9.500V6z" /><path d="m9 12 2.200 2.200L15 10.400" /></Base>
+)
+export const IconoCampana = (p: Props) => (
+  <Base {...p}><path d="M6 10a6 6 0 0 1 12 0c0 5 2 6.500 2 6.500H4S6 15 6 10z" /><path d="M10 20a2.200 2.200 0 0 0 4 0" /></Base>
+)
+export const IconoAbajo = (p: Props) => (
+  <Base {...p}><path d="m6 9 6 6 6-6" /></Base>
+)

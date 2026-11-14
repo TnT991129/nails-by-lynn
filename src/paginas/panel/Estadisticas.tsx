@@ -2,15 +2,48 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { resumenMes, topServiciosMes, topClientasMes } from '../../lib/panel/api-panel'
 import ResumenSemanal from './ResumenSemanal'
-import { Tarjeta, Esqueleto, Aviso, Etiqueta } from '../../componentes/ui'
+import { Tarjeta, Esqueleto, Aviso } from '../../componentes/ui'
+import { IconoAtras, IconoFlecha } from '../../componentes/iconos'
 import { importe, fechaISO } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
 import EmbudoWeb from './EmbudoWeb'
+import { Cabecera, Seccion, Pestanas, Cifras } from './piezas'
 
 const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
+type Vista = 'mes' | 'semana' | 'web'
+
+// Una fila de ranking con su barra (lo más alto llena la barra)
+function Ranking({ filas }: { filas: { clave: string; nombre: string; apoyo: string; valor: number }[] }) {
+  const maximo = Math.max(1, ...filas.map(f => f.valor))
+  return (
+    <Tarjeta className="!p-0 divide-y divide-rosa-100 overflow-hidden">
+      {filas.map((f, i) => (
+        <div key={f.clave} className="px-4 py-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="min-w-0 flex items-baseline gap-2">
+              <span className="text-[12px] text-tinta-tenue w-4 shrink-0">{i + 1}</span>
+              <span className="text-[15px] font-medium truncate">{f.nombre}</span>
+            </div>
+            <span className="font-display text-[16px] shrink-0">{importe(f.valor)}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5 pl-6">
+            <span className="flex-1 h-1.5 rounded-full bg-rosa-50 overflow-hidden">
+              <span className="block h-full rounded-full bg-gradient-to-r from-rosa-400 to-rosa-600"
+                    style={{ width: `${Math.max(4, f.valor / maximo * 100)}%` }} />
+            </span>
+            <span className="text-[12px] text-tinta-tenue shrink-0">{f.apoyo}</span>
+          </div>
+        </div>
+      ))}
+    </Tarjeta>
+  )
+}
+
+// Tres vistas: el dinero del mes (lo primero), la semana comparada con la anterior y las visitas de la web
 export default function Estadisticas() {
+  const [vista, setVista] = useState<Vista>('mes')
   // Mes actual según La Habana
   const [añoHoy, mesHoy] = fechaISO(new Date()).split('-').map(Number)
   const [año, setAño] = useState(añoHoy)
@@ -37,137 +70,105 @@ export default function Estadisticas() {
     queryKey: ['top-cli', año, mes],
     queryFn: () => topClientasMes(año, mes),
   })
+  const r = qResumen.data
 
   return (
     <div className="p-5 space-y-5">
-      <h1 className="text-[30px] leading-tight">Estadísticas</h1>
+      <Cabecera titulo="Estadísticas" />
+      <Pestanas etiqueta="Qué ver" valor={vista} onChange={setVista}
+        opciones={[{ clave: 'mes', titulo: 'Mes' }, { clave: 'semana', titulo: 'Semana' }, { clave: 'web', titulo: 'Tu web' }]} />
 
-      <ResumenSemanal />
-      <EmbudoWeb />
+      {vista === 'semana' && <ResumenSemanal />}
+      {vista === 'web' && <EmbudoWeb />}
 
-      <div className="flex items-center justify-between">
-        <button onClick={() => mover(-1)} className="min-h-[44px] px-4 text-tinta-suave">←</button>
-        <span className="text-[16px] font-medium">{NOMBRES_MES[mes]} {año}</span>
-        <button onClick={() => mover(1)} disabled={esMesActual}
-          className="min-h-[44px] px-4 text-tinta-suave disabled:opacity-30">→</button>
-      </div>
-
-      {qResumen.isLoading && <Esqueleto className="h-40" />}
-      {qResumen.isError && <Aviso>{mensajeDeError(qResumen.error)}</Aviso>}
-
-      {qResumen.data && (
+      {vista === 'mes' && (
         <>
-          <div className="grid grid-cols-2 gap-3">
-            <Tarjeta className="text-center py-4">
-              <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Ingresos</div>
-              <div className="font-display text-[24px] mt-1">{importe(qResumen.data.ingresos)}</div>
-            </Tarjeta>
-            <Tarjeta className="text-center py-4">
-              <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Gastos</div>
-              <div className="font-display text-[24px] mt-1">{importe(qResumen.data.gastos)}</div>
-            </Tarjeta>
+          <div className="flex items-center justify-between bg-papel rounded-full border border-rosa-100 px-1">
+            <button onClick={() => mover(-1)} aria-label="Mes anterior"
+              className="w-11 h-11 flex items-center justify-center text-tinta-suave"><IconoAtras tam={18} /></button>
+            <span className="text-[15px] font-semibold">{NOMBRES_MES[mes]} {año}</span>
+            <button onClick={() => mover(1)} disabled={esMesActual} aria-label="Mes siguiente"
+              className="w-11 h-11 flex items-center justify-center text-tinta-suave disabled:opacity-30"><IconoFlecha tam={18} /></button>
           </div>
 
-          {qResumen.data.citas_completadas > 0 && (
-            <Tarjeta className="py-3 space-y-1.5">
-              <div className="flex justify-between text-[14px]">
-                <span className="text-tinta-suave">Cobrado</span>
-                <b className="text-estado-exito">{importe(qResumen.data.cobrado)}</b>
+          {qResumen.isLoading && <Esqueleto className="h-40" />}
+          {qResumen.isError && <Aviso>{mensajeDeError(qResumen.error)}</Aviso>}
+
+          {r && (
+            <>
+              {/* Lo que quedó en el mes, y de dónde sale */}
+              <div className={`rounded-xl p-5 text-center border ${r.neto >= 0
+                ? 'bg-gradient-to-br from-rosa-500 via-rosa-600 to-vino text-white border-transparent shadow-boton'
+                : 'bg-estado-error-fondo border-estado-error/30 text-estado-error'}`}>
+                <div className="text-[11px] font-semibold tracking-[0.2em] uppercase opacity-80">Te quedó este mes</div>
+                <div className="font-display text-[40px] leading-none mt-2">{importe(r.neto)}</div>
+                <div className="text-[13px] opacity-85 mt-2">{importe(r.ingresos)} de ingresos − {importe(r.gastos)} de gastos</div>
               </div>
-              {Math.abs(qResumen.data.sobre_estimado) > 0.009 && (
-                <div className="flex justify-between text-[14px]">
-                  <span className="text-tinta-suave">Frente al precio estimado</span>
-                  <b>{qResumen.data.sobre_estimado > 0 ? '+' : '−'}{importe(Math.abs(qResumen.data.sobre_estimado))}</b>
-                </div>
+
+              <Cifras datos={[
+                { etiqueta: 'Ingresos', valor: importe(r.ingresos) },
+                { etiqueta: 'Gastos', valor: importe(r.gastos) },
+                { etiqueta: 'Por cita', valor: importe(r.ticket_promedio) },
+              ]} />
+
+              {r.citas_completadas > 0 && (
+                <Seccion titulo="Cobros">
+                  <Tarjeta className="!py-3.5 space-y-2">
+                    <div className="flex justify-between text-[14px]">
+                      <span className="text-tinta-suave">Cobrado</span>
+                      <b className="text-estado-exito">{importe(r.cobrado)}</b>
+                    </div>
+                    {Math.abs(r.sobre_estimado) > 0.009 && (
+                      <div className="flex justify-between text-[14px]">
+                        <span className="text-tinta-suave">Frente al precio estimado</span>
+                        <b>{r.sobre_estimado > 0 ? '+' : '−'}{importe(Math.abs(r.sobre_estimado))}</b>
+                      </div>
+                    )}
+                    {r.sin_cobro > 0 && (
+                      <div className="flex justify-between text-[14px]">
+                        <span className="text-tinta-suave">{r.sin_cobro} {r.sin_cobro === 1 ? 'cita' : 'citas'} sin apuntar el cobro</span>
+                        <b className="text-estado-aviso">≈ {importe(r.sin_cobro_estimado)}</b>
+                      </div>
+                    )}
+                    <p className="text-[12px] text-tinta-tenue pt-1">
+                      Los ingresos son lo que apuntas en «Cobrar» en cada cita. Si no lo apuntas, cuenta el precio estimado.
+                    </p>
+                  </Tarjeta>
+                </Seccion>
               )}
-              {qResumen.data.sin_cobro > 0 && (
-                <div className="flex justify-between text-[14px]">
-                  <span className="text-tinta-suave">
-                    {qResumen.data.sin_cobro} {qResumen.data.sin_cobro === 1 ? 'cita' : 'citas'} sin apuntar el cobro
-                  </span>
-                  <b className="text-estado-aviso">≈ {importe(qResumen.data.sin_cobro_estimado)}</b>
-                </div>
-              )}
-              <p className="text-[11px] text-tinta-tenue">
-                Los ingresos son lo que apuntas en «Cobrar» en cada cita. Si no lo apuntas, cuenta el precio estimado.
-              </p>
-            </Tarjeta>
+
+              <Seccion titulo="Citas del mes">
+                <Cifras datos={[
+                  { etiqueta: 'Hechas', valor: r.citas_completadas },
+                  { etiqueta: 'Clientas', valor: r.clientas_atendidas },
+                  { etiqueta: 'No vino', valor: r.citas_no_show, tono: r.citas_no_show > 0 ? 'error' : 'normal' },
+                  { etiqueta: 'Canceló', valor: r.citas_canceladas },
+                ]} />
+              </Seccion>
+            </>
           )}
 
-          <Tarjeta className={`text-center py-4 ${
-            qResumen.data.neto >= 0 ? 'bg-rosa-50 border border-rosa-200' : 'bg-estado-error-fondo border border-estado-error/30'
-          }`}>
-            <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Ingreso neto</div>
-            <div className={`font-display text-[30px] mt-1 ${
-              qResumen.data.neto >= 0 ? 'text-rosa-900' : 'text-estado-error'
-            }`}>{importe(qResumen.data.neto)}</div>
-          </Tarjeta>
+          <Seccion titulo="Servicios que más dejan">
+            {qServ.isLoading && <Esqueleto className="h-24" />}
+            {qServ.data && qServ.data.length === 0 && <p className="text-[14px] text-tinta-tenue px-1">Sin datos este mes.</p>}
+            {qServ.data && qServ.data.length > 0 && (
+              <Ranking filas={qServ.data.map(s => ({
+                clave: s.nombre, nombre: s.nombre, valor: s.ingresos, apoyo: `${s.cantidad} ${s.cantidad === 1 ? 'cita' : 'citas'}`,
+              }))} />
+            )}
+          </Seccion>
 
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <Tarjeta className="py-3">
-              <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Completadas</div>
-              <div className="font-display text-[24px] mt-1">{qResumen.data.citas_completadas}</div>
-            </Tarjeta>
-            <Tarjeta className="py-3">
-              <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">No-show</div>
-              <div className="font-display text-[24px] mt-1">{qResumen.data.citas_no_show}</div>
-            </Tarjeta>
-            <Tarjeta className="py-3">
-              <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Canceladas</div>
-              <div className="font-display text-[24px] mt-1">{qResumen.data.citas_canceladas}</div>
-            </Tarjeta>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Tarjeta className="py-3">
-              <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Ticket promedio</div>
-              <div className="font-display text-[19px] mt-1">{importe(qResumen.data.ticket_promedio)}</div>
-            </Tarjeta>
-            <Tarjeta className="py-3">
-              <div className="text-[11px] uppercase tracking-wider text-tinta-tenue">Clientas</div>
-              <div className="font-display text-[19px] mt-1">{qResumen.data.clientas_atendidas}</div>
-            </Tarjeta>
-          </div>
+          <Seccion titulo="Clientas que más vienen">
+            {qCli.isLoading && <Esqueleto className="h-24" />}
+            {qCli.data && qCli.data.length === 0 && <p className="text-[14px] text-tinta-tenue px-1">Sin datos este mes.</p>}
+            {qCli.data && qCli.data.length > 0 && (
+              <Ranking filas={qCli.data.map(c => ({
+                clave: c.id, nombre: c.nombre, valor: c.gastado, apoyo: `${c.visitas} ${c.visitas === 1 ? 'visita' : 'visitas'}`,
+              }))} />
+            )}
+          </Seccion>
         </>
       )}
-
-      <section>
-        <Etiqueta>Servicios más vendidos</Etiqueta>
-        {qServ.isLoading && <Esqueleto className="h-24 mt-3" />}
-        {qServ.data && qServ.data.length === 0 && (
-          <p className="text-[13px] text-tinta-tenue mt-3">Sin datos este mes.</p>
-        )}
-        <div className="mt-3 space-y-2">
-          {qServ.data?.map(s => (
-            <Tarjeta key={s.nombre} className="flex justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-[14px] font-medium truncate">{s.nombre}</div>
-                <div className="text-[12px] text-tinta-tenue">{s.cantidad} {s.cantidad === 1 ? 'cita' : 'citas'}</div>
-              </div>
-              <div className="text-[14px] font-display shrink-0">{importe(s.ingresos)}</div>
-            </Tarjeta>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <Etiqueta>Clientas más frecuentes</Etiqueta>
-        {qCli.isLoading && <Esqueleto className="h-24 mt-3" />}
-        {qCli.data && qCli.data.length === 0 && (
-          <p className="text-[13px] text-tinta-tenue mt-3">Sin datos este mes.</p>
-        )}
-        <div className="mt-3 space-y-2">
-          {qCli.data?.map(c => (
-            <Tarjeta key={c.id} className="flex justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-[14px] font-medium truncate">{c.nombre}</div>
-                <div className="text-[12px] text-tinta-tenue">{c.visitas} {c.visitas === 1 ? 'visita' : 'visitas'}</div>
-              </div>
-              <div className="text-[14px] font-display shrink-0">{importe(c.gastado)}</div>
-            </Tarjeta>
-          ))}
-        </div>
-      </section>
     </div>
   )
 }
