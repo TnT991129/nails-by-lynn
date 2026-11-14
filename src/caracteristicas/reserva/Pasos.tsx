@@ -113,7 +113,8 @@ export function PasoServicio({
                     <IconoReloj tam={14} /> {duracion(s.duration_minutes)}
                   </div>
                   {descripcionServicio(s.short_description) && (
-                    <p className="text-[14px] text-tinta-suave mt-2">{descripcionServicio(s.short_description)}</p>
+                    // Recortada a 2 líneas para ver más servicios de un vistazo; al elegirlo se lee entera
+                    <p className={`text-[14px] text-tinta-suave mt-2 ${activo ? '' : 'line-clamp-2'}`}>{descripcionServicio(s.short_description)}</p>
                   )}
                 </div>
               </div>

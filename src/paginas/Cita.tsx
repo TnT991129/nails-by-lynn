@@ -216,12 +216,6 @@ export default function Cita() {
         </Tarjeta>
         </Revelar>
 
-        {activa && <AnadirCalendario c={c} token={token} />}
-        <InspiracionCita token={token} activa={activa} pendiente={inspiracionPendiente}
-          enlaceWhatsApp={c.negocio.whatsapp ? `https://wa.me/${numeroWhatsApp(c.negocio.whatsapp)}?text=${encodeURIComponent(`Hola Lynn! Te mando la foto del diseño para mi cita ${c.code}`)}` : null} />
-        <TarjetaSellos token={token} />
-        {!['CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO', 'NO_SHOW'].includes(c.estado) && <RecomiendaAmiga telefono={c.cliente.telefono} />}
-
         {!esNueva && bloqueAviso}
 
         {c.estado === 'COMPLETADA' && <ValorarCita token={token} resena={c.resena} />}
@@ -300,6 +294,15 @@ export default function Cita() {
             </div>
           </Tarjeta>
         )}
+
+        {/* Lo de más: recordatorio, diseño, premios y recomendar (después de lo urgente) */}
+        <div className="space-y-4 pt-2">
+          {activa && <AnadirCalendario c={c} token={token} />}
+          <InspiracionCita token={token} activa={activa} pendiente={inspiracionPendiente}
+            enlaceWhatsApp={c.negocio.whatsapp ? `https://wa.me/${numeroWhatsApp(c.negocio.whatsapp)}?text=${encodeURIComponent(`Hola Lynn! Te mando la foto del diseño para mi cita ${c.code}`)}` : null} />
+          <TarjetaSellos token={token} />
+          {!['CANCELADA_CLIENTA', 'CANCELADA_NEGOCIO', 'NO_SHOW'].includes(c.estado) && <RecomiendaAmiga telefono={c.cliente.telefono} />}
+        </div>
 
         <Link to="/" className="block text-center text-rosa-800 font-medium min-h-[44px] leading-[44px]">
           Volver al inicio
