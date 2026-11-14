@@ -6,12 +6,12 @@ import {
   bloqueosEnRango, obtenerAjustesPoliticas, crearBloqueo, eliminarBloqueo,
   type CitaAgenda, type ReglaHorario, type DiaCerrado,
 } from '../../lib/panel/api-panel'
-import { Tarjeta, Esqueleto, Aviso, Pildora, estiloBoton } from '../../componentes/ui'
+import { Tarjeta, Esqueleto, Aviso, estiloBoton } from '../../componentes/ui'
 import { IconoAtras, IconoMas } from '../../componentes/iconos'
-import { hora, duracion, fechaLarga, fechaISO, instanteEnHabana, horaDeTurno } from '../../lib/formato'
+import { hora, fechaLarga, fechaISO, instanteEnHabana, horaDeTurno } from '../../lib/formato'
 import { diaSemana, sumarDias, dos } from '../../componentes/CalendarioMes'
 import { mensajeDeError } from '../../lib/errores'
-import { ListaServicios } from './comunes'
+import { Cabecera, FilaCita as TarjetaCita } from './piezas'
 
 type Vista = 'dia' | 'semana' | 'mes'
 const VISTAS: { v: Vista; texto: string }[] = [{ v: 'dia', texto: 'Día' }, { v: 'semana', texto: 'Semana' }, { v: 'mes', texto: 'Mes' }]
@@ -111,12 +111,10 @@ export default function Agenda() {
 
   return (
     <div className="p-5 space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-[30px] leading-tight">Agenda</h1>
-        <Link to="/panel/agenda/nueva" className={`${estiloBoton('primario')} !min-h-[44px] !px-4 !text-[14px]`}>
-          <IconoMas tam={16} strokeWidth={2.4} /> Cita manual
-        </Link>
-      </div>
+      <Cabecera titulo="Agenda" accion={
+        <Link to="/panel/agenda/nueva" className={`${estiloBoton('primario')} !min-h-[42px] !px-4 !text-[14px]`}>
+          <IconoMas tam={16} strokeWidth={2.4} /> Cita
+        </Link>} />
 
       <div className="flex gap-1 bg-rosa-50 rounded-full border border-rosa-100 p-1 w-full">
         {VISTAS.map(({ v, texto }) => (
@@ -267,24 +265,9 @@ function VistaDia({ j, compacta = false }: { j: Jornada; compacta?: boolean }) {
   )
 }
 
+// La misma tarjeta de cita que en Hoy (raya de color según el estado)
 function FilaCita({ c }: { c: CitaAgenda }) {
-  return (
-    <Link to={`/panel/cita/${c.id}`} className="block">
-      <Tarjeta className="flex items-start gap-3 !py-3.5">
-        <div className="text-center min-w-[64px] pt-0.5">
-          <div className="font-display text-[17px]">{hora(c.starts_at)}</div>
-          <div className="text-[11px] text-tinta-tenue">{duracion(c.total_duration_minutes)}</div>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="text-[15px] font-medium truncate">{c.cliente_nombre}</div>
-            <div className="shrink-0"><Pildora estado={c.status} /></div>
-          </div>
-          <ListaServicios texto={c.servicios} className="text-[13px] text-tinta-tenue mt-1" />
-        </div>
-      </Tarjeta>
-    </Link>
-  )
+  return <TarjetaCita cita={c} />
 }
 
 // ---------- Mes: un punto por turno (relleno = ocupado) ----------

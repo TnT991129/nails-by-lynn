@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listarClientas, contadoresClientas } from '../../lib/panel/api-panel'
-import { Tarjeta, Esqueleto, Aviso, Vacio, estiloBoton } from '../../componentes/ui'
+import { Esqueleto, Aviso, Vacio, estiloBoton } from '../../componentes/ui'
 import { IconoMas } from '../../componentes/iconos'
 import { fechaLarga } from '../../lib/formato'
 import { mensajeDeError } from '../../lib/errores'
+import { Cabecera } from './piezas'
 
 export default function Clientas() {
   const [busq, setBusq] = useState('')
@@ -17,12 +18,10 @@ export default function Clientas() {
 
   return (
     <div className="p-5 space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-[30px] leading-tight">Clientas</h1>
-        <Link to="/panel/clientas/nueva" className={`${estiloBoton('primario')} !min-h-[44px] !px-4 !text-[14px]`}>
+      <Cabecera titulo="Clientas" apoyo={q.data && !busq ? `${q.data.length} clientas` : undefined} accion={
+        <Link to="/panel/clientas/nueva" className={`${estiloBoton('primario')} !min-h-[42px] !px-4 !text-[14px]`}>
           <IconoMas tam={16} strokeWidth={2.4} /> Nueva
-        </Link>
-      </div>
+        </Link>} />
       <input value={busq} onChange={e => setBusq(e.target.value)}
         placeholder="Buscar por nombre, teléfono o @instagram"
         className="w-full min-h-[48px] px-4 rounded-full border border-rosa-200 text-[16px] bg-papel
@@ -38,7 +37,7 @@ export default function Clientas() {
                  texto="Cuando alguien reserve o crees una cita manual aparecerá aquí." />
       )}
 
-      <div className="space-y-2">
+      <div className={q.data?.length ? 'bg-papel rounded-xl border border-rosa-100/80 shadow-suave divide-y divide-rosa-100 overflow-hidden' : ''}>
         {q.data?.map(c => {
           const k = qCont.data?.[c.id]
           const marcas = [
@@ -47,8 +46,11 @@ export default function Clientas() {
             k?.noAsistio ? `${k.noAsistio} ${k.noAsistio === 1 ? 'falta' : 'faltas'}` : null,
           ].filter(Boolean)
           return (
-          <Link key={c.id} to={`/panel/clientas/${c.id}`} className="block">
-            <Tarjeta className="space-y-1">
+          <Link key={c.id} to={`/panel/clientas/${c.id}`} className="flex items-start gap-3 px-4 py-3 active:bg-rosa-50 transition-colors">
+            <span aria-hidden className="w-10 h-10 rounded-full bg-gradient-to-br from-rosa-100 to-rosa-200 text-rosa-800 font-semibold text-[15px] flex items-center justify-center shrink-0">
+              {c.full_name.trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase()}
+            </span>
+            <div className="flex-1 min-w-0 space-y-0.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-[16px] font-medium truncate">
                   {c.full_name}{c.is_blocked && <span className="text-[12px] text-estado-error"> · bloqueada</span>}
@@ -59,7 +61,7 @@ export default function Clientas() {
                   {k?.proximas ? <div className="text-[12px] text-rosa-700 font-semibold">{k.proximas} {k.proximas === 1 ? 'próxima' : 'próximas'}</div> : null}
                 </div>
               </div>
-              <div className="text-[14px] text-tinta-tenue truncate">
+              <div className="text-[13px] text-tinta-tenue truncate">
                 {c.phone}{c.last_appointment_at && ` · última: ${fechaLarga(c.last_appointment_at)}`}
               </div>
               {(marcas.length > 0 || c.next_discount_percent) && (
@@ -72,7 +74,7 @@ export default function Clientas() {
                   {marcas.length > 0 && <span className="text-estado-aviso">{marcas.join(' · ')}</span>}
                 </div>
               )}
-            </Tarjeta>
+            </div>
           </Link>
           )
         })}
